@@ -1,0 +1,3648 @@
+<?php
+/**
+ * Part of Nr_Sync package.
+ * Holds Configuration
+ *
+ * PHP version 5
+ *
+ * @package    Netresearch/TYPO3/Sync
+ * @author     Michael Ablass <ma@netresearch.de>
+ * @author     Alexander Opitz <alexander.opitz@netresearch.de>
+ * @author     Tobias Hein <tobias.hein@netresearch.de>
+ * @license    https://www.gnu.org/licenses/agpl AGPL v3
+ * @link       http://www.netresearch.de
+ */
+
+namespace Netresearch\Sync\Controller;
+
+use Netresearch\Sync\Exception;
+use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Table;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Fluid\View\StandaloneView;
+
+/**
+ * Module 'Netresearch Sync' for the 'nr_sync' extension.
+ *
+ * Diese Modul sorgt für die Synchronisation zwischen Staging und
+ * Live. Es wird je nach Benutzergruppe eine Auswahl zu synchronisierender
+ * Tabellen erscheinen. Diese werden gedumpt, gezippt und in ein bestimmtes
+ * Verzeichnis geschrieben. Danach wird per FTP der Hauptserver
+ * benachrichtigt. Dieser holt sich dann per RSync die Daten ab und spielt
+ * sie in die DB ein. Der Cache wird ebenfalls gelöscht. Aktuell werden
+ * immer auch die Files (fileadmin/ & statisch/) mitsynchronisiert.
+ *
+ * PHP version 5
+ *
+ * @todo      doc
+ * @todo      Logfile in DB wo Syncs hineingeschrieben werden
+ * @package   Netresearch/TYPO3/Sync
+ * @author    Michael Ablass <ma@netresearch.de>
+ * @author    Alexander Opitz <alexander.opitz@netresearch.de>
+ * @author    Tobias Hein <tobias.hein@netresearch.de>
+ * @company   Netresearch GmbH & Co.KG <info@netresearch.de>
+ * @copyright 2004-2012 Netresearch GmbH & Co.KG (ma@netresearch.de)
+ * @license   https://www.gnu.org/licenses/agpl AGPL v3
+ * @link      http://www.netresearch.de
+ */
+class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
+{
+    const STYLE_OK = -1;
+    const STYLE_NORMAL = 0;
+    const STYLE_LIGHT = 1;
+    const STYLE_FAILURE = 2;
+
+    const FUNC_SINGLE_PAGE = 46;
+    const FUNC_FAL = 8;
+    const FUNC_SYS_DOMAINS = 31;
+    const FUNC_FE_GROUPS = 9;
+    const FUNC_FILES = 35;
+    const FUNC_BE_USERS_GROUPS = 10;
+    const FUNC_ITG = 13;
+    const FUNC_TABLE_DEF = 17;
+    const FUNC_SCHEDULER = 40;
+
+
+    /**
+     * key to use for storing insert statements
+     * in $arGlobalSqlLinesStoarage
+     */
+    const STATEMENT_TYPE_INSERT = 'insert';
+
+    /**
+     * key to use for storing delete statements
+     * in $arGlobalSqlLinesStoarage
+     */
+    const STATEMENT_TYPE_DELETE = 'delete';
+
+    var $nDumpTableRecursion = 0;
+
+    /**
+     * @var array backend page information
+     */
+    var $pageinfo;
+
+    /**
+     * @var array Dateien mit dieser Endung werden gesynct
+     */
+    var $arFileEndingsToSync = array('gif', 'jpg', 'png', 'swf', 'pdf');
+
+    /**
+     * @var array Dateien mit diesem Pfadstart werden gesynct
+     */
+    var $arFilePathsToSync = array('fileadmin_v8');
+
+    /**
+     * @var array Felder in tt_content die ebenfalls Bildverweise beinhalten können
+     */
+    var $arFileFieldsToSync = array('image');
+
+    /**
+     * @var string Where to put DB Dumps (trailing Slash)
+     */
+    var $strDBFolder = '';
+
+    /**
+     * @var string Where to put URL file lists
+     */
+    public $strUrlFolder = '';
+
+    /**
+     * @var string folder for live db dump
+     */
+    var $strLIVEFolder = '';
+
+    /**
+     *
+     * @var string Where to put clear cache urls
+     */
+    public $strClearCacheFolder = '';
+
+    /**
+     * @var integer Access rights for new folders
+     */
+    public $nFolderRights = 0777;
+
+    /**
+     * @var int Access rights for new files
+     */
+    public $nFileRights = 0666;
+
+    /**
+     * @var string Error string
+     */
+    var $strError = '';
+
+    /**
+     * @var string Success string
+     */
+    var $strSuccess = '';
+
+    /**
+     * @var string DAM Error string
+     */
+    var $strDAMError = '';
+
+    /**
+     * @var string Dummy file
+     */
+    var $strDummyFile = '';
+
+    /**
+     * @var string file where to store table information
+     */
+    protected $strTableSerializedFile = 'tables_serialized.txt';
+
+    /**
+     * @var string path to temp folder
+     */
+    protected $strTempFolder = null;
+
+    /**
+     * @var int
+     */
+    protected $nRecursion = 1;
+
+    /**
+     * @var array pages to sync
+     */
+    protected $arPageIds = array();
+
+    /**
+     * @var array
+     */
+    var $arObsoleteRows = array();
+
+    /**
+     * @var array
+     */
+    var $arReferenceTables = array();
+
+    /**
+     * Multidimensional array to save the lines put to the
+     * current sync file for the current sync process
+     * Structure
+     * $arGlobalSqlLineStorage[<statementtype>][<tablename>][<identifier>] = <statement>;
+     *
+     * statementtypes: delete, insert
+     * tablename:      name of the table the records belong to
+     * identifier:     unique identifier like uid or a uique string
+     *
+     * @var array
+     */
+    protected $arGlobalSqlLineStorage = array();
+
+    protected $arConfig = null;
+
+    protected $configurationManager = null;
+
+    /**
+     * ModuleTemplate Container
+     *
+     * @var ModuleTemplate
+     */
+    protected $moduleTemplate;
+
+    /**
+     * The name of the module
+     *
+     * @var string
+     */
+    protected $moduleName = 'web_txnrsyncM1';
+
+    /**
+     * @var IconFactory
+     */
+    protected $iconFactory;
+
+    /**
+     * @var StandaloneView
+     */
+    protected $view;
+
+    /**
+     * @var Area
+     */
+    protected $area = null;
+
+    /**
+     * @return SyncModuleController
+     */
+    public function __construct()
+    {
+        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
+        $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
+        $this->MCONF = [
+            'name' => $this->moduleName,
+        ];
+        /*
+        $this->cshKey = '_MOD_' . $this->moduleName;
+        $this->backendTemplatePath = ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Templates/Backend/SchedulerModule/';
+        $this->view = GeneralUtility::makeInstance(\TYPO3\CMS\Fluid\View\StandaloneView::class);
+        $this->view->getRequest()->setControllerExtensionName('nr_sync');
+        $this->view->setPartialRootPaths([ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Partials/Backend/SchedulerModule/']);
+        */
+        $this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
+        $this->iconFactory = GeneralUtility::makeInstance(IconFactory::class);
+
+        $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
+        $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
+        $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/SplitButtons');
+    }
+
+
+
+    /**
+     * Init sync module.
+     *
+     * @return void
+     */
+    public function init()
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        if ($BE_USER->user['admin']
+            && $this->receivedLockChangeRequest()
+        ) {
+            $this->handleLockRequest();
+        }
+
+        parent::init();
+
+        $this->initFolders();
+    }
+
+
+
+    /**
+     * Initialize the folders needed while synchronize.
+     *
+     * @return void
+     */
+    private function initFolders()
+    {
+        $strRootPath = $_SERVER['DOCUMENT_ROOT'];
+        if (empty($strRootPath)) {
+            $strRootPath = substr(PATH_site, 0, -1);
+        }
+        $this->strDummyFile = $strRootPath . '/db.txt';
+        $this->strDBFolder = $strRootPath . '/db/';
+        $this->strLIVEFolder = $strRootPath . '/db/sync-aws-live/';
+        $this->strUrlFolder = $this->strDBFolder . 'url/';
+        $this->strClearCacheFolder = $this->strDBFolder . 'clearcache/';
+        $this->strTempFolder = $this->strDBFolder . 'tmp/';
+
+        if (!file_exists($this->strTempFolder)) {
+            mkdir($this->strTempFolder, $this->nFolderRights, true);
+        }
+        if (!file_exists($this->strUrlFolder)) {
+            mkdir($this->strUrlFolder, $this->nFolderRights, true);
+        }
+
+        if (!file_exists($this->strClearCacheFolder)) {
+            mkdir($this->strClearCacheFolder, $this->nFolderRights, true);
+        }
+    }
+
+
+
+    /**
+     * Adds items to the ->MOD_MENU array. Used for the function menu selector.
+     *
+     * @return void
+     */
+    function menuConfig()
+    {
+        $this->MOD_MENU = array('function' => array());
+
+        if (!$this->isLocked()) {
+            $this->calculateAccessRights();
+        }
+
+        parent::menuConfig();
+    }
+
+
+
+    /**
+     * Injects the request object for the current request or subrequest
+     * Simply calls main() and init() and outputs the content
+     *
+     * @param ServerRequestInterface $request the current request
+     * @param ResponseInterface $response
+     * @return ResponseInterface the response with the content
+     */
+    public function mainAction(ServerRequestInterface $request, ResponseInterface $response)
+    {
+        $GLOBALS['SOBE'] = $this;
+        $this->init();
+        $this->main();
+
+        $this->view = $this->getFluidTemplateObject('nrsync', 'nrsync');
+        $this->view->assign('moduleName', BackendUtility::getModuleUrl('web_txnrsyncM1'));
+        $this->view->assign('id', $this->id);
+        //$this->view->assign('functionMenuModuleContent', $this->getExtObjContent());
+        $this->view->assign('functionMenuModuleContent', $this->content);
+        // Setting up the buttons and markers for docheader
+
+        //$this->getButtons();
+        $this->generateMenu();
+
+        //$this->content .= $this->view->render();
+
+        $this->moduleTemplate->setContent(
+            $this->content
+            . '</form>'
+        );
+        $response->getBody()->write($this->moduleTemplate->renderContent());
+        return $response;
+    }
+
+
+
+    /**
+     * returns a new standalone view, shorthand function
+     *
+     * @param string $extensionName
+     * @param string $controllerExtensionName
+     * @param string $templateName
+     * @return StandaloneView
+     */
+    protected function getFluidTemplateObject($extensionName, $controllerExtensionName, $templateName = 'Main')
+    {
+        /** @var StandaloneView $view */
+        $view = GeneralUtility::makeInstance(StandaloneView::class);
+        $view->setLayoutRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Layouts')]);
+        $view->setPartialRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Partials')]);
+        $view->setTemplateRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates')]);
+
+        $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates/' . $templateName . '.html'));
+
+        $view->getRequest()->setControllerExtensionName($controllerExtensionName);
+
+        return $view;
+    }
+
+
+
+    /**
+     * Add items to the function menu
+     *
+     * @return void
+     */
+    protected function calculateAccessRights()
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $nAccessLevel = 50;
+        if ($BE_USER->user['admin']) {
+            $nAccessLevel = 100;
+        }
+
+        // Darf jeder der das SyncTool eingeschaltet hat
+        $this->MOD_MENU['function'][self::FUNC_SINGLE_PAGE] = 'Einzelne Seiten (TYPO 6.2)';
+        $this->MOD_MENU['function'][self::FUNC_FAL] = 'DAM (Bilder & Videos)';
+        $this->MOD_MENU['function'][self::FUNC_SYS_DOMAINS] = 'Domain Records';
+        $this->MOD_MENU['function'][self::FUNC_FE_GROUPS] = 'Frontend Benutzergruppen';
+
+        if ($nAccessLevel >= 100) {
+            $this->MOD_MENU['function'][self::FUNC_FILES] = '[admin] Anlegen DB.txt und Files.txt';
+            $this->MOD_MENU['function'][self::FUNC_BE_USERS_GROUPS] = '[admin] Backend Gruppen & Benutzer';
+            $this->MOD_MENU['function'][self::FUNC_ITG] = '[admin] Sync auf ITG';
+            $this->MOD_MENU['function'][self::FUNC_TABLE_DEF] = '[admin] Update Tabellendefinition';
+            $this->MOD_MENU['function'][self::FUNC_SCHEDULER] = '[admin] Scheduler';
+        }
+
+        // sort and prepend '0' => 'Bitte auswählen'
+        natcasesort($this->MOD_MENU['function']);
+
+        $this->MOD_MENU['function']
+            = array('0' => 'Bitte auswählen') + $this->MOD_MENU['function'];
+    }
+
+
+
+    /**
+     * Tests if given tables holds data on given page id.
+     * Returns true if "pages" is one of the tables to look for without checking
+     * if page exists.
+     *
+     * @param integer $nId      The page id to look for.
+     * @param array   $arTables Tables this task manages.
+     *
+     * @return boolean True if data exists otherwise false.
+     */
+    protected function pageContainsData($nId, array $arTables = null)
+    {
+        global $TCA;
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+
+        if (null === $arTables) {
+            return false;
+        } elseif (false !== array_search('pages', $arTables)) {
+            return true;
+        } else {
+            foreach ($arTables as $strTableName) {
+                if (isset($TCA[$strTableName])) {
+                    $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+
+                    $nCount = $queryBuilder->count('pid')
+                        ->from($strTableName)
+                        ->where($queryBuilder->expr()->eq('pid', intval($nId)))
+                        ->execute()
+                        ->fetchColumn(0);
+
+                    if ($nCount > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * Shows the page selection, depending on selected id and tables to look at.
+     *
+     * @param string $strName  Name of this page selection (Depends on task).
+     * @param array  $arTables Tables this task manages.
+     *
+     * @return string HTML Output for the selection box.
+     */
+    protected function showPageSelection(
+        $strName, array $arTables
+    ) {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $strPreOutput = '';
+
+        if ($this->id == 0) {
+            $this->addError(
+                'Please select a page from the page tree.'
+            );
+            return $strPreOutput;
+        }
+
+        $record = BackendUtility::getRecord('pages', $this->id);
+
+        if (null === $record) {
+            $this->addError(
+                'Could not load record for selected page: ' . $this->id . '.'
+            );
+
+            return $strPreOutput;
+        }
+
+        if (false === $this->area->isDocTypeAllowed($record)) {
+            $this->addError(
+                'Page type not allowed to sync.'
+            );
+
+            return $strPreOutput;
+        }
+
+        $bShowButton = false;
+
+        $this->nRecursion = (int) $BE_USER->getSessionData(
+            'nr_sync_synclist_levelmax' . $strName
+        );
+        if (isset($_POST['data']['rekursion'])) {
+            $this->nRecursion = (int) $_POST['data']['levelmax'];
+            $BE_USER->setAndSaveSessionData(
+                'nr_sync_synclist_levelmax' . $strName, $this->nRecursion
+            );
+        }
+        if ($this->nRecursion < 1) {
+            $this->nRecursion = 1;
+        }
+
+        $arCount = array();
+
+        $this->getSubpagesAndCount(
+            $this->id, $arCount, 0, $this->nRecursion,
+            $this->area->getNotDocType(), $this->area->getDocType(),
+            $arTables
+        );
+
+        $strTitle = $this->area->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
+        if ($record['doktype'] == 4) {
+            $strTitle .= ' - LINK';
+        }
+        $strPreOutput .= $this->doc->section($strTitle, '', 2, 0);
+
+        $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
+        $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
+        $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
+        $strPreOutput .= '<input type="hidden" name="data[noaccess]" value="' . $arCount['noaccess'] . '">';
+        $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->area->getId() . '">';
+        if ($this->pageContainsData($this->id, $arTables)) {
+            $strPreOutput .= '<input type="radio" name="data[type]" value="alone" id="data_type_alone" />'
+                . ' <label for="data_type_alone">Als einzelne Seite vormerken.</label>';
+            $bShowButton = true;
+        }
+
+        //$strPreOutput .= $this->doc->spacer(5);
+
+        if ($arCount['count'] > 0) {
+            $strPreOutput .= $this->doc->section(
+                '',
+                '<input type="radio" name="data[type]" value="tree" id="data_type_tree" />'
+                . ' <label for="data_type_tree">Diese Seite und alle ' . $arCount['count']
+                . ' Unterseiten vormerken.</label><br><small>(Davon sind '
+                . $arCount['deleted'] . ' gelöscht. Auf '
+                . $arCount['noaccess'] . ' Seiten kann nicht'
+                . ' zugegriffen werden. Falsche Elemente: '
+                . $arCount['falses'] . ')</small>'
+            );
+            $bShowButton = true;
+            if ($arCount['other_area'] > 0) {
+                $strPreOutput .= $this->doc->section(
+                    '',
+                    '<br><b>Es gibt fremde Unterbereiche, die nicht Berücksichtigt werden!</b>'
+                );
+            }
+        } else {
+            //$strPreOutput .= $this->doc->spacer(15);
+        }
+
+        if (!$bShowButton) {
+            $this->addError(
+                'Bitte wählen Sie eine Seite mit entsprechendem Inhalt aus.'
+            );
+        } else {
+            //$strPreOutput .= $this->doc->spacer(5);
+            $strPreOutput .= $this->doc->section(
+                '',
+                '<input type="submit" name="data[add]" value="Zur Synchronisation vormerken.">'
+            );
+        }
+
+        $strPreOutput .= $this->doc->divider(5);
+        $strPreOutput .= $this->doc->section(
+            '',
+            '<input type="input" name="data[levelmax]" value="'
+            . $this->nRecursion . '">&nbsp;'
+            . '<input type="submit" name="data[rekursion]" value="Maximale Rekursionstiefe ändern.">.'
+        );
+        $strPreOutput .= $this->doc->divider(5);
+
+        return $strPreOutput;
+    }
+
+
+
+    /**
+     * Manages adding and deleting of pages/trees to the sync list.
+     *
+     * @param string $strName Name of the sync list to manage.
+     *
+     * @return array Synclist after processing.
+     */
+    protected function manageSyncList($strName)
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        // Vorhandene Liste holen
+        $arSynclist = $BE_USER->getSessionData('nr_sync_synclist' . $strName);
+
+        // ID hinzufügen
+        if (isset($_POST['data']['add'])) {
+            if (isset($_POST['data']['type'])) {
+                $this->addToSyncList($_POST['data'], $arSynclist);
+            } else {
+                $this->addError(
+                    'Bitte wählen Sie aus, wie die Seite vorgemerkt werden soll.'
+                );
+            }
+        }
+
+        // ID entfernen
+        if (isset($_POST['data']['delete'])) {
+            $this->deleteFromSyncList($_POST['data'], $arSynclist);
+        }
+
+        $this->saveSyncList($strName, $arSynclist);
+
+        return $arSynclist;
+    }
+
+
+
+    /**
+     * Saves the sync list to user session.
+     *
+     * @param string $strName Name of the sync list to save.
+     * @param array $arSynclist The sync list to save.
+     *
+     * @return void
+     */
+    protected function saveSyncList($strName, $arSynclist)
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $BE_USER->setAndSaveSessionData(
+            'nr_sync_synclist' . $strName, $arSynclist
+        );
+    }
+
+
+
+    /**
+     * Adds given data to sync list, if pageId doesn't already exists.
+     *
+     * @param array $arData      Data to add to sync list.
+     * @param array &$arSyncList The sync list to add to.
+     *
+     * @return void
+     */
+    protected function addToSyncList($arData, &$arSyncList)
+    {
+        $arData['removeable'] = true;
+        // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
+        if (!$this->isInTree($arSyncList[$arData['areaID']], $arData['pageID'])) {
+            $arSyncList[$arData['areaID']][] = $arData;
+        } else {
+            $this->addError(
+                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.'
+            );
+        }
+    }
+
+
+
+    /**
+     * Adds given data to sync list, if pageId does not already exists.
+     *
+     * @param array $arData      Data to add to sync list.
+     * @param array &$arSyncList The sync list to remove from.
+     *
+     * @return void
+     */
+    protected function deleteFromSyncList($arData, &$arSyncList)
+    {
+        $arDeleteArea = array_keys($arData['delete']);
+        $arDeletePageID = array_keys(
+            $arData['delete'][$arDeleteArea[0]]
+        );
+        foreach ($arSyncList[$arDeleteArea[0]] as $key => $value) {
+            if ($value['removeable']
+                && $value['pageID'] == $arDeletePageID[0]
+            ) {
+                unset($arSyncList[$arDeleteArea[0]][$key]);
+                if (0 === count($arSyncList[$arDeleteArea[0]])) {
+                    unset($arSyncList[$arDeleteArea[0]]);
+                }
+                break;
+            }
+        }
+    }
+
+
+
+    /**
+     * Main function of the module. Write the content to $this->content
+     *
+     * If you chose 'web' as main module, you will need to consider the $this->id
+     * parameter which will contain the uid-number of the page clicked in the page
+     * tree
+     *
+     * @return void
+     */
+    public function main()
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        /* @var $LANG \TYPO3\CMS\Lang\LanguageService */
+        global $BE_USER, $LANG;
+
+        // Access check!
+        // The page will show only if there is a valid page and if this page may
+        // be viewed by the user
+        $this->pageinfo = BackendUtility::readPageAccess(
+            $this->id, $this->perms_clause
+        );
+        if ($this->pageinfo) {
+            $this->moduleTemplate->getDocHeaderComponent()->setMetaInformation($this->pageinfo);
+        }
+
+        $this->doc = GeneralUtility::makeInstance(
+            \TYPO3\CMS\Backend\Template\DocumentTemplate::class
+        );
+        $this->doc->setModuleTemplate('EXT:nr_sync/mod1/template.html');
+
+        if (defined('TYPO3_TX_NR_SYNC_DISABLED') && TYPO3_TX_NR_SYNC_DISABLED) {
+            $this->addError('Netresearch Sync is disabled.');
+            return;
+        }
+
+        if ($BE_USER->user['admin']) {
+            $this->addLockCheckbox();
+        }
+
+        if ($this->isLocked()) {
+            $this->handleLockedState();
+            return;
+        }
+
+        $this->doc->form = '<form action="" method="POST">';
+        $this->content = '<form action="" method="POST">';
+
+        // JavaScript
+        $this->doc->JScodeArray[] = '
+            script_ended = 0;
+            function jumpToUrl(URL) {
+                document.location = URL;
+            }
+        ';
+        $this->doc->postCode = '
+            <script type="text/javascript">
+            // <![CDATA[
+                script_ended = 1;
+                if (top.fsMod) {
+                    top.fsMod.recentIds["web"] = ' . intval($this->id) . ';
+                }
+            // ]]>
+            </script>
+        ';
+
+        $this->area = GeneralUtility::makeInstance(
+            Area::class, $this->id
+        );
+
+        $arTables         = array();
+        $strDumpFile      = '';
+        $strDisabled      = '';
+        $bUseSyncList     = false;
+        $arSyncList       = array();
+        $arUrlsOnce       = array();
+        $arUrlsPerMachine = array();
+
+        $nAreaType = self::STYLE_LIGHT;
+        $bCanSync  = true;
+        $bClearCodeCache = !empty($_POST['data']['delete_code_cache']);
+
+        switch ((int)$this->MOD_SETTINGS['function']) {
+
+            /*
+             * DAM
+             */
+            case self::FUNC_FAL: {
+                $strSyncWhat = 'Digital-Asset-Management (DAM)';
+                $strTableType = 'sync_tables';
+
+                $arTables = $this->getDamTables();
+
+                $strDumpFile = 'dam.sql';
+                break;
+            }
+
+            /*
+             * FE_Groups
+             */
+            case self::FUNC_FE_GROUPS: {
+                $strSyncWhat = 'Frontend-Benutzergruppen';
+                $strTableType = 'sync_fe_groups';
+
+                $arTables[] = 'fe_groups';
+                $strDumpFile = 'fe_groups.sql';
+                break;
+            }
+
+            /*
+             * BE_Groups
+             */
+            case self::FUNC_BE_USERS_GROUPS: {
+                $strSyncWhat = 'Backend-Benutzergruppen';
+                $strTableType = 'sync_be_groups';
+
+                $arTables[] = 'be_users';
+                $arTables[] = 'be_groups';
+                $strDumpFile = 'be_users_groups.sql';
+                break;
+            }
+
+            /*
+             * Sync auf itg starten/stoppen
+             */
+            case self::FUNC_ITG: {
+                $strSyncWhere = 'Integrationsserver';
+                $strSyncWhat = 'Einstellungen für itg';
+
+                if (is_file($this->strDBFolder . '/aida-aws-itg/.lock')) {
+                    $selected = 'checked="checked"';
+                } else {
+                    $selected = '';
+                }
+                // Vorgreifen des Status, da er sich im weiteren Verlauf ändert.
+                if (isset($_POST['data']['submit'])) {
+                    if (isset($_POST['data']['type'])
+                        && 'lock' === $_POST['data']['type']
+                    ) {
+                        $selected = 'checked="checked"';
+                    } else {
+                        $selected = '';
+                    }
+                }
+                $strPreOutput = '<input type="checkbox" name="data[type]" id="type"'
+                    . ' value="lock" ' . $selected . '><label for="type">&nbsp;'
+                    . $LANG->getLL('stop_synchronization') . '.</label>';
+                $strDumpFile = '.lock';
+                break;
+            }
+
+            /*
+             * Tabellendefinition updaten
+             */
+            case self::FUNC_TABLE_DEF: {
+                $strSyncWhere = 'local';
+                $strSyncWhat = 'Table definitions';
+
+                if (!isset($_POST['data']['submit'])) {
+                    $this->testAllTablesForDifferences();
+                }
+
+                $strDumpFile = $this->strTableSerializedFile;
+                break;
+            }
+
+            /*
+             * TextDB updaten
+             */
+            case 20: {
+                $strSyncWhat = 'TextDB Daten';
+                $strTableType = 'sync_tables';
+
+                $arTables[] = 'tx_aidatextdb_component';
+                $arTables[] = 'tx_aidatextdb_placeholder';
+                $arTables[] = 'tx_aidatextdb_textmodule';
+                $arTables[] = 'tx_aidatextdb_type';
+                $arTables[] = 'tx_aidatextdb_environment';
+                $strDumpFile = 'text-db.sql';
+                break;
+            }
+
+            /*
+             * sys_domain SDM-2460
+             */
+            case self::FUNC_SYS_DOMAINS: {
+                $strSyncWhat = 'AIDA Domain Records';
+                $strTableType = 'sync_tables';
+
+                $arTables[] = 'sys_domain';
+                $strDumpFile = 'sys_domain.sql';
+                break;
+            }
+
+            /*
+             * Anlegen der DB.txt und Files.txt
+             */
+            case self::FUNC_FILES: {
+                $strSyncWhat = 'Anlegen DB.txt und Files.txt auf Einspielserver (ITG und Live).';
+                $strSyncWhere = 'Einspielserver';
+                // Blind to get into working mode
+                $strDumpFile = '.lock';
+                break;
+            }
+
+            /*
+             * Scheduler
+             */
+            case self::FUNC_SCHEDULER: {
+                $strSyncWhat = 'Scheduler';
+                $strTableType = 'sync_tables';
+
+                $arTables[] = 'tx_scheduler_task';
+                $strDumpFile = 'scheduler.sql';
+                break;
+            }
+
+            /**
+             * Sync einzelner Pages/Pagetrees (TYPO3 6.2.x)
+             */
+            case self::FUNC_SINGLE_PAGE: {
+                $strSyncWhere = $this->area->getDescription();
+                $strSyncWhat  = 'Einzelne Seiten und deren Inhalte (TYPO 6.2)';
+
+                //Seiten
+                $arTables[] = 'pages';
+                $arTables[] = 'pages_language_overlay';
+
+                //Seiteninhalte
+                $arTables[] = 'tt_content';
+
+                //Templates
+                $arTables[] = 'sys_template';
+
+                $strDumpFile = 'partly-pages.sql';
+
+                $arTables[] = 'sys_file_reference';
+
+                $strPreOutput = $this->showPageSelection(
+                    $this->MOD_SETTINGS['function'],
+                    $arTables
+                );
+                $arSyncList = $this->manageSyncList($this->MOD_SETTINGS['function']);
+
+                $bUseSyncList = true;
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
+
+        $strAreaText = 'Target: ' . $strSyncWhere . '<br>';
+        if ($bCanSync) {
+            $strAreaText .= 'Content: ' . $strSyncWhat;
+        }
+
+        $this->content .= $this->getDiv(
+            $nAreaType,
+            $strAreaText,
+            'Area: ' . $this->area->getName(),
+            true, true, 1
+        );
+        $this->content .= $this->doc->sectionEnd();
+        //$this->content .= $this->doc->spacer(5);
+
+        if ($bCanSync) {
+            if ($bUseSyncList
+                && (!is_array($arSyncList) || count($arSyncList) == 0)
+            ) {
+                $strDisabled = ' disabled="disabled" style="color:graytext"';
+            }
+
+            $this->content .= $strPreOutput;
+        } else {
+            $strDisabled = ' disabled="disabled" style="color:graytext"';
+        }
+
+        $this->testTablesForDifferences($arTables);
+
+        if (self::FUNC_FAL == $this->MOD_SETTINGS['function']) {
+
+            // http://jira.aida.de/jira/browse/SDM-2099
+            if (isset($_POST['data']['dam_cleanup'])) {
+                $this->cleanUpDAM();
+            }
+
+            // DAM Test
+            $this->testDAMForErrors();
+
+            // http://jira.aida.de/jira/browse/SDM-2099
+            if ($this->strDAMError && $this->strError == '') {
+                $this->addError($this->strDAMError);
+                $this->content .= $this->doc->section(
+                    '',
+                    '<input type="Submit" name="data[dam_cleanup]" value="DAM Bereinigen!">'
+                );
+                //$this->content .= $this->doc->spacer(5);
+            }
+        }
+
+        if ($this->strError) {
+            $this->addError($this->strError);
+        }
+
+        // sync process
+
+        $bSyncResult = false;
+
+        if (isset($_POST['data']['submit']) && $strDumpFile != '') {
+            $strDumpFile = $this->addInformationToSyncfileName($strDumpFile);
+            //set_time_limit(480);
+            $strSyncedPages = '';
+
+            if ($bUseSyncList) {
+                if (is_array($arSyncList) && count($arSyncList) > 0) {
+                    $this->content .= $this->doc->section(
+                        '',
+                        '<div style="background-color:#887733; padding:3px; margin-bottom: 3px; color:#FFFFFF;"><b>Prozessliste</b></div>'
+                    );
+
+                    foreach ($arSyncList as $areaID => $arSynclistArea) {
+
+                        /* @var $area Area */
+                        $area = GeneralUtility::makeInstance(Area::class, $areaID);
+
+                        $arPageIDs = $this->getAllPageIDs($arSynclistArea);
+                        $strDumpFileArea = date('YmdHis_') . $strDumpFile;
+
+                        $ret = $this->createShortDump(
+                            $arPageIDs, $arTables, $strDumpFileArea,
+                            $area->getDirectories()
+                        );
+
+
+                        $this->content .= $this->doc->section(
+                            '',
+                            '<div style="background-color:#FFAAAA; padding:3px; float:left;">'
+                            . '<div style="float:right;">&nbsp;</div>'
+                            . '<b>' . $area->getName() . '</b> '
+                            . $area->getDescription() . '</div>'
+                        );
+                        if ($ret
+                            && $this->createClearCacheFile(
+                                $strDumpFileArea, 'pages', $arPageIDs,
+                                $area->getDirectories()
+                            )
+                        ) {
+                            $strSyncedPages .= $this->getPagesAsString($arSyncList[$areaID]);
+                            if ($area->informServer()) {
+                                if ($this->notifyMaster($area) == false) {
+                                    $this->addError(
+                                        $this->strError
+                                        . '<br/>Bitte Versuchen Sie die Synchronisation in 30 Minuten noch einmal.'
+                                    );
+                                    foreach (Area::getAreaDirectories($this->areas[$areaID]) as $strDirectory) {
+                                        @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
+                                        @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
+                                    }
+                                } else {
+                                    $this->addSuccess(
+                                        'Synchronisation wurde erfolgreich initiiert. Sie wird in den nächsten 15 Minuten ausgeführt.'
+                                    );
+                                    unset($arSyncList[$areaID]);
+                                }
+                            } else {
+                                $this->addSuccess(
+                                    'Synchronisationsdateien wurden geschrieben. Der jeweilige Server holt sie sich in Kürze ab.'
+                                );
+                                unset($arSyncList[$areaID]);
+                            }
+                            $this->saveSyncList(
+                                $this->MOD_SETTINGS['function'], $arSyncList
+                            );
+                        } else {
+                            $this->addError($this->strError);
+                        }
+                        $this->content .= '<br>';
+                    }
+                }
+            } elseif (self::FUNC_ITG == $this->MOD_SETTINGS['function']) {
+                //Sync to ITG
+                if (isset($_POST['data']['type'])
+                    && 'lock' === $_POST['data']['type']
+                ) {
+                    mkdir($this->strDBFolder . '/aida-aws-itg/', 0777, true);
+                    $handle = fopen($this->strDBFolder . '/aida-aws-itg/.lock', 'w');
+                    if ($handle) {
+                        $bSyncResult = true;
+                        fclose($handle);
+                    }
+                } else {
+                    $bSyncResult = @unlink($this->strDBFolder . '/aida-aws-itg/.lock');
+                }
+            } elseif (self::FUNC_TABLE_DEF == $this->MOD_SETTINGS['function']) {
+                // Update der Defintionsdatei
+
+                $bSyncResult = $this->createNewDefinitions();
+
+                if (false === $bSyncResult) {
+                    $this->addError(
+                        'Write definition Error: ' . htmlspecialchars($this->strError)
+                    );
+                } else {
+                    $this->addSuccess(
+                        'Neue Tabellendefinitionen geschrieben.'
+                    );
+                }
+            } elseif (self::FUNC_FILES == $this->MOD_SETTINGS['function']) {
+                // Send DB.txt and Files.txt
+                $bSyncResult = $this->notifyMaster($this->area);
+                if (false === $bSyncResult) {
+                    $this->addError(
+                        'Notify Master Error: ' . htmlspecialchars($this->strError)
+                    );
+                } else {
+                    $this->addSuccess(
+                        'Notify Master wurde erfolgreich ausgeführt.'
+                    );
+                }
+            } else {
+                $bSyncResult = $this->createDumpToAreas(
+                    $arTables, $strDumpFile, $strTableType
+                );
+
+                if ($bSyncResult) {
+                    $this->addSuccess(
+                        'Synchronisationsdateien wurde erfolgreich initiiert. Sie wird in den nächsten 15 Minuten ausgeführt.'
+                    );
+                }
+
+                if ($this->strError) {
+                    $this->addError($this->strError);
+                }
+            }
+        }
+
+        if (empty($bUseSyncList) && !empty($arTables)) {
+            $this->printTableSyncStats($arTables);
+        }
+
+        if (count($arTables)) {
+            $this->content .= '<input type="checkbox" name="data[force_full_sync]" value="1" id="force_full_sync">'
+                . ' <label for="force_full_sync">Force full sync. A full sync of this element will be initiated even if an incremental sync is possible. This should be avoided.</label>';
+            $this->content .= '<br>'
+                . '<input type="checkbox" checked="checked" name="data[delete_obsolete_rows]" value="1" id="delete_obsolete_rows">'
+                . ' <label for="delete_obsolete_rows">Delete obsolete Rows on LIVE system. All Rows which are hidden or deleted or where endtime is a date in past will be deleted on live system</label>'
+                . '<hr>';
+        }
+
+        if ($this->isSinglePageSync()) {
+            $this->content .= '<br>'
+                . '<input type="checkbox"  name="data[delete_code_cache]" value="1" id="delete_code_cache" />'
+                . ' <label for="delete_code_cache">Delete Extension View and Code Cache</label>'
+                . '<hr />';
+        }
+
+        // Syncliste anzeigen
+        if ($bUseSyncList) {
+            if (is_array($arSyncList) && count($arSyncList) > 0) {
+                $this->showSyncList($arSyncList);
+            }
+        } elseif (self::FUNC_ITG == $this->MOD_SETTINGS['function']) {
+            if (is_file($this->strDBFolder . '/aida-aws-itg/.lock')) {
+                $this->addError('Syncsperre gesetzt');
+            } else {
+                $this->addSuccess('Keine Syncsperre gesetzt');
+            }
+        }
+
+        //$this->content .= $this->doc->spacer(5);
+
+        if (!empty($this->MOD_SETTINGS['function'])
+            && ($this->strError == '' || $this->MOD_SETTINGS['function'] == self::FUNC_TABLE_DEF)
+        ) {
+            $this->content .= $this->doc->section(
+                '',
+                '<input type="Submit" name="data[submit]" value="Execute!" ' . $strDisabled . '/>'
+            );
+            //$this->content .= $this->doc->spacer(5);
+        }
+
+        $this->showSyncState();
+    }
+
+
+
+    /**
+     * Render sync stats for given tables.
+     *
+     * @param array $arTables Table names.
+     *
+     * @return void
+     */
+    protected function printTableSyncStats(array $arTables)
+    {
+        $arSyncStats = Table::getSyncStats($arTables);
+
+        $this->content .= '<strong>Table sync status:</strong><br><br>' . "\n\n";
+
+        $this->content .= '<dl>';
+        foreach ($arSyncStats as $strTable => $arTableSyncStats) {
+
+            $this->content .= '<dt>';
+            $this->content .= '<strong>"' . $strTable . '"</strong>';
+            $this->content .= '</dt>';
+
+            if ($arTableSyncStats['last_time']) {
+                $this->content .= '<dd>';
+                $this->content .= ' - at <strong>' . static::fmtTime($arTableSyncStats['last_time']) . '</strong>';
+                $this->content .= ' (' . $arTableSyncStats['last_type'] . ')';
+                $this->content .= ' by <strong>' . static::fmtUser($arTableSyncStats['last_user']) . '</strong>';
+                $this->content .= '</dd>';
+            }
+
+            $this->content .= "<br>\n";
+        }
+        $this->content .= '</dl>';
+    }
+
+
+
+    /**
+     * Returns time formatted to be displayed in table sync stats.
+     *
+     * @param integer $nTime Unix timestamp.
+     *
+     * @return string
+     */
+    protected static function fmtTime($nTime)
+    {
+        if ($nTime) {
+            return date('Y-m-d H:i:s', $nTime);
+        }
+
+        return 'n/a';
+    }
+
+
+
+    /**
+     * Returns human readable user name.
+     *
+     * @param integer $nUser USer ID.
+     *
+     * @return string
+     */
+    protected static function fmtUser($nUser)
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        if ($nUser) {
+            //return date('Y-m-d H:i:s', $nTime);
+            $arUser = $BE_USER->getRawUserByUid($nUser);
+            return $arUser['realName'] . ' #' . $nUser;
+        } elseif ($nUser === 0) {
+            return 'SYSTEM';
+        } else {
+            return 'UNKNOWN';
+        }
+    }
+
+
+
+    /**
+     * Adds the elements from the synclist as section into the content of the
+     * template of backend module.
+     *
+     * @param array $arSynclist The Synclist to show.
+     *
+     * @return void
+     */
+    protected function showSyncList(array $arSynclist)
+    {
+        $this->content .= $this->doc->section(
+            '',
+            '<div style="background-color:#887733; padding:3px; '
+            . 'margin-bottom: 3px; color:#FFFFFF;"><b>Synchronisationsliste</b>'
+            . '</div>'
+        );
+
+        foreach ($arSynclist as $nAreaId => $arList) {
+            $this->content .= $this->doc->section(
+                '',
+                '<div style="background-color:#FFAAAA; padding:3px;"><b>'
+                . $this->areas[$nAreaId]['name'] . '</b> '
+                . $this->areas[$nAreaId]['description'] . '</div>'
+            );
+            $this->showSyncListArea($nAreaId, $arList);
+        }
+    }
+
+
+
+    /**
+     * Adds the elements of an Netresearch\Sync\Helper\Area from the synclist as section into the content
+     * of the template of backend module.
+     *
+     * @param integer $nAreaId Id of the area this list is from.
+     * @param array $arList Synclist of an Netresearch\Sync\Helper\Area.
+     *
+     * @return void
+     */
+    protected function showSyncListArea($nAreaId, array $arList)
+    {
+        foreach ($arList as $value) {
+            if ($value['removeable']) {
+                $strLinkLoeschen = $this->getRemoveLink(
+                    $nAreaId, $value['pageID']
+                );
+            } else {
+                $strLinkLoeschen = '';
+            }
+
+            if ($value['type'] == 'tree') {
+                $strColor = '#DDFF77';
+            } else {
+                $strColor = '#BBFF77';
+            }
+
+            $strText = '<div style="background-color:' . $strColor
+                . '; padding:3px; margin: 1px; margin-left:3px;">' . $strLinkLoeschen;
+
+            $strText .= BackendUtility::getRecordTitle(
+                    'pages',
+                    BackendUtility::getRecord('pages', $value['pageID'])
+                ) . ' - ' . $value['pageID'];
+            if ($value['type'] == 'tree' && $value['count'] > 0) {
+                $strText .= ' mit ca. ' . $value['count']
+                    . ' Seiten (Davon ' . $value['deleted']
+                    . ' gelöschte und ' . $value['noaccess']
+                    . ' nicht erreichbar)';
+            }
+
+            $strText .= '</div>';
+            $this->content .= $this->doc->section('', $strText);
+        }
+    }
+
+
+
+    /**
+     * Generates HTML of a div with input button to show as remove element from
+     * Synclist.
+     *
+     * @param integer $nAreaId Id of the area to remove from list.
+     * @param integer $nElementId Id of the element to remove from list.
+     *
+     * @return string HTML formatted div with input button.
+     */
+    protected function getRemoveLink($nAreaId, $nElementId)
+    {
+        return '<div style="text-align:right;float:right;">'
+            . '<input type="submit" name="data[delete][' . $nAreaId . ']'
+            . '[' . $nElementId . ']"'
+            . ' value="Von Synchronisationsliste löschen"></div>';
+    }
+
+
+
+    /**
+     * Shows how manyx files are waiting for sync and how old the oldest file is.
+     *
+     * @return void
+     */
+    protected function showSyncState()
+    {
+        $arFiles = $this->removeLinksFromFileList(glob($this->strLIVEFolder . '/*'));
+
+        $nDumpFiles = count($arFiles);
+        if ($nDumpFiles < 1) {
+            return;
+        }
+
+        $strFiles = '';
+        $nSyncSize = 0;
+
+        foreach ($arFiles as $strFile) {
+            $nSize = filesize($strFile);
+            $nSyncSize += $nSize;
+            $strFiles .= basename($strFile)
+                . ' (' . number_format($nSize / 1024 / 1024, 2, '.', ',') . ' MiB) <br>';
+        }
+
+        //$this->content .= $this->doc->spacer(5);
+
+        /* @var $message t3lib_FlashMessage */
+        $this->content .= GeneralUtility::makeInstance(
+            't3lib_FlashMessage',
+            $nDumpFiles . ' ' . 'Dumpdatei'
+            . ($nDumpFiles == 1 ? ' wartet' : 'en warten') . ' auf Synchronisation'
+            . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).',
+            '',
+            FlashMessage::INFO
+        )->render();
+
+        $nTime = filemtime(end($arFiles));
+        if ($nTime < time() - 60 * 15) {
+            // if oldest file time is older than 15 minutes display this in red
+            $type = FlashMessage::ERROR;
+        } else {
+            $type = FlashMessage::INFO;
+        }
+
+        $this->content .= GeneralUtility::makeInstance(
+            't3lib_FlashMessage',
+            ' Älteste Datei ist vom ' . date('d.m.Y H:i:s', $nTime)
+            . ' und somit ' . '<strong>' . ceil((time() - $nTime) / 60)
+            . ' Minuten alt</strong>.',
+            '',
+            $type
+        )->render();
+
+        $this->content .= $this->getDiv(
+            self::STYLE_LIGHT, $strFiles, 'Dateiliste'
+        );
+    }
+
+
+
+    /**
+     * Remove links from fileList for displaying SyncStat
+     *
+     * @param array $arFiles
+     *
+     * @return array
+     */
+    protected function removeLinksFromFileList(array $arFiles)
+    {
+        foreach ($arFiles as $index => $strPath) {
+            if (is_link($strPath)) {
+                unset($arFiles[$index]);
+            }
+        }
+
+        return $arFiles;
+    }
+
+
+
+    /**
+     * Schaut nach ob eine $pid bereits in der Synliste liegt
+     *
+     * @param array $arSynclist List of page IDs
+     * @param integer $pid Page ID
+     *
+     * @return boolean
+     */
+    protected function isInTree(array $arSynclist = null, $pid)
+    {
+        if (is_array($arSynclist)) {
+            foreach ($arSynclist as $value) {
+                if ($value['pageID'] == $pid) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * Gibt die erste Ebene der Syncliste als zeilenweisen String zurück
+     *
+     * @param array $arSynclist The synclist.
+     *
+     * @return string
+     */
+    protected function getPagesAsString(array $arSynclist)
+    {
+        $strReturn = '';
+        foreach ($arSynclist as $value) {
+            $title = BackendUtility::getRecordTitle(
+                'pages', BackendUtility::getRecord('pages', $value['pageID'])
+            );
+            $strReturn .= $value['pageID'] . ' - \'' . $title
+                . '\' Type: ' . $value['type'] . ' Count: ' . $value['count']
+                . ' Deleted: ' . $value['deleted']
+                . ' No Access: ' . $value['noaccess'] . "\r\n";
+        }
+        return $strReturn;
+    }
+
+
+
+    /**
+     * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
+     * Und Editiert werden dürfen
+     *
+     * @param array $arSyncList The synclist.
+     *
+     * @return array
+     */
+    protected function getAllPageIDs(array $arSyncList)
+    {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $arPageIDs = array();
+        foreach ($arSyncList as $arSyncPage) {
+            // Prüfen ob User Seite Bearbeiten darf
+            $arPage = BackendUtility::getRecord('pages', $arSyncPage['pageID']);
+            if ($BE_USER->doesUserHaveAccess($arPage, 2)) {
+                array_push($arPageIDs, $arSyncPage['pageID']);
+            }
+
+            // Wenn der ganze Baum syncronisiert werden soll
+            // getSubpagesAndCount liefert nur Pages zurück die Editiert werden
+            // dürfen
+            // @TODO
+            if ($arSyncPage['type'] == 'tree') {
+                /* @var $area Area */
+                $area = GeneralUtility::makeInstance(Area::class, $arSyncPage['areaID']);
+                $arCount = $this->getSubpagesAndCount(
+                    $arSyncPage['pageID'], $dummy, 0, $arSyncPage['levelmax'],
+                    $area->getNotDocType(),
+                    $area->getDocType()
+                );
+                $a = $this->getPageIDsFromTree($arCount);
+                $arPageIDs = array_merge($arPageIDs, $a);
+
+            }
+        }
+        $arPageIDs = array_unique($arPageIDs);
+        $this->arPageIds = $arPageIDs;
+        return $arPageIDs;
+    }
+
+
+
+    /**
+     * Gibt alle ID's aus einem Pagetree zurück.
+     *
+     * @param array $arTree The pagetree to get IDs from.
+     *
+     * @return array
+     */
+    protected function getPageIDsFromTree(array $arTree)
+    {
+        $arPageIDs = array();
+        foreach ($arTree as $value) {
+            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
+            // editierrechten fehlen)
+            if (isset($value['page'])) {
+                array_push($arPageIDs, $value['page']['uid']);
+            }
+
+            // Schauen ob es unter liegende Seiten gibt
+            if (is_array($value['sub'])) {
+                $arPageIDs = array_merge(
+                    $arPageIDs, $this->getPageIDsFromTree($value['sub'])
+                );
+            }
+        }
+        return $arPageIDs;
+    }
+
+
+
+    /**
+     * Gibt die Seite, deren Unterseiten und ihre Zählung zu einer PageID zurück,
+     * wenn sie vom User editierbar ist.
+     *
+     * @param integer $pid               The page id to count on.
+     * @param array   &$arCount          Information about the count data.
+     * @param integer $nLevel            Depth on which we are.
+     * @param integer $nLevelMax         Maximum depth to search for.
+     * @param array   $arDocTypesExclude TYPO3 doc types to exclude.
+     * @param array   $arDocTypesOnly    TYPO3 doc types to count only.
+     * @param array   $arTables          Tables this task manages.
+     *
+     * @return array
+     */
+    protected function getSubpagesAndCount(
+        $pid, &$arCount, $nLevel = 0, $nLevelMax = 1, array $arDocTypesExclude = null,
+        array $arDocTypesOnly = null, array $arTables = null
+    ) {
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $arCountDefault = array(
+            'count'      => 0,
+            'deleted'    => 0,
+            'noaccess'   => 0,
+            'falses'     => 0,
+            'other_area' => 0,
+        );
+
+        if (!is_array($arCount)) {
+            $arCount = $arCountDefault;
+        }
+
+        $return = array();
+
+        if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
+            return $return;
+        }
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable('pages');
+
+        $result = $queryBuilder->select('*')
+            ->from('pages')
+            ->where(
+                $queryBuilder->expr()->eq('pid', intval($pid))
+            )
+            ->execute();
+
+        while ($arPage = $result->fetch()) {
+            if (is_array($arDocTypesExclude) && in_array($arPage['doktype'], $arDocTypesExclude)) {
+                continue;
+            }
+
+            if (isset($this->areas[$arPage['uid']])) {
+                $arCount['other_area']++;
+                continue;
+            }
+
+            if (is_array($arDocTypesOnly)
+                && !in_array($arPage['doktype'], $arDocTypesOnly)
+            ) {
+                $arCount['falses']++;
+                continue;
+            }
+
+            $arSub = $this->getSubpagesAndCount(
+                $arPage['uid'], $arCount, $nLevel + 1, $nLevelMax,
+                $arDocTypesExclude, $arDocTypesOnly, $arTables
+            );
+
+            if ($BE_USER->doesUserHaveAccess($arPage, 2)) {
+                $return[] = array(
+                    'page' => $arPage,
+                    'sub'  => $arSub,
+                );
+            } else {
+                $return[] = array(
+                    'sub' => $arSub,
+                );
+                $arCount['noaccess']++;
+            }
+
+            // Die Zaehlung fuer die eigene Seite
+            if ($this->pageContainsData($arPage['uid'], $arTables)) {
+                $arCount['count']++;
+                if ($arPage['deleted']) {
+                    $arCount['deleted']++;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+
+
+    /**
+     * FIXME
+     *
+     * @param array $arTables Array with the table names
+     * @param string $strDumpFile Name of the dump file.
+     * @param string $strTableType Type of table.
+     *
+     * @return boolean success
+     */
+    protected function createDumpToAreas(
+        array $arTables, $strDumpFile, $strTableType
+    ) {
+        $filename = date('YmdHis_') . $strDumpFile;
+
+        $strDumpFile = $this->strTempFolder . sprintf($strDumpFile, '');
+
+        if (file_exists($strDumpFile) || file_exists($strDumpFile . '.gz')
+        ) {
+            $this->strError = 'Die letzte Synchronisationsvorbereitung ist noch'
+                . ' nicht abgeschlossen. Bitte versuchen Sie es in 5'
+                . ' Minuten noch einmal.';
+            return false;
+        }
+
+        Table::writeDumps(
+            $arTables, $strDumpFile, $arOptions = array(
+                'bForceFullSync'
+                => !empty($_POST['data']['force_full_sync']),
+                'bDeleteObsoleteRows'
+                => !empty($_POST['data']['delete_obsolete_rows'])
+            )
+        );
+
+        if (!file_exists($strDumpFile)) {
+            $this->addInfo(
+                'No data dumped for further processing. '
+                . 'The selected sync process did not produce any data to be '
+                . 'synched to the live system.'
+            );
+            return false;
+        }
+
+        if (!$this->createGZipFile($strDumpFile)) {
+            $this->strError = 'Zipfehler: ' . $strDumpFile;
+            return false;
+        }
+
+        foreach (Area::getMatchingAreas() as $area) {
+            foreach ($area->getDirectories() as $strPath) {
+                if (!file_exists($this->strDBFolder . $strPath . '/')) {
+                    mkdir($this->strDBFolder . $strPath, $this->nFolderRights, true);
+                }
+                if (!copy(
+                    $strDumpFile . '.gz',
+                    $this->strDBFolder . $strPath . '/' . $filename
+                    . '.gz'
+                )) {
+                    $this->strError = 'Konnte ' . $this->strTempFolder
+                        . $strDumpFile . '.gz nicht nach '
+                        . $this->strDBFolder . $strPath . '/'
+                        . $filename . '.gz kopieren.';
+                    return false;
+                }
+            }
+            if (false === $this->notifyMaster($area)) {
+                return false;
+            }
+        }
+        unlink($strDumpFile . '.gz');
+        return true;
+    }
+
+
+
+    /**
+     * Generates the file with the content for the clear cache task.
+     *
+     * @param string $strFileName Name of the sql dump file.
+     * @param string $strTable Name of the table which cache should be cleared.
+     * @param array $arUids Array with the uids to clear cache.
+     * @param array $arPath Array with path names to propagate the file.
+     *
+     * @return boolean True if file was generateable otherwise false.
+     */
+    private function createClearCacheFile($strFileName, $strTable, $arUids, $arPath)
+    {
+        $arClearCacheData = array();
+        $strFileName = str_replace('.sql', '.cache', $strFileName);
+
+        // Open file
+        $fpClearCacheFile = fopen(
+            $this->strTempFolder . $strFileName, 'a'
+        );
+        if ($fpClearCacheFile === false) {
+            $this->strError = $this->strTempFolder
+                . $strFileName . ' konnte nicht angelegt werden.';
+            return false;
+        }
+
+        // Create data
+        foreach ($arUids as $strUid) {
+            $arClearCacheData[] = $strTable . ':' . $strUid;
+        }
+
+        // Write into file
+        fwrite($fpClearCacheFile, implode(',', $arClearCacheData) . "\n");
+        fclose($fpClearCacheFile);
+
+        try {
+            $this->finalizeDumpFile($strFileName, $arPath, false);
+        } catch (Exception $e) {
+            $this->strError = $e->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+
+
+    /**
+     * Baut Speciellen Dump zusammen, der nur die angewählten Pages enthällt.
+     * Es werden nur Pages gedumpt, zu denen der Redakteur auch Zugriff hat.
+     *
+     * @param array  $arPageIDs   List if page IDs to dump
+     * @param array  $arTables    List of tables to dump
+     * @param string $strDumpFile Name of target dump file
+     * @param array  $arPath
+     *
+     * @return boolean success
+     */
+    protected function createShortDump(
+        $arPageIDs, $arTables, $strDumpFile, $arPath
+    ) {
+        if (!is_array($arPageIDs) || count($arPageIDs) <= 0) {
+            $this->strError = 'Keine Seiten für die Synchronisation vorgemerkt.';
+            return false;
+        }
+
+        try {
+            $fpDumpFile = $this->openTempDumpFile($strDumpFile, $arPath);
+        } catch (Exception $e) {
+            $this->strError = $e->getMessage();
+            return false;
+        }
+
+        foreach ($arTables as $value) {
+            $this->dumpTableByPageIDs($arPageIDs, $value, $fpDumpFile);
+        }
+
+        // TYPO-206
+        // Append Statement for Delete unused rows in LIVE environment
+        $this->writeToDumpFile(
+            array(),
+            array(),
+            $fpDumpFile,
+            $this->getDeleteRowStatements()
+        );
+        // TYPO-2214: write inserts at the end of the file
+        $this->writeInsertLines($fpDumpFile);
+
+        try {
+            fclose($fpDumpFile);
+            $this->finalizeDumpFile($strDumpFile, $arPath, true);
+        } catch (Exception $e) {
+            $this->strError = $e->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+
+
+    /**
+     * Test and opens the temporary dump file.
+     *
+     * @param string $strFileName Name of the dump file.
+     * @param array $arDirectories The directories to copy the temp files later.
+     *
+     * @return resource The opened dump file
+     * @throws Exception If file can't be opened or last sync is in progress.
+     */
+    private function openTempDumpFile($strFileName, $arDirectories)
+    {
+        if (file_exists($this->strTempFolder . $strFileName)
+            || file_exists($this->strTempFolder . $strFileName . '.gz')
+        ) {
+            throw new Exception(
+                'Die letzte Synchronisationsvorbereitung ist noch nicht abgeschlossen.'
+                . ' Bitte versuchen Sie es in wenigen Minuten noch einmal.'
+                . "<br/>\n"
+                . $this->strTempFolder . $strFileName . '(.gz)'
+            );
+        }
+
+        foreach ($arDirectories as $strPath) {
+            if (file_exists($this->strDBFolder . $strPath . '/' . $strFileName)
+                || file_exists($this->strDBFolder . $strPath . '/' . $strFileName . '.gz')
+            ) {
+                throw new Exception(
+                    'Die letzte Synchronisation ist noch nicht abgeschlossen.'
+                    . ' Bitte versuchen Sie es in wenigen Minuten noch einmal.'
+                );
+            }
+        }
+
+        $fp = fopen($this->strTempFolder . $strFileName, 'w');
+
+        if ($fp === false) {
+            throw new Exception(
+                $this->strTempFolder . $strFileName
+                . ' konnte nicht angelegt werden.'
+            );
+        }
+
+        return $fp;
+    }
+
+
+
+    /**
+     * Zips the tmp dump file and copy it to given directories.
+     *
+     * @param string $strDumpFile Name of the dump file.
+     * @param array $arDirectories The directories to copy files into.
+     * @param boolean $bZipFile The directories to copy files into.
+     *
+     * @return void
+     * @throws Exception If file can't be zipped or copied.
+     */
+    private function finalizeDumpFile($strDumpFile, $arDirectories, $bZipFile)
+    {
+        if ($bZipFile) {
+            // Dateien komprimieren
+            if (!$this->createGZipFile($this->strTempFolder . $strDumpFile)) {
+                throw new Exception($this->strError);
+            }
+            $strDumpFile = $strDumpFile . '.gz';
+        }
+
+        // Dateien an richtige Position kopieren
+        foreach ($arDirectories as $strPath) {
+            $strTargetDir = $this->strDBFolder . $strPath . '/';
+            if (!file_exists($strTargetDir)) {
+                mkdir($strTargetDir, $this->nFolderRights, true);
+                // TYPO-3713: change folder permissions to nFolderRights due to
+                // mask of mkdir could be overwritten by the host
+                chmod($strTargetDir, $this->nFolderRights);
+            }
+
+            $bCopied = copy(
+                $this->strTempFolder . $strDumpFile,
+                $strTargetDir . $strDumpFile
+            );
+            if (!$bCopied) {
+                throw new Exception(
+                    'Konnte ' . $this->strTempFolder . $strDumpFile
+                    . ' nicht nach '
+                    . $strTargetDir . $strDumpFile
+                    . ' kopieren.'
+                );
+            }
+        }
+        unlink($this->strTempFolder . $strDumpFile);
+    }
+
+
+
+    /**
+     * Erzeugt ein Dump durch Seiten IDs.
+     *
+     * @param array    $arPageIDs    Page ids to dump.
+     * @param string   $strTableName Name of table to dump from.
+     * @param resource $fpDumpFile   File pointer to the SQL dump file.
+     * @param boolean  $bContentIDs  True to interpret pageIDs as content IDs.
+     *
+     * @return void
+     * @throws Exception
+     */
+    protected function dumpTableByPageIDs(
+        array $arPageIDs, $strTableName, $fpDumpFile, $bContentIDs = false
+    ) {
+        if (substr($strTableName, -3) == '_mm') {
+            throw new Exception(
+                'MM Tabellen wie: ' . $strTableName . ' werden nicht mehr unterstützt.'
+            );
+        }
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $this->nDumpTableRecursion++;
+        $arDeleteLine = array();
+        $arInsertLine = array();
+
+        $arColumns = $connectionPool->getConnectionForTable($strTableName)
+            ->getSchemaManager()
+            ->listTableColumns($strTableName);
+
+        $arColumnNames = [];
+        foreach ($arColumns as $column) {
+            $arColumnNames[] = $column->getName();
+        }
+
+        $arFiles = array();
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+
+        // In pages und pages_language_overlay entspricht die pageID der uid
+        // pid ist ja der Parent (Elternelement) ... so mehr oder weniger *lol*
+        if ($strTableName == 'pages' || $bContentIDs) {
+            $strWhere = $queryBuilder->expr()->in('uid', $arPageIDs);
+        } else {
+            $strWhere = $queryBuilder->expr()->in('pid', $arPageIDs);
+        }
+
+        $refTableContent = $queryBuilder->select('*')
+            ->from($strTableName)
+            ->where($strWhere)
+            ->execute();
+
+        if ($refTableContent) {
+            while ($arContent = $refTableContent->fetch()) {
+                if ($strTableName == 'tt_content') {
+                    $this->addFilesToArray($arContent, $arFiles);
+                }
+                $arDeleteLine[$strTableName][$arContent['uid']]
+                    = $this->buildDeleteLine($strTableName, $arContent['uid']);
+                $arInsertLine[$strTableName][$arContent['uid']]
+                    = $this->buildInsertUpdateLine($strTableName, $arColumnNames, $arContent);
+
+                $this->writeMMReferences(
+                    $strTableName, $arContent, $fpDumpFile
+                );
+                if (count($arDeleteLine) > 50) {
+
+                    $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+                    $arDeleteLine = array();
+                    $arInsertLine = array();
+                }
+            }
+        }
+
+        // TYPO-206: append delete obsolete rows on live
+        if (!empty($_POST['data']['delete_obsolete_rows'])) {
+            $this->addAsDeleteRowTable($strTableName);
+        }
+
+        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+        /*
+         * @TODO
+         * NOT USED YET ... Kein Einzelabgleich der zu syncenden Dateien
+        if ($strTableName == 'tt_content') {
+            fwrite($fpFilesFile,implode("\n", $arFiles)."\n");
+        }
+         */
+        $this->nDumpTableRecursion--;
+    }
+
+
+
+    /**
+     * Adds the Table and its DeleteObsoleteRows statement to an array
+     * if the statement does not exists in the array
+     *
+     * @param string $strTableName the name of the Table the obsolete rows
+     *                             should be added to the $arObsoleteRows array
+     *                             for
+     *
+     * @return void
+     */
+    public function addAsDeleteRowTable($strTableName)
+    {
+        $table = new Table($strTableName, 'dummy');
+        if (!isset($this->arObsoleteRows[0])) {
+            $this->arObsoleteRows[0] = "-- Delete obsolete Rows on live, see: TYPO-206";
+        }
+        $strSql = $table->getSqlDroppingObsoleteRows();
+        unset($table);
+
+        if (empty($strSql)) {
+            return;
+        }
+        $strSqlKey = md5($strSql);
+
+        if (isset($this->arObsoleteRows[$strSqlKey])) {
+            return;
+        }
+
+        $this->arObsoleteRows[$strSqlKey] = $strSql;
+
+        return;
+    }
+
+
+
+    /**
+     * @return array
+     */
+    public function getDeleteRowStatements()
+    {
+        return $this->arObsoleteRows;
+    }
+
+
+
+    /**
+     * Writes the references of a table to the sync data.
+     *
+     * @param string $strRefTableName Table to reference.
+     * @param array $arContent The database row to find MM References.
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     *
+     * @return void
+     */
+    protected function writeMMReferences(
+        $strRefTableName, array $arContent, $fpDumpFile
+    ) {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $arDeleteLine = array();
+        $arInsertLine = array();
+
+        $this->arReferenceTables = array();
+        $this->addMMReferenceTables($strRefTableName);
+        foreach ($this->arReferenceTables as $strMMTableName => $arTableFields) {
+            $arColumns = $connectionPool->getConnectionForTable($strMMTableName)
+                ->getSchemaManager()
+                ->listTableColumns($strMMTableName);
+
+            $arColumnNames = [];
+            foreach ($arColumns as $column) {
+                $arColumnNames[] = $column->getName();
+            }
+
+            foreach ($arTableFields as $arMMConfig) {
+                $this->writeMMReference(
+                    $strRefTableName, $strMMTableName, $arContent['uid'],
+                    $arMMConfig,
+                    $arColumnNames, $fpDumpFile
+                );
+            }
+        }
+        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+    }
+
+
+
+    /**
+     * Writes the data of a MM table to the sync data.
+     * Calls dumpTableByPageIDs for sys_file_reference if MM Table isn't sys_file. Or
+     * calls dumpTableByPageIDs for tx_dam_mm_ref if MM Table isn't tx_dam.
+     *
+     * MM table structure:
+     *
+     * - uid_local
+     * -- uid from 'local' table, local table ist first part of mm table name
+     * -- sys_file_reference -> uid_local points to uid in sys_file
+     *    /tx_dam_mm_ref -> uid_local points to uid in tx_dam
+     * -- tt_news_cat_mm -> uid_local points to uid in tt_news_cat
+     * - uid_foreign
+     * -- uid from foreign table, foreign is the table in field 'tablenames'
+     * --- tx_Dem_mm_ref -> uid_foreign points to uid in table from 'tablenames'
+     * -- or static table name (hidden in code)
+     * --- tt_news_cat_mm -> uid_foreign points to uid in tt_news
+     * -- or last part of mm table name
+     * --- sys_category_record_mm -> uid_foreign points to uid in sys_category
+     *     /tx_dam_mm_cat -> uid_foreign points to uid in tx_dam_cat
+     * - tablenames
+     * -- optional, if present forms unique data with uid_* and ident
+     * - ident
+     * -- optional, if present forms unique data with uid_* and tablenames
+     * -- points to a field in TCA or Flexform
+     * - sorting - optional
+     * - sorting_foreign - optional
+     *
+     * @param string   $strRefTableName Table which we get the references from.
+     * @param string   $strTableName    Table to get MM data from.
+     * @param integer  $uid             The uid of element which references.
+     * @param array    $arMMConfig      The configuration of this MM reference.
+     * @param array    $arColumnNames   Table columns
+     * @param resource $fpDumpFile      File pointer to the SQL dump file.
+     *
+     * @return void
+     */
+    protected function writeMMReference(
+        $strRefTableName, $strTableName, $uid, array $arMMConfig,
+        array $arColumnNames, $fpDumpFile
+    )
+    {
+        $arDeleteLine = array();
+        $arInsertLine = array();
+
+        $strFieldName = 'uid_foreign';
+        if (isset($arMMConfig['foreign_field'])) {
+            $strFieldName = $arMMConfig['foreign_field'];
+        }
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable($strTableName);
+
+        $strAdditionalWhere = ' AND ' . $connection->quoteIdentifier('tablenames')
+            . ' = ' . $connection->quote($strRefTableName);
+
+        $strWhere = $strFieldName . ' = ' . $uid;
+
+        if (isset($arMMConfig['foreign_match_fields'])) {
+            foreach ($arMMConfig['foreign_match_fields'] as $strName => $strValue) {
+                $strWhere .= ' AND ' . $connection->quoteIdentifier($strName) . ' = ' . $connection->quote($strValue)
+                    . $strAdditionalWhere;
+            }
+        }
+
+        $queryBuilder = $connection->createQueryBuilder();
+        $refTableContent = $queryBuilder->select('*')
+            ->from($strTableName)
+            ->where($strWhere)
+            ->execute();
+
+        $arDeleteLine[$strTableName][$strWhere]
+            = 'DELETE FROM ' . $connection->quoteIdentifier($strTableName) . ' WHERE ' . $strWhere . ';';
+
+        if ($refTableContent) {
+            while ($arContent = $refTableContent->fetch()) {
+                $strContentKey = implode('-', $arContent);
+                $arInsertLine[$strTableName][$strContentKey] = $this->buildInsertUpdateLine(
+                    $strTableName, $arColumnNames, $arContent
+                );
+
+                $strDamTable = 'sys_file';
+                $strDamRefTable = 'sys_file_reference';
+
+                if ($strRefTableName !== $strDamTable
+                    && $arMMConfig['MM'] === $strDamRefTable
+                    && $arMMConfig['form_type'] === 'user'
+                ) {
+                    $this->dumpTableByPageIDs(
+                        array($arContent['uid_local']), $strDamTable, $fpDumpFile,
+                        true
+                    );
+                }
+            }
+            unset($refTableContent);
+        }
+
+        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+    }
+
+
+
+    /**
+     * Finds MM reference tables and the config of them. Respects flexform fields.
+     * Data will be set in arReferenceTables
+     *
+     * @param string $strTableName Table to find references.
+     *
+     * @return void
+     */
+    protected function addMMReferenceTables($strTableName)
+    {
+        global $TCA;
+
+        if ( ! isset($TCA[$strTableName]['columns'])) {
+            return;
+        }
+
+        foreach ($TCA[$strTableName]['columns'] as $strFieldName => $arColumn) {
+            if (isset($arColumn['config']['type'])) {
+                switch ($arColumn['config']['type']) {
+                    case 'inline':
+                        $this->addForeignTableToReferences($arColumn);
+                        break;
+                    default:
+                        $this->addMMTableToReferences($arColumn);
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     * Adds Column config to references table, if a foreign_table reference config
+     * like in inline-fields exists.
+     *
+     * @param array $arColumn Column config to get foreign_table data from.
+     *
+     * @return void
+     */
+    protected function addForeignTableToReferences($arColumn)
+    {
+        if (isset($arColumn['config']['foreign_table'])) {
+            $strForeignTable = $arColumn['config']['foreign_table'];
+            $this->arReferenceTables[$strForeignTable][] = $arColumn['config'];
+        }
+    }
+
+
+
+    /**
+     * Adds Column config to references table, if a MM reference config exists.
+     *
+     * @param array $arColumn Column config to get MM data from.
+     *
+     * @return void
+     */
+    protected function addMMTableToReferences(array $arColumn)
+    {
+        if (isset($arColumn['config']['MM'])) {
+            $strMMTableName = $arColumn['config']['MM'];
+            $this->arReferenceTables[$strMMTableName][] = $arColumn['config'];
+        }
+    }
+
+
+
+    /**
+     * Add the passed $arSqlLines to the $arGlobalSqlLineStorage in unique way.
+     *
+     * @param string $strStatementType the type of the current arSqlLines
+     * @param array  $arSqlLines       multidimensional array of sql statements
+     *
+     * @return void
+     */
+    protected function addLinesToLineStorage($strStatementType, array $arSqlLines)
+    {
+        foreach ($arSqlLines as $strTableName => $arLines) {
+            if (!is_array($arLines)) {
+                return;
+            }
+            foreach ($arLines as $strIdentifier => $strLine) {
+                $this->arGlobalSqlLineStorage[$strStatementType][$strTableName][$strIdentifier] = $strLine;
+            }
+        }
+    }
+
+
+
+    /**
+     * Removes all entries from $arSqlLines which already exists in $arGlobalSqlLineStorage
+     *
+     * @param string $strStatementType Type the type of the current arSqlLines
+     * @param array  &$arSqlLines      multidimensional array of sql statements
+     *
+     * @return void
+     */
+    public function clearDuplicateLines($strStatementType, array &$arSqlLines)
+    {
+        foreach ($arSqlLines as $strTableName => $arLines) {
+            foreach ($arLines as $strIdentifier => $strStatement) {
+                if (!empty($this->arGlobalSqlLineStorage[$strStatementType][$strTableName][$strIdentifier])) {
+                    unset($arSqlLines[$strTableName][$strIdentifier]);
+                }
+            }
+            // unset tablename key if no statement exists anymore
+            if (0 === count($arSqlLines[$strTableName])) {
+                unset($arSqlLines[$strTableName]);
+            }
+        }
+    }
+
+
+
+    /**
+     * Writes the data into dump file. Line per line.
+     *
+     * @param array $arDeleteLines The lines with the delete statements.
+     *                                        Expected structure:
+     *                                        $arDeleteLines['table1']['uid1'] = 'STATMENT1'
+     *                                        $arDeleteLines['table1']['uid2'] = 'STATMENT2'
+     *                                        $arDeleteLines['table2']['uid2'] = 'STATMENT3'
+     * @param array $arInsertLines The lines with the insert statements.
+     *                                        Expected structure:
+     *                                        $arInsertLines['table1']['uid1'] = 'STATMENT1'
+     *                                        $arInsertLines['table1']['uid2'] = 'STATMENT2'
+     *                                        $arInsertLines['table2']['uid2'] = 'STATMENT3'
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     * @param array $arDeleteObsoleteRows the lines with delete obsolete
+     *                                        rows statement
+     *
+     * @throws Exception
+     * @return void
+     */
+    protected function writeToDumpFile(
+        array $arDeleteLines,
+        array $arInsertLines,
+        $fpDumpFile,
+        $arDeleteObsoleteRows = array()
+    ) {
+
+        // Keep the current lines in mind
+        $this->addLinesToLineStorage(
+            self::STATEMENT_TYPE_DELETE,
+            $arDeleteLines
+        );
+        // Keep the current lines in mind
+        $this->addLinesToLineStorage(
+            self::STATEMENT_TYPE_INSERT,
+            $arInsertLines
+        );
+
+        // Foreach Table in DeleteArray
+        foreach ($arDeleteLines as $arDelLines) {
+            if (count($arDelLines)) {
+                $strDeleteLines = implode("\n", $arDelLines);
+                fwrite($fpDumpFile, $strDeleteLines . "\n\n");
+            }
+        }
+
+        // do not write the inserts here, we want to add them
+        // at the end of the file see $this->writeInsertLines
+
+        if (count($arDeleteObsoleteRows)) {
+            $strDeleteObsoleteRows = implode("\n", $arDeleteObsoleteRows);
+            fwrite($fpDumpFile, $strDeleteObsoleteRows . "\n\n");
+        }
+
+        foreach ($arInsertLines as $strTable => $arInsertStatements) {
+            foreach ($arInsertStatements as $nUid => $strStatement) {
+                $this->setLastDumpTimeForElement($strTable, $nUid);
+            }
+        }
+    }
+
+
+
+    /**
+     * Writes all SQL Lines from arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
+     * to the passed Filestream.
+     *
+     * @param resource $fpDumpFile the file to write the lines to
+     *
+     * @return void
+     */
+    protected function writeInsertLines($fpDumpFile)
+    {
+        if (!is_array(
+            $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
+        )) {
+            return;
+        }
+
+        $arInsertLines
+            = $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT];
+        // Foreach Table in InsertArray
+        foreach ($arInsertLines as $strTable => $arTableInsLines) {
+            if (count($arTableInsLines)) {
+                $strInsertLines
+                    = '-- Insert lines for Table: '
+                    . $strTable
+                    . "\n";
+                $strInsertLines .= implode("\n", $arTableInsLines);
+                fwrite($fpDumpFile, $strInsertLines . "\n\n");
+            }
+        }
+        return;
+    }
+
+
+
+    /**
+     * Removes all delete statements from $arDeleteLines where an insert statement
+     * exists in $arInsertLines.
+     *
+     * @param array &$arDeleteLines referenced array with delete statements
+     *                              structure should be
+     *                              $arDeleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $arDeleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $arDeleteLines['table2']['uid2'] = 'STATMENT3'
+     * @param array &$arInsertLines referenced array with insert statements
+     *                              structure should be
+     *                              $arDeleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $arDeleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $arDeleteLines['table2']['uid2'] = 'STATMENT3'
+     *
+     * @return void
+     */
+    protected function diffDeleteLinesAgainstInsertLines(
+        array &$arDeleteLines, array &$arInsertLines
+    ) {
+        foreach ($arInsertLines as $strTableName => $arElements) {
+            // no modification for arrays with old flat structure
+            if (!is_array($arElements)) {
+                return;
+            }
+            // UNSET each delete line where an insert exists
+            foreach ($arElements as $strUid => $strStatement) {
+                if (!empty($arDeleteLines[$strTableName][$strUid])) {
+                    unset($arDeleteLines[$strTableName][$strUid]);
+                }
+            }
+
+            if (0 === count($arDeleteLines[$strTableName])) {
+                unset($arDeleteLines[$strTableName]);
+            }
+        }
+    }
+
+
+
+    /**
+     * Returns the tables array with the dam data tables
+     *
+     * @return array
+     */
+    protected function getDamTables()
+    {
+        $arTables[] = 'sys_file';
+        $arTables[] = 'sys_category';
+        $arTables[] = 'sys_filemounts';
+        $arTables[] = 'sys_category_record_mm';
+        $arTables[] = 'sys_file_reference';
+        $arTables[] = 'sys_collection';
+        $arTables[] = 'sys_file_storage';
+        $arTables[] = 'sys_file_metadata';
+
+        return $arTables;
+    }
+
+
+
+    /**
+     * Creates syncable dump files for dam images given by uid.
+     * The function is crated to get called from outside of Netresearch Sync.
+     *
+     * @param string $strFilePrefix A prefix for the sync files, to get a glue
+     *                               who wanted to sync.
+     *
+     * @return void
+     * @throws Exception For errors while the sync process.
+     */
+    public function createDAMDump($strFilePrefix)
+    {
+        include_once \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('nr_sync') . 'mod1/conf.php';
+
+        $this->initFolders();
+
+        $arTables = $this->getDamTables();
+
+        $this->createDumpToAreas($arTables, $strFilePrefix . 'dam.sql', 'sync_tables');
+    }
+
+
+
+    /**
+     * Returns SQL DELETE query.
+     *
+     * @param string $strTableName name of table to delete from
+     * @param integer $uid uid of row to delete
+     *
+     * @return string
+     */
+    protected function buildDeleteLine($strTableName, $uid)
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable($strTableName);
+
+        return 'DELETE FROM '
+            . $connection->quoteIdentifier($strTableName)
+            . ' WHERE uid = ' . (int) $uid . ';';
+    }
+
+
+
+    /**
+     * Retruns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
+     *
+     * @param string $strTableName name of table to insert into
+     * @param array  $arColumnNames
+     * @param array  $arContent
+     *
+     * @return string
+     */
+    protected function buildInsertUpdateLine($strTableName, array $arColumnNames, array $arContent)
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable($strTableName);
+
+        $arUpdateParts = array();
+        foreach ($arContent as $key => $value) {
+            if (!is_numeric($value)) {
+                $arContent[$key] = $connection->quote($value);
+            }
+            // TYPO-2215 - Match the column to its update value
+            $arUpdateParts[$key] = $key . ' = VALUES(' . $key . ')';
+        }
+
+        $strStatement = 'INSERT INTO '
+            . $connection->quoteIdentifier($strTableName)
+            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
+            . implode(', ', $arContent) . ')' . "\n"
+            . ' ON DUPLICATE KEY UPDATE '
+            . implode(', ', $arUpdateParts) . ';';
+
+        return $strStatement;
+    }
+
+
+
+    /**
+     * Returns SQL INSERT query.
+     *
+     * @param string $strTableName name of table to insert into
+     * @param array  $arTableStructure
+     * @param array  $arContent
+     *
+     * @return string
+     */
+    protected function buildInsertLine($strTableName, $arTableStructure, $arContent)
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable($strTableName);
+
+        foreach ($arContent as $key => $value) {
+            if (!is_numeric($value)) {
+                $arContent[$key] = $connection->quote($value);
+            }
+        }
+
+        $arColumnNames = array_keys($arTableStructure);
+        $str = 'REPLACE INTO '
+            . $connection->quoteIdentifier($strTableName)
+            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
+            . implode(', ', $arContent) . ');';
+
+        return $str;
+    }
+
+
+
+    /**
+     * Erzeugt ein gzip vom Dump File
+     *
+     * @param string $strDumpFile name of dump file to gzip
+     *
+     * @return boolean success
+     */
+    protected function createGZipFile($strDumpFile)
+    {
+        $strExec = 'gzip ' . escapeshellarg($strDumpFile);
+
+        $ret = shell_exec($strExec);
+
+        if (!file_exists($strDumpFile . '.gz')) {
+            $this->strError = 'Fehler beim Erstellen der gzip Datei aus dem Dump.';
+            return false;
+        }
+
+        chmod($strDumpFile . '.gz', 0777);
+
+        return true;
+    }
+
+
+
+    /**
+     * Writes the table definition of database into an file.
+     *
+     * @return boolean True if file was written else false.
+     */
+    protected function createNewDefinitions()
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $arTableNames = $connectionPool->getConnectionForTable('pages')
+            ->getSchemaManager()
+            ->listTableNames();
+
+        $arTables = [];
+        foreach ($arTableNames as $strTableName) {
+            $arColumns = $connectionPool->getConnectionForTable($strTableName)
+                ->getSchemaManager()
+                ->listTableColumns($strTableName);
+
+            $arColumnNames = [];
+            foreach ($arColumns as $column) {
+                $arColumnNames[] = $column->getName();
+            }
+            $arTables[$strTableName] = $arColumnNames;
+        }
+
+        $strTables = serialize($arTables);
+
+        if (!file_exists($this->strDBFolder)) {
+            $this->strError = 'Tabellendefinitionsordner existiert nicht!'
+                . ' ' . $this->strDBFolder;
+            return false;
+        }
+        $strFile = $this->strDBFolder . $this->strTableSerializedFile;
+        if (file_exists($strFile) && !is_writable($strFile)) {
+            $this->strError = 'Tabellendefinitionsdatei ist nicht schreibar!'
+                . ' ' . $strFile;
+            return false;
+        }
+        $fpDumpFile = fopen($strFile, 'w');
+        if (false === $fpDumpFile) {
+            $this->strError = 'Konnte Tabellendefinitionsdatei nicht öffnen!'
+                . ' ' . $strFile;
+            return false;
+        }
+        $ret = fwrite($fpDumpFile, $strTables);
+        if (false === $ret) {
+            $this->strError = 'Konnte Tabellendefinitionsdatei nicht schreiben!'
+                . ' ' . $strFile;
+            return false;
+        }
+        fclose($fpDumpFile);
+
+        return true;
+    }
+
+
+
+    /**
+     * Loads the last saved definition of the tables.
+     *
+     * @return void
+     */
+    protected function loadTableDefinition()
+    {
+        $strFile = $this->strDBFolder . $this->strTableSerializedFile;
+        if (!file_exists($strFile)) {
+            $this->arTableDefinition = array();
+            return;
+        }
+
+        $fpDumpFile = fopen($strFile, 'r');
+        $strAllTables = fread(
+            $fpDumpFile,
+            filesize($this->strDBFolder . $this->strTableSerializedFile)
+        );
+        fclose($fpDumpFile);
+        $this->arTableDefinition = unserialize($strAllTables);
+    }
+
+
+
+    /**
+     * Tests if a table in the DB differs from last saved state.
+     *
+     * @param string $strTableName Name of table.
+     *
+     * @return boolean True if file differs otherwise false.
+     */
+    protected function isTableDifferent($strTableName)
+    {
+        if (!isset($this->arTableDefinition)) {
+            $this->loadTableDefinition();
+        }
+
+        // Tabelle existierte vorher nicht
+        if (!isset($this->arTableDefinition[$strTableName])) {
+            return true;
+        }
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $arColumns = $connectionPool->getConnectionForTable($strTableName)
+            ->getSchemaManager()
+            ->listTableColumns($strTableName);
+
+        $arColumnNames = [];
+        foreach ($arColumns as $column) {
+            $arColumnNames[] = $column->getName();
+        }
+
+        // Tabelle existiert jetzt nicht
+        if (count($arColumnNames) == 0) {
+            return true;
+        }
+
+        // Sind Tabellendefinitionen ungleich?
+        if (serialize($this->arTableDefinition[$strTableName]) !== serialize($arColumnNames)
+        ) {
+            return true;
+        }
+
+        // Alles in Ordnung
+        return false;
+    }
+
+
+
+    /**
+     * Test if the given tables in the DB differs from last saved state.
+     *
+     * @param array $arTables Names of tables to test
+     *
+     * @return void
+     */
+    protected function testTablesForDifferences(array $arTables)
+    {
+        foreach ($arTables as $strTableName) {
+            if ($this->isTableDifferent($strTableName)) {
+                $arErrorTables[] = htmlspecialchars($strTableName);
+            }
+        }
+
+        if (count($arErrorTables)) {
+            $this->addError(
+                'Following tables have changed, please contact your TYPO3 admin: '
+                . implode(', ', $arErrorTables)
+            );
+        }
+    }
+
+
+
+    /**
+     * http://jira.aida.de/jira/browse/SDM-2099
+     *
+     * @return void
+     */
+    protected function testDAMForErrors()
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable('sys_file_reference');
+
+        $count = $queryBuilder->count('*')
+            ->from('sys_file_reference')
+            ->where(
+                $queryBuilder->expr()->eq('uid_foreign', 0)
+            )
+            ->execute()
+            ->fetchColumn(0);
+
+        if ($count > 0) {
+            $strError = 'FAL has corrupted entries. (Entries with uid_foreign = 0)';
+
+            $this->strDAMError .= $strError;
+        }
+    }
+
+
+
+    /**
+     * Tests if the tables of db differs from saved file.
+     *
+     * @return void
+     */
+    protected function testAllTablesForDifferences()
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $arTableNames = $connectionPool->getConnectionForTable('pages')
+            ->getSchemaManager()
+            ->listTableNames();
+
+        $this->testTablesForDifferences($arTableNames);
+    }
+
+
+
+    /**
+     * http://jira.aida.de/jira/browse/SDM-2099
+     *
+     * @return void
+     */
+    protected function cleanUpDAM()
+    {
+        echo 'Der Vorgang kann eine weile dauern, bitte warten Sie bis die Seite sich komplett darstellt...';
+        flush();
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable('sys_file_reference');
+
+        $connection->delete(
+            'sys_file_reference',
+            array('uid_foreign' => 0)
+        );
+
+        echo 'fertig';
+    }
+
+
+
+    /**
+     * Informiert Master(LIVE) Server per zb. FTP
+     *
+     * @param Area $area Config of the area in use
+     *
+     * @return boolean True if all went well, false otherwise
+     */
+    protected function notifyMaster(Area $area)
+    {
+        if (!isset($_SERVER['SERVER_ADDR'])
+            || preg_match("/(192\\.168\\.1\\.|127\\.)/", $_SERVER['SERVER_ADDR'])
+            || (isset($_SERVER['AIDA_ENV']) && $_SERVER['AIDA_ENV'] == 'cmstest')
+        ) {
+            //nr-intern gibts kein FTP
+            touch($this->strDBFolder . 'notification-hint-db.txt');
+            return true;
+        }
+
+        $bReturn = true;
+
+        foreach ($area->getSystems() as $arSystem) {
+            $bReportError = (isset($arSystem['report_error']) ? (bool)$arSystem['report_error'] : false);
+            switch ($arSystem['notify']['type']) {
+                case 'ftp':
+                    $return = $this->notifyMasterViaFtp($arSystem['notify']);
+                    if ($return === false) {
+                        $bReturn = false;
+                        if ($bReportError) {
+                            $this->addError($this->strError);
+                        }
+                    } else {
+                        $this->addSuccess($this->strSuccess);
+                    }
+                    break;
+            }
+        }
+
+        return $bReturn;
+    }
+
+
+
+    /**
+     * Inform the Master(LIVE) Server per FTP
+     *
+     * @param array $arFtpConfig Config of the ftp connection
+     *
+     * @return boolean True if all went well, false otherwise
+     */
+    protected function notifyMasterViaFtp(array $arFtpConfig)
+    {
+        $ftp_server = $arFtpConfig['host'];
+        $ftp_user_name = $arFtpConfig['user'];
+        $ftp_user_pass = $arFtpConfig['password'];
+
+        $source_file = $this->strDummyFile;
+
+        // Herstellen der Basis-Verbindung
+        $conn_id = @ftp_connect("$ftp_server");
+
+        // Verbindung überprüfen
+        if (!$conn_id) {
+            $this->strError = "FTP-Verbindung nicht hergestellt! Keine Verbindung zu $ftp_server.";
+            return false;
+        }
+
+        // Einloggen mit Benutzername und Kennwort
+        $login_result = @ftp_login($conn_id, $ftp_user_name, $ftp_user_pass);
+
+        // Verbindung überprüfen
+        if (!$login_result) {
+            $this->strError = "FTP-Verbindung nicht hergestellt!'
+                . ' Login auf $ftp_server als Benutzer $ftp_user_name nicht möglich.";
+            return false;
+        }
+        //TYPO-3844: enforce passive mode
+        ftp_pasv($conn_id, true);
+        // Upload der Datei
+        //$upload = ftp_put($conn_id, $destination_file, $source_file, FTP_BINARY);
+        $upload = @ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY);
+        $upload = @ftp_put($conn_id, 'files.txt', $source_file, FTP_BINARY);
+
+        // Schließen des FTP-Streams
+        ftp_quit($conn_id);
+
+        // Upload-Status überprüfen
+        if (!$upload) {
+            $this->strError = 'FTP mit "' . $ftp_user_name . '" zu "' . $ftp_server . '" upload war fehlerhaft!';
+            return false;
+        }
+        $this->strSuccess = 'Upload Signalfiles with user "' . $ftp_user_name . '" to "' . $ftp_server . '" succeeded!';
+        return true;
+    }
+
+
+
+    /**
+     * Adds all file names which are found to the array.
+     *
+     * @param array $row Row of tt_content(?)
+     * @param array &$arFiles Array to fill in the file names.
+     *
+     * @return void
+     */
+    protected function addFilesToArray($row, array &$arFiles)
+    {
+        global $TCA;
+
+        // src='' Angaben im Text
+        preg_match('/src=\"([\w\d\_\.\-\/\?\&\=\{\}]+)\"/', $row['bodytext'], $regs);
+        if (count($regs) > 0) {
+            $this->addFileToArray($regs[1], $arFiles);
+        }
+
+        // Ein Feld in tt_content was ein Bild enthällt (aus /uploads zumeist)
+        foreach ($this->arFileFieldsToSync as $arField) {
+            if ($row[$arField] != '') {
+                $arElements = explode(',', $row[$arField]);
+                foreach ($arElements as $strFileName) {
+                    if ($row['CType'] != 'list') {
+                        $strUploads = $TCA['tt_content']['columns'][$row['CType']]['config']['uploadfolder'];
+                    } else {
+                        $strUploads = '/uploads';
+                    }
+                    $this->addFileToArray($strUploads . '/' . $strFileName, $arFiles);
+
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     * Adds files to an array if they have the right file ending
+     *
+     * @param string $strFile Name of file.
+     * @param array &$arFiles Array to fill in the file names.
+     *
+     * @return void
+     */
+    protected function addFileToArray($strFile, array &$arFiles)
+    {
+        if (strpos($strFile, '/') === 0) {
+            $strFile = substr($strFile, 1);
+        }
+        if (($pos = strpos($strFile, '?')) !== false) {
+            $strFile = substr($strFile, 0, $pos);
+        }
+        $rootDir = substr($strFile, 0, strpos($strFile, '/'));
+        $fileExt = substr($strFile, strrpos($strFile, '.') + 1);
+        if (in_array($fileExt, $this->arFileEndingsToSync)
+            && in_array($rootDir, $this->arFilePathsToSync)
+        ) {
+            if (!in_array($strFile, $arFiles)) {
+                array_push($arFiles, $strFile);
+            }
+        }
+    }
+
+
+
+    /**
+     * Creates a <div> Element with the content and color of type and puts it in
+     * a section of the TYPO3 Template
+     *
+     * @param integer  $nStyle Style to use for the message
+     * @param string   $strText The text to output
+     * @param string   $strHeader TYPO3 Section Header text
+     * @param boolean  $noStrToUpper A flag that will prevent the header from
+     *                                    being converted to uppercase
+     * @param boolean  $sH Defines the type of header (if set, "<h3>"
+     *                                    rather than the default "h4")
+     * @param integer  $type The number of an icon to show with the
+     *                                    header (see the icon-function). -1,1,2,3
+     * @param boolean  $allowHTMLinHeader If set, HTML tags are allowed in $label
+     *                                    (otherwise this value is by default
+     *                                    htmlspecialchars()'ed)
+     *
+     * @return string The result in the TYPO3 template section.
+     */
+    protected function getDiv(
+        $nStyle = 0, $strText = '', $strHeader = '',
+        $noStrToUpper = false, $sH = false, $type = null, $allowHTMLinHeader = false
+    ) {
+        switch ($nStyle) {
+            case self::STYLE_OK:
+                $strBgColor = '#00AA00';
+                $strFgColor = '#FFFFFF';
+                break;
+            case self::STYLE_FAILURE:
+                $strBgColor = '#AA0000';
+                $strFgColor = '#FFFFFF';
+                break;
+            case self::STYLE_LIGHT:
+                $strBgColor = '#CCCCEE';
+                $strFgColor = '#000000';
+                break;
+            default:
+                $strBgColor = '#BBAA66';
+                $strFgColor = '#FFFFFF';
+                break;
+        }
+        if (null === $type) {
+            $type = $nStyle;
+        }
+        $strContent = $this->doc->section(
+            $strHeader,
+            '<div style="background-color:' . $strBgColor . '; '
+            . 'padding:5px; color:' . $strFgColor . ';">'
+            . $strText . '</div>',
+            $noStrToUpper, $sH, $type, $allowHTMLinHeader
+        );
+        return $strContent;
+    }
+
+
+
+    /**
+     * Generates the menu based on $this->MOD_MENU
+     *
+     */
+    protected function generateMenu()
+    {
+        $menu = $this->moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
+        $menu->setIdentifier('WebFuncJumpMenu');
+        foreach ($this->MOD_MENU['function'] as $controller => $title) {
+            $item = $menu
+                ->makeMenuItem()
+                ->setHref(
+                    BackendUtility::getModuleUrl(
+                        $this->moduleName,
+                        [
+                            'id' => $this->id,
+                            'SET' => [
+                                'function' => $controller
+                            ]
+                        ]
+                    )
+                )
+                ->setTitle($title);
+            if ($controller === (int) $this->MOD_SETTINGS['function']) {
+                $item->setActive(true);
+            }
+            $menu->addMenuItem($item);
+        }
+        $this->moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->addMenu($menu);
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * @param string $strMessage error message
+     *
+     * @return void
+     */
+    public function addError($strMessage)
+    {
+        $this->addMessage($strMessage, FlashMessage::ERROR);
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * @param string $strMessage success message
+     *
+     * @return void
+     */
+    public function addSuccess($strMessage)
+    {
+        $this->addMessage($strMessage, FlashMessage::OK);
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * @param string $strMessage info message
+     *
+     * @return void
+     */
+    public function addInfo($strMessage)
+    {
+        $this->addMessage($strMessage, FlashMessage::INFO);
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * message types are defined as class constants self::STYLE_*
+     *
+     * @param string $strMessage message
+     * @param integer $type message type
+     *
+     * @return void
+     */
+    public function addMessage($strMessage, $type)
+    {
+        /* @var $message FlashMessage */
+        $message = GeneralUtility::makeInstance(
+            FlashMessage::class, $strMessage, '', $type, true
+        );
+
+        /* @var $messageService \TYPO3\CMS\Core\Messaging\FlashMessageService */
+        $messageService = GeneralUtility::makeInstance(
+            \TYPO3\CMS\Core\Messaging\FlashMessageService::class
+        );
+
+        $messageService->getMessageQueueByIdentifier()->addMessage($message);
+    }
+
+
+
+    /**
+     * Get synced page ids
+     *
+     * @return array page ids to sync
+     */
+    public function getPageIds()
+    {
+        return $this->arPageIds;
+    }
+
+
+
+    /**
+     * Remove entries not needed for the sync.
+     *
+     * @param array $arLines lines with data to sync
+     *
+     * @return array
+     */
+    protected function removeNotSyncableEntries(array $arLines)
+    {
+        $arResult = $arLines;
+        foreach ($arLines as $strTable => $arStatements) {
+            foreach ($arStatements as $nUid => $strStatement) {
+                if (!$this->isElementSyncable($strTable, $nUid)) {
+                    unset($arResult[$strTable][$nUid]);
+                }
+            }
+        }
+        return $arResult;
+    }
+
+
+
+    /**
+     * Sets time of last dump/sync for this element.
+     *
+     * @param string  $strTable the table, the element contains to
+     * @param integer $nUid     the uid for the element
+     *
+     * @return void
+     * @throws Exception
+     */
+    protected function setLastDumpTimeForElement($strTable, $nUid)
+    {
+        if (strpos($nUid, '-')) {
+            // CRAP - we get something like: 47-18527-0-0-0--0-0-0-0-0-0-1503315964-1500542276-…
+            // happens in writeMMReference() before createupdateinsertline()
+            // take second number as ID:
+            $nUid = explode('-', $nUid)[1];
+        }
+
+        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
+        global $BE_USER;
+
+        $nTime = time();
+        $nUserId = intval($BE_USER->user['uid']);
+        $strUpdateField = ($this->getForcedFullSync()) ? 'full' : 'incr';
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
+
+        $connection->exec(
+            'INSERT INTO tx_nrsync_syncstat'
+            . " (tab, " . $strUpdateField . ", cruser_id, uid_foreign) VALUES "
+            . ' ('
+            . $connection->quote($strTable)
+            . ', ' . $connection->quote($nTime)
+            . ', ' . $connection->quote($nUserId)
+            . ', ' . $connection->quote($nUid) . ')'
+            . ' ON DUPLICATE KEY UPDATE'
+            . ' cruser_id = ' . $connection->quote($nUserId) . ', '
+            . $strUpdateField . ' = ' . $connection->quote($nTime)
+        );
+    }
+
+
+
+    /**
+     * Fetches syncstats for an element from db.
+     *
+     * @param string $strTable the table, the element belongs to
+     * @param integer $nUid the uid for the element
+     *
+     * @return array|boolean syncstats for an element or false if stats don't exist
+     * @throws Exception
+     */
+    protected static function getSyncStatsForElement($strTable, $nUid)
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable('tx_nrsync_syncstat');
+
+        $arRow = $queryBuilder->select('*')
+            ->from('tx_nrsync_syncstat')
+            ->where(
+                $queryBuilder->expr()->eq('tab', $queryBuilder->quote($strTable)),
+                $queryBuilder->expr()->eq('uid_foreign', intval($nUid))
+            )
+            ->execute()
+            ->fetch();
+
+        return $arRow;
+    }
+
+
+
+    /**
+     * Returns time stamp of this element.
+     *
+     * @param string $strTable The table, the elements belongs to
+     * @param integer $nUid The uid of the element.
+     *
+     * @return integer
+     * @throws Exception
+     */
+    protected function getTimestampOfElement($strTable, $nUid)
+    {
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable($strTable);
+
+        $arRow = $queryBuilder->select('tstamp')
+            ->from($strTable)
+            ->where(
+                $queryBuilder->expr()->eq('uid', intval($nUid))
+            )
+            ->execute()
+            ->fetch();
+
+        return $arRow['tstamp'];
+    }
+
+
+
+    /**
+     * Clean up statements and prepare dump file.
+     *
+     * @param array    $arDeleteLine Delete statements
+     * @param array    $arInsertLine Insert statements
+     * @param resource $fpDumpFile   dump file
+     *
+     * @return void
+     */
+    protected function prepareDump(array $arDeleteLine, array $arInsertLine, $fpDumpFile)
+    {
+        if (!$this->getForcedFullSync()) {
+            $arDeleteLine = $this->removeNotSyncableEntries($arDeleteLine);
+            $arInsertLine = $this->removeNotSyncableEntries($arInsertLine);
+        }
+        // Remove Deletes which has a corresponding Insert statement
+        $this->diffDeleteLinesAgainstInsertLines(
+            $arDeleteLine,
+            $arInsertLine
+        );
+
+        // Remove all DELETE Lines which already has been put to file
+        $this->clearDuplicateLines(
+            self::STATEMENT_TYPE_DELETE,
+            $arDeleteLine
+        );
+        // Remove all INSERT Lines which already has been put to file
+        $this->clearDuplicateLines(
+            self::STATEMENT_TYPE_INSERT,
+            $arInsertLine
+        );
+        $this->writeToDumpFile($arDeleteLine, $arInsertLine, $fpDumpFile);
+
+        $this->writeStats($arInsertLine);
+    }
+
+
+
+    /**
+     * Write stats for the sync.
+     *
+     * @param array $arInsertLines insert array ofstatements for elements to sync
+     *
+     * @return void
+     */
+    protected function writeStats(array $arInsertLines)
+    {
+        foreach ($arInsertLines as $strTable => $arInstertStatements) {
+            if (strpos($strTable, '_mm') !== false) {
+                continue;
+            }
+            foreach ($arInstertStatements as $nUid => $strStatement) {
+                $this->setLastDumpTimeForElement($strTable, $nUid);
+            }
+        }
+
+    }
+
+
+
+    /**
+     * Return true if a full sync should be forced.
+     *
+     * @return boolean
+     */
+    protected function getForcedFullSync()
+    {
+        return isset($_POST['data']['force_full_sync'])
+            && !empty($_POST['data']['force_full_sync']);
+    }
+
+
+
+    /**
+     * Return true if an element, given by tablename and uid is syncable.
+     *
+     * @param string $strTable the table, the element belongs to
+     * @param integer $nUid the uid of the element
+     *
+     * @return boolean
+     */
+    protected function isElementSyncable($strTable, $nUid)
+    {
+        if (strpos($strTable, '_mm') !== false) {
+            return true;
+        }
+
+        $arSyncStats = $this->getSyncStatsForElement($strTable, $nUid);
+        $nTimeStamp = $this->getTimestampOfElement($strTable, $nUid);
+        if (!$nTimeStamp) {
+            return false;
+        }
+        if (isset($arSyncStats['full']) && $arSyncStats['full'] > $nTimeStamp) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+
+    /**
+     * Adds information about full or inc sync to syncfile
+     *
+     * @param string $strDumpFile the name of the file
+     *
+     * @return string
+     */
+    protected function addInformationToSyncfileName($strDumpFile)
+    {
+        $bIsFullSync = !empty($_POST['data']['force_full_sync']);
+        $strPrefix = 'inc_';
+        if ($bIsFullSync) {
+            $strPrefix = 'full_';
+        }
+        return $strPrefix . $strDumpFile;
+    }
+
+
+
+    /**
+     * Set messages in case the sync module is locked
+     *
+     * @return  void
+     */
+    protected function handleLockedState()
+    {
+        $config = $this->getExtensionConfiguration();
+        $this->addError($config['syncModuleLockedMessage']);
+    }
+
+
+
+    /**
+     * React to requests concerning lock or unlock of the module
+     *
+     * @return void
+     */
+    protected function handleLockRequest()
+    {
+        try {
+            $this->storeLockConfiguration($this->isLockRequested());
+            $strMessage = 'Sync-Modul wurde ' . ($this->isLockRequested() ? 'gesperrt.' : 'freigegeben.');
+            $this->addSuccess($strMessage);
+        } catch (\Exception $exception) {
+            $this->addError(
+                'Error in nr_sync configuration:<br>'
+                . $exception->getMessage()
+                . '<br>Please check configuration in the Extension Manager.'
+            );
+        }
+    }
+
+
+
+    /**
+     * Check whether a lock-request was sent
+     *
+     * @return bool
+     */
+    protected function receivedLockChangeRequest()
+    {
+        return isset($_POST['data']['sent'])
+            && $this->isLocked() !== $this->isLockRequested();
+    }
+
+
+
+    /**
+     * Get the value of the lock-request
+     *
+     * @return bool
+     */
+    protected function isLockRequested()
+    {
+        return (bool) $_POST['data']['lock'];
+    }
+
+
+
+    /**
+     * Add the checkbox to the page content
+     *
+     * @return void
+     */
+    protected function addLockCheckbox()
+    {
+        /* @var $LANG \TYPO3\CMS\Lang\LanguageService */
+        global $LANG;
+
+        $selected = $this->isLocked() ? 'checked="checked" ' : '';
+
+        $this->content .= '<form action="" method="post">'
+            . '<input type="checkbox" name="data[lock]" id="lock"'
+            . ' value="lock" ' . $selected . '><label for="type">&nbsp;'
+            . $LANG->getLL('lock_synchronization') . '.</label>'
+            . '<input type="hidden" name="data[sent]" value="true">'
+            . '<br>'
+            . '<input type="submit"'
+            . ' value="' . $LANG->getLL('lock_synchronization_button') . '"></div>'
+            . '</form>';
+    }
+
+
+
+    /**
+     * Check whether module is locked
+     *
+     * @return bool
+     */
+    protected function isLocked()
+    {
+        try {
+            $syncConf = $this->getExtensionConfiguration();
+        } catch (\RuntimeException $e) {
+            $this->addError(
+                'Error in nr_sync configuration:<br>'
+                . $e->getMessage()
+                . '<br>Please check configuration in the Extension Manager.'
+            );
+            return false;
+        }
+
+        return (boolean)$syncConf['syncModuleLocked'];
+    }
+
+
+
+    /**
+     * Receive the extension configuration
+     *
+     * @return array
+     */
+    protected function getExtensionConfiguration()
+    {
+        if (null === $this->arConfig) {
+            $this->loadExtensionConfiguration();
+        }
+
+        return $this->arConfig;
+    }
+
+
+
+    /**
+     * Get the configuration manager
+     *
+     * @return \TYPO3\CMS\Core\Configuration\ConfigurationManager
+     */
+    protected function getConfigurationManager()
+    {
+        if (null === $this->configurationManager) {
+            $objectManager = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Object\ObjectManager::class);
+            $this->configurationManager = $objectManager->get(\TYPO3\CMS\Core\Configuration\ConfigurationManager::class);
+        }
+
+        return $this->configurationManager;
+    }
+
+
+
+    /**
+     * Load the extension configuration if not already loaded
+     *
+     * @return void
+     */
+    protected function loadExtensionConfiguration()
+    {
+        $arConf = $this->getConfigurationManager()->getLocalConfigurationValueByPath('EXT/extConf/nr_sync');
+        if (is_array($arConf)) {
+            $this->arConfig = $arConf;
+        } else {
+            $this->arConfig = unserialize($arConf);
+        }
+    }
+
+
+
+    /**
+     * Set the locked value in the localconf file
+     *
+     * @param bool $bLocked whether Netresearch Sync should be locked
+     *
+     * @return void
+     */
+    protected function storeLockConfiguration($bLocked)
+    {
+        $this->arConfig = $this->getExtensionConfiguration();
+        $this->arConfig['syncModuleLocked'] = (int)$bLocked;
+        $instObj = $this->getConfigurationManager();
+
+        $instObj->setLocalConfigurationValueByPath(
+            'EXT/extConf/nr_sync',
+            serialize($this->arConfig)
+        );
+    }
+
+
+
+    /**
+     * Returns true, if a page sync has been selected.
+     *
+     * @return bool
+     */
+    protected function isSinglePageSync()
+    {
+        return 43 == $this->MOD_SETTINGS['function'];
+    }
+}

@@ -15,7 +15,6 @@
 namespace Netresearch\Sync;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Messaging\FlashMessageQueue;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 
@@ -521,83 +520,6 @@ class Table
             . $strUpdateField . ' = ' . $connection->quote($nTime)
         );
     }
-
-
-
-    /**
-     * Returns table sync statistics.
-     *
-     * @param array $arTables Table names
-     *
-     * @throws Exception
-     * @return array
-     */
-    public static function getSyncStats(array $arTables)
-    {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-
-        $arResult = array();
-
-        $queryBuilder = $connection->createQueryBuilder();
-        $arRow = $queryBuilder->select('*')
-            ->from('tx_nrsync_syncstat')
-            ->where(
-                $queryBuilder->expr()->eq('tab', $queryBuilder->quote('*'))
-            )
-            ->execute()
-            ->fetch();
-
-        $arDefault = array(
-            'full'      => $arRow['full'],
-            'incr'      => $arRow['incr'],
-            'last_time' => max($arRow['incr'], $arRow['full']),
-            'last_type' => ($arRow['full'] > $arRow['incr'] ? 'full' : 'incr'),
-            'last_user' => $arRow['cruser_id'],
-        );
-
-        foreach ($arTables as $strTable) {
-
-            $arResult[$strTable] = $arDefault;
-
-            $queryBuilder = $connection->createQueryBuilder();
-            $arRow = $queryBuilder->select('*')
-                ->from('tx_nrsync_syncstat')
-                ->where(
-                    $queryBuilder->expr()->eq('tab', $queryBuilder->quote($strTable))
-                )
-                ->execute()
-                ->fetch();
-
-            $arResultRow = array(
-                'full' => $arRow['full'],
-                'incr' => $arRow['incr'],
-                'last_time' => max($arRow['incr'], $arRow['full']),
-                'last_type' => ($arRow['full'] > $arRow['incr'] ? 'full' : 'incr'),
-                'last_user' => $arRow['cruser_id'],
-            );
-
-            $arResult[$strTable] = array(
-                'full' => max($arResultRow['full'], $arDefault['full']),
-                'incr' => max($arResultRow['incr'], $arDefault['incr']),
-                'last_time' => max($arResultRow['last_time'], $arDefault['last_time']),
-                'last_type' => (
-                $arResultRow['last_time'] > $arDefault['last_time']
-                    ? $arResultRow['last_type'] : $arDefault['last_type']
-                ),
-                'last_user' => (
-                $arResultRow['last_time'] > $arDefault['last_time']
-                    ? $arResultRow['last_user'] : $arDefault['last_user']
-                ),
-            );
-        }
-
-        return $arResult;
-    }
-
 
 
     /**

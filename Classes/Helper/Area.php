@@ -12,6 +12,7 @@
 
 namespace Netresearch\Sync\Helper;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Core\ApplicationContext;
 
 /**
  * Methods to work with synchronization areas
@@ -78,7 +79,6 @@ class Area
         'sync_be_groups' => true,
         'sync_tables'    => true,
     ];
-    private $getSystems;
 
 
     /**
@@ -264,5 +264,73 @@ class Area
     public function getSystems()
     {
         return (array) $this->area['system'];
+    }
+
+
+
+    /**
+     * Informiert Master(LIVE) Server per zb. FTP
+     *
+     * @return boolean True if all went well, false otherwise
+     */
+    public function notifyMaster()
+    {
+        if (!isset($_SERVER['SERVER_ADDR'])
+            || preg_match("/(192\\.168\\.1\\.|127\\.)/", $_SERVER['SERVER_ADDR'])
+            || (isset($_SERVER['AIDA_ENV']) && $_SERVER['AIDA_ENV'] == 'cmstest')
+        ) {
+            return true;
+        }
+
+        $bReturn = true;
+
+        foreach ($this->getSystems() as $arSystem) {
+            switch ($arSystem['notify']['type']) {
+                case 'ftp':
+                    $bReturn &= $this->notifyMasterViaFtp($arSystem['notify']);
+                    break;
+            }
+        }
+
+        return $bReturn;
+    }
+
+
+
+    /**
+     * Inform the Master(LIVE) Server per FTP
+     *
+     * @param array $arFtpConfig Config of the ftp connection
+     *
+     * @return boolean True if all went well, false otherwise
+     */
+    protected function notifyMasterViaFtp(array $arFtpConfig)
+    {
+        $conn_id = ftp_connect($arFtpConfig['host']);
+
+        if (!$conn_id) {
+            return false;
+        }
+
+        $login_result = ftp_login($conn_id, $arFtpConfig['user'], $arFtpConfig['password']);
+
+        if (!$login_result) {
+            return false;
+        }
+
+        // TYPO-3844: enforce passive mode
+        ftp_pasv($conn_id, true);
+
+        // create trigger file
+        $source_file = tmpfile();
+
+        $upload = true;
+        //$upload &= ftp_put($conn_id, $destination_file, $source_file, FTP_BINARY);
+        $upload &= ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY);
+        $upload &= ftp_put($conn_id, 'files.txt', $source_file, FTP_BINARY);
+
+        ftp_quit($conn_id);
+
+        return $upload;
     }
 }

@@ -23,6 +23,7 @@ use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
@@ -62,21 +63,9 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
  */
 class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 {
-    const STYLE_OK = -1;
-    const STYLE_NORMAL = 0;
-    const STYLE_LIGHT = 1;
-    const STYLE_FAILURE = 2;
-
     const FUNC_SINGLE_PAGE = 46;
-    const FUNC_FAL = 8;
-    const FUNC_SYS_DOMAINS = 31;
-    const FUNC_FE_GROUPS = 9;
-    const FUNC_FILES = 35;
-    const FUNC_BE_USERS_GROUPS = 10;
-    const FUNC_ITG = 13;
-    const FUNC_TABLE_DEF = 17;
-    const FUNC_SCHEDULER = 40;
-
+    const FUNC_FILES       = 35;
+    const FUNC_TABLE_DEF   = 17;
 
     /**
      * key to use for storing insert statements
@@ -117,26 +106,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * @var integer Access rights for new folders
      */
     public $nFolderRights = 0777;
-
-    /**
-     * @var int Access rights for new files
-     */
-    public $nFileRights = 0666;
-
-    /**
-     * @var string Error string
-     */
-    var $strError = '';
-
-    /**
-     * @var string Success string
-     */
-    var $strSuccess = '';
-
-    /**
-     * @var string DAM Error string
-     */
-    var $strDAMError = '';
 
     /**
      * @var string Dummy file
@@ -300,6 +269,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected $function;
 
+
+
     /**
      * @return SyncModuleController
      */
@@ -318,7 +289,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->view->setPartialRootPaths([ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Partials/Backend/SchedulerModule/']);
         */
         $this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
-        $this->iconFactory = GeneralUtility::makeInstance(IconFactory::class);
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
         $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
@@ -379,13 +349,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     function menuConfig()
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $this->MOD_MENU = array('function' => array());
 
         $nAccessLevel = 50;
-        if ($BE_USER->isAdmin()) {
+        if ($this->getBackendUser()->isAdmin()) {
             $nAccessLevel = 100;
         }
 
@@ -410,7 +377,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * Simply calls main() and init() and outputs the content
      *
      * @param ServerRequestInterface $request the current request
-     * @param ResponseInterface $response
+     * @param ResponseInterface      $response
      * @return ResponseInterface the response with the content
      */
     public function mainAction(ServerRequestInterface $request, ResponseInterface $response)
@@ -420,7 +387,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->main();
 
         $this->view = $this->getFluidTemplateObject('nrsync', 'nrsync');
-        $this->view->assign('moduleName', BackendUtility::getModuleUrl('web_txnrsyncM1'));
+        $this->view->assign('moduleName', BackendUtility::getModuleUrl($this->moduleName));
         $this->view->assign('id', $this->id);
         //$this->view->assign('functionMenuModuleContent', $this->getExtObjContent());
         $this->view->assign('functionMenuModuleContent', $this->content);
@@ -522,9 +489,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function showPageSelection(
         $strName, array $arTables
     ) {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $strPreOutput = '';
 
         if ($this->id == 0) {
@@ -554,12 +518,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $bShowButton = false;
 
-        $this->nRecursion = (int) $BE_USER->getSessionData(
+        $this->nRecursion = (int) $this->getBackendUser()->getSessionData(
             'nr_sync_synclist_levelmax' . $strName
         );
         if (isset($_POST['data']['rekursion'])) {
             $this->nRecursion = (int) $_POST['data']['levelmax'];
-            $BE_USER->setAndSaveSessionData(
+            $this->getBackendUser()->setAndSaveSessionData(
                 'nr_sync_synclist_levelmax' . $strName, $this->nRecursion
             );
         }
@@ -578,6 +542,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $strTitle .= ' - LINK';
         }
 
+        $strPreOutput .= '<div class="form-section">';
         $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
         $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
         $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
@@ -618,17 +583,28 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             );
         } else {
             $strPreOutput .= '<div class="form-group">';
+            $strPreOutput .= '<div class="row">';
+
+            $strPreOutput .= '<div class="form-group col-xs-6">';
             $strPreOutput .= '<button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">';
-            $strPreOutput .= $this->iconFactory->getIcon('actions-add', Icon::SIZE_SMALL)->render();
+            $strPreOutput .= $this->getIconFactory()->getIcon('actions-add', Icon::SIZE_SMALL)->render();
             $strPreOutput .= 'Add to sync list';
-            $strPreOutput .= '</button>';
+            $strPreOutput .= '</button>
+                </div>';
+
+            $strPreOutput .= '<div class="form-group col-xs-1">
+            <input class="form-control" type="input" name="data[levelmax]" value="'
+                . $this->nRecursion . '">'
+                . ' </div>
+            <div class="form-group col-xs-4 form">
+            <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">
+            </div>
+            </div>';
+
             $strPreOutput .= '</div>';
         }
 
-        $strPreOutput .= '<div class="form-group">';
-        $strPreOutput .= '<input class="form-control input-sm" type="input" name="data[levelmax]" value="'
-            . $this->nRecursion . '">'
-            . ' <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">';
+
         $strPreOutput .= '</div>';
 
         return $strPreOutput;
@@ -641,20 +617,17 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @param string $strName Name of the sync list to manage.
      *
-     * @return array Synclist after processing.
+     * @return array Sync list after processing.
      */
     protected function manageSyncList($strName)
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         // Vorhandene Liste holen
-        $arSynclist = $BE_USER->getSessionData('nr_sync_synclist' . $strName);
+        $arSyncList = $this->getBackendUser()->getSessionData('nr_sync_synclist' . $strName);
 
         // ID hinzufügen
         if (isset($_POST['data']['add'])) {
             if (isset($_POST['data']['type'])) {
-                $this->addToSyncList($_POST['data'], $arSynclist);
+                $this->addToSyncList($_POST['data'], $arSyncList);
             } else {
                 $this->addError(
                     'Bitte wählen Sie aus, wie die Seite vorgemerkt werden soll.'
@@ -664,12 +637,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         // ID entfernen
         if (isset($_POST['data']['delete'])) {
-            $this->deleteFromSyncList($_POST['data'], $arSynclist);
+            $this->deleteFromSyncList($_POST['data'], $arSyncList);
         }
 
-        $this->saveSyncList($strName, $arSynclist);
+        $this->saveSyncList($strName, $arSyncList);
 
-        return $arSynclist;
+        return $arSyncList;
     }
 
 
@@ -677,17 +650,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Saves the sync list to user session.
      *
-     * @param string $strName Name of the sync list to save.
-     * @param array $arSynclist The sync list to save.
+     * @param string $strName    Name of the sync list to save.
+     * @param array  $arSynclist The sync list to save.
      *
      * @return void
      */
     protected function saveSyncList($strName, $arSynclist)
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
-        $BE_USER->setAndSaveSessionData(
+        $this->getBackendUser()->setAndSaveSessionData(
             'nr_sync_synclist' . $strName, $arSynclist
         );
     }
@@ -702,7 +672,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function addToSyncList($arData, &$arSyncList)
+    protected function addToSyncList(array $arData, array &$arSyncList)
     {
         $arData['removeable'] = true;
         // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
@@ -725,7 +695,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function deleteFromSyncList($arData, &$arSyncList)
+    protected function deleteFromSyncList(array $arData, array &$arSyncList)
     {
         $arDeleteArea = array_keys($arData['delete']);
         $arDeletePageID = array_keys(
@@ -773,10 +743,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     public function main()
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        /* @var $LANG \TYPO3\CMS\Lang\LanguageService */
-        global $BE_USER, $LANG;
-
         // Access check!
         // The page will show only if there is a valid page and if this page may
         // be viewed by the user
@@ -787,11 +753,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->moduleTemplate->getDocHeaderComponent()->setMetaInformation($this->pageinfo);
         }
 
-        $this->doc = GeneralUtility::makeInstance(
-            \TYPO3\CMS\Backend\Template\DocumentTemplate::class
-        );
-        $this->doc->setModuleTemplate('EXT:nr_sync/mod1/template.html');
-
         if (defined('TYPO3_TX_NR_SYNC_DISABLED') && TYPO3_TX_NR_SYNC_DISABLED) {
             $this->addError('Netresearch Sync is disabled.');
             return;
@@ -800,7 +761,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         /* @var $syncLock SyncLock */
         $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
-        if ($BE_USER->isAdmin()) {
+        if ($this->getBackendUser()->isAdmin()) {
             $syncLock->handleLockRequest();
         }
 
@@ -880,16 +841,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
         }
 
+        $this->content .= '<h1>Create new sync</h1>';
         $this->content .= '<form action="" method="POST">';
-        $this->content .= '<h2>Area: ' . $this->getArea()->getName() . '</h2>';
-        $this->content .= '<div class="callout callout-info">';
-        $this->content .= $this->function->getDescription();
-        $this->content .= '</div>';
-
-        $strDisabled  = '';
-        if ($bUseSyncList && count($arSyncList) == 0) {
-            $strDisabled = ' disabled="disabled"';
-        }
 
         $this->content .= $strPreOutput;
 
@@ -903,10 +856,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $this->content .= $this->function->getContent();
 
-        if ($this->strError) {
-            $this->addError($this->strError);
-        }
-
         // sync process
 
         $bSyncResult = false;
@@ -918,7 +867,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
             if ($bUseSyncList) {
                 if (is_array($arSyncList) && count($arSyncList) > 0) {
-                    $this->content .= '<div style="background-color:#887733; padding:3px; margin-bottom: 3px; color:#FFFFFF;"><b>Waiting sync list</b></div>';
 
                     foreach ($arSyncList as $areaID => $arSynclistArea) {
 
@@ -933,14 +881,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                             $area->getDirectories()
                         );
 
-
-                        $this->content .= $this->doc->section(
-                            '',
-                            '<div style="background-color:#FFAAAA; padding:3px; float:left;">'
-                            . '<div style="float:right;">&nbsp;</div>'
-                            . '<b>' . $area->getName() . '</b> '
-                            . $area->getDescription() . '</div>'
-                        );
                         if ($ret
                             && $this->createClearCacheFile(
                                 $strDumpFileArea, 'pages', $arPageIDs,
@@ -950,10 +890,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                             $strSyncedPages .= $this->getPagesAsString($arSyncList[$areaID]);
                             if ($area->informServer()) {
                                 if ($area->notifyMaster() == false) {
-                                    $this->addError(
-                                        $this->strError
-                                        . ' Please re-try in a couple of minutes.'
-                                    );
+                                    $this->addError('Please re-try in a couple of minutes.');
                                     foreach (Area::getAreaDirectories($this->areas[$areaID]) as $strDirectory) {
                                         @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
                                         @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
@@ -973,10 +910,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                             $this->saveSyncList(
                                 $this->MOD_SETTINGS['function'], $arSyncList
                             );
-                        } else {
-                            $this->addError($this->strError);
                         }
-                        $this->content .= '<br>';
                     }
                 }
             } elseif (self::FUNC_TABLE_DEF == $this->MOD_SETTINGS['function']) {
@@ -984,11 +918,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
                 $bSyncResult = $this->createNewDefinitions();
 
-                if (false === $bSyncResult) {
-                    $this->addError(
-                        'Write definition Error: ' . htmlspecialchars($this->strError)
-                    );
-                } else {
+                if ($bSyncResult) {
                     $this->addSuccess(
                         'Neue Tabellendefinitionen geschrieben.'
                     );
@@ -996,18 +926,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             } elseif (self::FUNC_FILES == $this->MOD_SETTINGS['function']) {
                 // Send DB.txt and Files.txt
                 $bSyncResult = $this->getArea()->notifyMaster();
-                if (false === $bSyncResult) {
-                    $this->addError(
-                        'Notify Master Error: ' . htmlspecialchars($this->strError)
-                    );
-                } else {
+                if ($bSyncResult) {
                     $this->addSuccess(
                         'Notify Master wurde erfolgreich ausgeführt.'
                     );
                 }
             } else {
                 $bSyncResult = $this->createDumpToAreas(
-                    $this->function->getTableNames(), $strDumpFile, $this->function->getType()
+                    $this->function->getTableNames(), $strDumpFile
                 );
 
                 if ($bSyncResult) {
@@ -1015,12 +941,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                         'Synchronisationsdateien wurde erfolgreich initiiert. Sie wird in den nächsten 15 Minuten ausgeführt.'
                     );
                 }
-
-                if ($this->strError) {
-                    $this->addError($this->strError);
-                }
             }
         }
+
+        $this->content .= '<div class="form-section">';
 
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
             /* @var $syncStats SyncStats */
@@ -1036,7 +960,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
         }
 
-        if (count($this->function->getTableNames())) {
+        if (($bUseSyncList && count($arSyncList) > 0)
+            || (false === $bUseSyncList && count($this->function->getTableNames()))
+        ) {
             $this->content .= '<div class="form-group">';
             $this->content .= '<div class="checkbox">';
             $this->content .= '<label for="force_full_sync">'
@@ -1052,27 +978,31 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->content .= '</div>';
             $this->content .= '</div>';
         }
+        $this->content .= '</div>';
 
-        if (!empty($this->MOD_SETTINGS['function'])
-            && ($this->strError == '' || $this->MOD_SETTINGS['function'] == self::FUNC_TABLE_DEF)
-        ) {
+        if (!empty($this->MOD_SETTINGS['function'])) {
+            $strDisabled  = '';
+            if ($bUseSyncList && count($arSyncList) == 0) {
+                $strDisabled = ' disabled="disabled"';
+            }
+
+            $this->content .= '<div class="form-section">';
             $this->content .= '<div class="form-group">';
-            $this->content .= '<input class="btn btn-primary" type="Submit" name="data[submit]" value="Execute!" ' . $strDisabled . '>';
+            $this->content .= '<input class="btn btn-primary" type="Submit" name="data[submit]" value="Create sync" ' . $strDisabled . '>';
+            $this->content .= '</div>';
             $this->content .= '</div>';
         }
 
-        foreach ($this->getArea()->getDirectories() as $strDirectory) {
-            $this->showSyncState($this->strDBFolder . $strDirectory);
-        }
+        $this->showSyncState();
     }
 
 
 
     /**
-     * Adds the elements from the synclist as section into the content of the
+     * Adds the elements from the sync list as section into the content of the
      * template of backend module.
      *
-     * @param array $arSyncList The Synclist to show.
+     * @param array $arSyncList The Sync list to show.
      *
      * @return void
      */
@@ -1095,7 +1025,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * of the template of backend module.
      *
      * @param integer $nAreaId Id of the area this list is from.
-     * @param array   $arList  Synclist of an Netresearch\Sync\Helper\Area.
+     * @param array   $arList  Sync list of an Netresearch\Sync\Helper\Area.
      *
      * @return void
      */
@@ -1160,7 +1090,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         return '<button class="btn btn-default" type="submit" name="data[delete][' . $nAreaId . ']'
             . '[' . $nElementId . ']"'
             . ' value="Remove from sync list">'
-            . $this->iconFactory->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render()
+            . $this->getIconFactory()->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render()
             . '</button>';
     }
 
@@ -1171,80 +1101,109 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function showSyncState($strFolder)
+    protected function showSyncState()
     {
-        $arFiles = $this->removeLinksFromFileList(glob($strFolder . '/*'));
+        $this->content .= '<h1>Waiting syncs</h1>';
 
-        $nDumpFiles = count($arFiles);
-        if ($nDumpFiles < 1) {
-            return;
+        foreach ($this->getArea()->getSystems() as $systemKey => $system) {
+            $this->content .= '<h2>';
+
+            if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
+                $href =  BackendUtility::getModuleUrl(
+                    $this->moduleName,
+                    [
+                        'lock' => [$systemKey => '0'],
+                        'id'   => $this->id,
+                    ]
+                );
+                $icon = $this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL);
+                $this->content .= '<a href="' . $href . '" class="btn btn-warning" title="Sync disabled, click to enable">' . $icon . '</a>';
+            } else {
+                $href =  BackendUtility::getModuleUrl(
+                    $this->moduleName,
+                    [
+                        'lock' => [$systemKey => '1'],
+                        'id'   => $this->id,
+                    ]
+                );
+                $icon = $this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL);
+                $this->content .= '<a href="' . $href . '" class="btn btn-success" title="Sync enabled, click to disable">' . $icon . '</a>';
+            }
+
+            $this->content .= ' Sync target: "' . htmlspecialchars($system['name']) . '"</h2>';
+
+
+            $arFiles = $this->removeLinksFromFileList(glob($this->strDBFolder . $system['directory'] . '/*'));
+
+            $nDumpFiles = count($arFiles);
+            if ($nDumpFiles < 1) {
+                return;
+            }
+
+            $strFiles = '';
+            $nSyncSize = 0;
+
+            $strFiles .= '<div class="table-fit">';
+            $strFiles .= '<table class="table table-striped table-hover" id="ts-overview">';
+            $strFiles .= '<thead>';
+            $strFiles .= '<tr><th>File</th><th>Size</th></tr>';
+            $strFiles .= '</thead>';
+            $strFiles .= '<tbody>';
+
+            foreach ($arFiles as $strFile) {
+                $nSize = filesize($strFile);
+                $nSyncSize += $nSize;
+
+                $strFiles .= '<tr class="bgColor4">';
+                $strFiles .= '<td>';
+                $strFiles .= htmlspecialchars(basename($strFile));
+                $strFiles .= '</td>';
+
+                $strFiles .= '<td>';
+                $strFiles .= number_format($nSize / 1024 / 1024, 2, '.', ',') . ' MiB';
+                $strFiles .= '</td>';
+
+                $strFiles .= '</tr>';
+            }
+
+            $strFiles .= '</tbody>';
+            $strFiles .= '</table>';
+            $strFiles .= '</div>';
+
+            /* @var $message1 FlashMessage */
+            $message1 = GeneralUtility::makeInstance(
+                FlashMessage::class,
+                $nDumpFiles . ' file'
+                . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
+                . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).',
+                '',
+                FlashMessage::INFO
+            );
+
+            $nTime = filemtime(reset($arFiles));
+            if ($nTime < time() - 60 * 15) {
+                // if oldest file time is older than 15 minutes display this in red
+                $type = FlashMessage::ERROR;
+            } else {
+                $type = FlashMessage::INFO;
+            }
+
+            /* @var $message2 FlashMessage */
+            $message2 = GeneralUtility::makeInstance(
+                FlashMessage::class,
+                'Oldest file from ' . date('d.m.Y H:i:s', $nTime)
+                . ' and therefor ' . ceil((time() - $nTime) / 60)
+                . ' minutes old.',
+                '',
+                $type
+            );
+
+            /* @var $renderer BootstrapRenderer */
+            $renderer = GeneralUtility::makeInstance(BootstrapRenderer::class);
+            $this->content .= $renderer->render([$message1, $message2]);
+
+            $this->content .= $strFiles;
         }
-
-        $strFiles = '';
-        $nSyncSize = 0;
-
-        $strFiles .= '<div class="table-fit">';
-        $strFiles .= '<table class="table table-striped table-hover" id="ts-overview">';
-        $strFiles .= '<thead>';
-        $strFiles .= '<tr><th>File</th><th>Size</th></tr>';
-        $strFiles .= '</thead>';
-        $strFiles .= '<tbody>';
-
-        foreach ($arFiles as $strFile) {
-            $nSize = filesize($strFile);
-            $nSyncSize += $nSize;
-
-            $strFiles .= '<tr class="bgColor4">';
-            $strFiles .= '<td>';
-            $strFiles .= htmlspecialchars(basename($strFile));
-            $strFiles .= '</td>';
-
-            $strFiles .= '<td>';
-            $strFiles .= number_format($nSize / 1024 / 1024, 2, '.', ',') . ' MiB';
-            $strFiles .= '</td>';
-
-            $strFiles .= '</tr>';
-        }
-
-        $strFiles .= '</tbody>';
-        $strFiles .= '</table>';
-        $strFiles .= '</div>';
-
-        /* @var $message1 FlashMessage */
-        $message1 = GeneralUtility::makeInstance(
-            FlashMessage::class,
-            $nDumpFiles . ' file'
-            . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
-            . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).',
-            '',
-            FlashMessage::INFO
-        );
-
-        $nTime = filemtime(reset($arFiles));
-        if ($nTime < time() - 60 * 15) {
-            // if oldest file time is older than 15 minutes display this in red
-            $type = FlashMessage::ERROR;
-        } else {
-            $type = FlashMessage::INFO;
-        }
-
-        /* @var $message2 FlashMessage */
-        $message2 = GeneralUtility::makeInstance(
-            FlashMessage::class,
-            'Oldest file from ' . date('d.m.Y H:i:s', $nTime)
-            . ' and therefor ' . ceil((time() - $nTime) / 60)
-            . ' minutes old.',
-            '',
-            $type
-        );
-
-        $this->content .= '<h2>' . $strFolder . '</h2>';
-
-        /* @var $renderer BootstrapRenderer */
-        $renderer = GeneralUtility::makeInstance(BootstrapRenderer::class);
-        $this->content .= $renderer->render([$message1, $message2]);
-
-        $this->content .= $strFiles;
     }
 
 
@@ -1272,8 +1231,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Schaut nach ob eine $pid bereits in der Synliste liegt
      *
-     * @param array $arSynclist List of page IDs
-     * @param integer $pid Page ID
+     * @param array   $arSynclist List of page IDs
+     * @param integer $pid        Page ID
      *
      * @return boolean
      */
@@ -1326,14 +1285,11 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function getAllPageIDs(array $arSyncList)
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $arPageIDs = array();
         foreach ($arSyncList as $arSyncPage) {
             // Prüfen ob User Seite Bearbeiten darf
             $arPage = BackendUtility::getRecord('pages', $arSyncPage['pageID']);
-            if ($BE_USER->doesUserHaveAccess($arPage, 2)) {
+            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
                 array_push($arPageIDs, $arSyncPage['pageID']);
             }
 
@@ -1408,9 +1364,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $pid, &$arCount, $nLevel = 0, $nLevelMax = 1, array $arDocTypesExclude = null,
         array $arDocTypesOnly = null, array $arTables = null
     ) {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $arCountDefault = array(
             'count'      => 0,
             'deleted'    => 0,
@@ -1463,7 +1416,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 $arDocTypesExclude, $arDocTypesOnly, $arTables
             );
 
-            if ($BE_USER->doesUserHaveAccess($arPage, 2)) {
+            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
                 $return[] = array(
                     'page' => $arPage,
                     'sub'  => $arSub,
@@ -1492,14 +1445,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * FIXME
      *
-     * @param array $arTables Array with the table names
-     * @param string $strDumpFile Name of the dump file.
-     * @param string $strTableType Type of table.
+     * @param string[] $arTables     Table names
+     * @param string   $strDumpFile  Name of the dump file.
      *
      * @return boolean success
      */
     protected function createDumpToAreas(
-        array $arTables, $strDumpFile, $strTableType
+        array $arTables, $strDumpFile
     ) {
         $filename = date('YmdHis_') . $strDumpFile;
 
@@ -1507,9 +1459,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         if (file_exists($strDumpFile) || file_exists($strDumpFile . '.gz')
         ) {
-            $this->strError = 'Die letzte Synchronisationsvorbereitung ist noch'
+            $this->addError('Die letzte Synchronisationsvorbereitung ist noch'
                 . ' nicht abgeschlossen. Bitte versuchen Sie es in 5'
-                . ' Minuten noch einmal.';
+                . ' Minuten noch einmal.');
             return false;
         }
 
@@ -1532,7 +1484,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         if (!$this->createGZipFile($strDumpFile)) {
-            $this->strError = 'Zipfehler: ' . $strDumpFile;
+            $this->addError('Zipfehler: ' . $strDumpFile);
             return false;
         }
 
@@ -1546,10 +1498,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     $this->strDBFolder . $strPath . '/' . $filename
                     . '.gz'
                 )) {
-                    $this->strError = 'Konnte ' . $this->strTempFolder
+                    $this->addError('Konnte ' . $this->strTempFolder
                         . $strDumpFile . '.gz nicht nach '
                         . $this->strDBFolder . $strPath . '/'
-                        . $filename . '.gz kopieren.';
+                        . $filename . '.gz kopieren.');
                     return false;
                 }
             }
@@ -1566,14 +1518,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Generates the file with the content for the clear cache task.
      *
-     * @param string $strFileName Name of the sql dump file.
-     * @param string $strTable Name of the table which cache should be cleared.
-     * @param array $arUids Array with the uids to clear cache.
-     * @param array $arPath Array with path names to propagate the file.
+     * @param string   $strFileName Name of the sql dump file.
+     * @param string   $strTable    Name of the table which cache should be cleared.
+     * @param int[]    $arUids      Array with the uids to clear cache.
+     * @param string[] $arPath      Array with path names to propagate the file.
      *
      * @return boolean True if file was generateable otherwise false.
      */
-    private function createClearCacheFile($strFileName, $strTable, $arUids, $arPath)
+    private function createClearCacheFile($strFileName, $strTable, array $arUids, $arPath)
     {
         $arClearCacheData = array();
         $strFileName = str_replace('.sql', '.cache', $strFileName);
@@ -1583,8 +1535,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->strTempFolder . $strFileName, 'a'
         );
         if ($fpClearCacheFile === false) {
-            $this->strError = $this->strTempFolder
-                . $strFileName . ' konnte nicht angelegt werden.';
+            $this->addError($this->strTempFolder
+                . $strFileName . ' konnte nicht angelegt werden.');
             return false;
         }
 
@@ -1600,7 +1552,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         try {
             $this->finalizeDumpFile($strFileName, $arPath, false);
         } catch (Exception $e) {
-            $this->strError = $e->getMessage();
+            $this->addError($e->getMessage());
             return false;
         }
 
@@ -1624,14 +1576,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $arPageIDs, $arTables, $strDumpFile, $arPath
     ) {
         if (!is_array($arPageIDs) || count($arPageIDs) <= 0) {
-            $this->strError = 'Keine Seiten für die Synchronisation vorgemerkt.';
+            $this->addError('Keine Seiten für die Synchronisation vorgemerkt.');
             return false;
         }
 
         try {
             $fpDumpFile = $this->openTempDumpFile($strDumpFile, $arPath);
         } catch (Exception $e) {
-            $this->strError = $e->getMessage();
+            $this->addError($e->getMessage());
             return false;
         }
 
@@ -1654,7 +1606,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             fclose($fpDumpFile);
             $this->finalizeDumpFile($strDumpFile, $arPath, true);
         } catch (Exception $e) {
-            $this->strError = $e->getMessage();
+            $this->addError($e->getMessage());
             return false;
         }
 
@@ -1666,13 +1618,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Test and opens the temporary dump file.
      *
-     * @param string $strFileName Name of the dump file.
-     * @param array $arDirectories The directories to copy the temp files later.
+     * @param string $strFileName   Name of the dump file.
+     * @param array  $arDirectories The directories to copy the temp files later.
      *
      * @return resource The opened dump file
      * @throws Exception If file can't be opened or last sync is in progress.
      */
-    private function openTempDumpFile($strFileName, $arDirectories)
+    private function openTempDumpFile($strFileName, array $arDirectories)
     {
         if (file_exists($this->strTempFolder . $strFileName)
             || file_exists($this->strTempFolder . $strFileName . '.gz')
@@ -1713,19 +1665,19 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Zips the tmp dump file and copy it to given directories.
      *
-     * @param string $strDumpFile Name of the dump file.
-     * @param array $arDirectories The directories to copy files into.
+     * @param string  $strDumpFile Name of the dump file.
+     * @param array   $arDirectories The directories to copy files into.
      * @param boolean $bZipFile The directories to copy files into.
      *
      * @return void
      * @throws Exception If file can't be zipped or copied.
      */
-    private function finalizeDumpFile($strDumpFile, $arDirectories, $bZipFile)
+    private function finalizeDumpFile($strDumpFile, array $arDirectories, $bZipFile)
     {
         if ($bZipFile) {
             // Dateien komprimieren
             if (!$this->createGZipFile($this->strTempFolder . $strDumpFile)) {
-                throw new Exception($this->strError);
+                throw new Exception('Could not create ZIP file.');
             }
             $strDumpFile = $strDumpFile . '.gz';
         }
@@ -2209,7 +2161,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
     /**
      * Writes all SQL Lines from arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
-     * to the passed Filestream.
+     * to the passed file stream.
      *
      * @param resource $fpDumpFile the file to write the lines to
      *
@@ -2305,7 +2257,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
-     * Retruns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
+     * Returns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
      *
      * @param string $strTableName name of table to insert into
      * @param array  $arColumnNames
@@ -2390,7 +2342,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $ret = shell_exec($strExec);
 
         if (!file_exists($strDumpFile . '.gz')) {
-            $this->strError = 'Fehler beim Erstellen der gzip Datei aus dem Dump.';
+            $this->addError('Fehler beim Erstellen der gzip Datei aus dem Dump.');
             return false;
         }
 
@@ -2431,26 +2383,26 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $strTables = serialize($arTables);
 
         if (!file_exists($this->strDBFolder)) {
-            $this->strError = 'Tabellendefinitionsordner existiert nicht!'
-                . ' ' . $this->strDBFolder;
+            $this->addError('Tabellendefinitionsordner existiert nicht!'
+                . ' ' . $this->strDBFolder);
             return false;
         }
         $strFile = $this->strDBFolder . $this->strTableSerializedFile;
         if (file_exists($strFile) && !is_writable($strFile)) {
-            $this->strError = 'Tabellendefinitionsdatei ist nicht schreibar!'
-                . ' ' . $strFile;
+            $this->addError('Tabellendefinitionsdatei ist nicht schreibar!'
+                . ' ' . $strFile);
             return false;
         }
         $fpDumpFile = fopen($strFile, 'w');
         if (false === $fpDumpFile) {
-            $this->strError = 'Konnte Tabellendefinitionsdatei nicht öffnen!'
-                . ' ' . $strFile;
+            $this->addError('Konnte Tabellendefinitionsdatei nicht öffnen!'
+                . ' ' . $strFile);
             return false;
         }
         $ret = fwrite($fpDumpFile, $strTables);
         if (false === $ret) {
-            $this->strError = 'Konnte Tabellendefinitionsdatei nicht schreiben!'
-                . ' ' . $strFile;
+            $this->addError('Konnte Tabellendefinitionsdatei nicht schreiben!'
+                . ' ' . $strFile);
             return false;
         }
         fclose($fpDumpFile);
@@ -2612,9 +2564,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function getButtons()
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         // CSH
@@ -2623,7 +2572,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             ->setFieldName('');
         $buttonBar->addButton($cshButton);
 
-        if ($BE_USER->isAdmin()) {
+        if ($this->getBackendUser()->isAdmin()) {
             // Lock
             $this->addButtonBarLockButton();
             $this->addButtonBarAreaLockButtons();
@@ -2656,33 +2605,31 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $lockButton = $buttonBar->makeLinkButton();
 
-        $iconFactory = $this->getIconFactory();
-
         if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
-                    'web_txnrsyncM1',
+                    $this->moduleName,
                     [
                         'lock' => [$systemName => '0'],
                         'id'   => $this->id,
                     ]
                 )
             );
-            $lockButton->setTitle('Unlock ' . $systemName);
-            $lockButton->setIcon($iconFactory->getIcon('actions-unlock', Icon::SIZE_SMALL));
-            $lockButton->setClasses('btn-alert');
+            $lockButton->setTitle($systemName);
+            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
+            $lockButton->setClasses('btn btn-warning');
         } else {
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
-                    'web_txnrsyncM1',
+                    $this->moduleName,
                     [
                         'lock' => [$systemName => '1'],
                         'id'   => $this->id,
                     ]
                 )
             );
-            $lockButton->setTitle('Lock ' . $systemName);
-            $lockButton->setIcon($iconFactory->getIcon('actions-lock', Icon::SIZE_SMALL));
+            $lockButton->setTitle($systemName);
+            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
         }
 
         $lockButton->setShowLabelText(true);
@@ -2701,15 +2648,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $lockButton = $buttonBar->makeLinkButton();
 
-        $iconFactory = $this->getIconFactory();
-
         /* @var $syncLock SyncLock */
         $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
         if ($syncLock->isLocked()) {
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
-                    'web_txnrsyncM1',
+                    $this->moduleName,
                     [
                         'data' => ['lock' => '0'],
                         'id'   => $this->id,
@@ -2717,11 +2662,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 )
             );
             $lockButton->setTitle('Unlock sync module');
-            $lockButton->setIcon($iconFactory->getIcon('actions-unlock', Icon::SIZE_SMALL));
+            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
+            $lockButton->setClasses('btn-warning');
         } else {
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
-                    'web_txnrsyncM1',
+                    $this->moduleName,
                     [
                         'data' => ['lock' => '1'],
                         'id'   => $this->id,
@@ -2729,10 +2675,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 )
             );
             $lockButton->setTitle('Lock sync module');
-            $lockButton->setIcon($iconFactory->getIcon('actions-lock', Icon::SIZE_SMALL));
+            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
         }
 
-        $buttonBar->addButton($lockButton);
+        $buttonBar->addButton($lockButton, ButtonBar::BUTTON_POSITION_LEFT, 0);
     }
 
 
@@ -2742,13 +2688,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function getIconFactory()
     {
-        /* @var $objectManager ObjectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+        if (null === $this->iconFactory) {
+            /* @var $objectManager ObjectManager */
+            $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
 
-        /** @var $iconFactory IconFactory */
-        $iconFactory = $objectManager->get(IconFactory::class);
+            $this->iconFactory = $objectManager->get(IconFactory::class);
+        }
 
-        return $iconFactory;
+        return $this->iconFactory;
     }
 
 
@@ -2823,18 +2770,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
-     * Get synced page ids
-     *
-     * @return array page ids to sync
-     */
-    public function getPageIds()
-    {
-        return $this->arPageIds;
-    }
-
-
-
-    /**
      * Remove entries not needed for the sync.
      *
      * @param array $arLines lines with data to sync
@@ -2874,11 +2809,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $nUid = explode('-', $nUid)[1];
         }
 
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
         $nTime = time();
-        $nUserId = intval($BE_USER->user['uid']);
+        $nUserId = intval($this->getBackendUser()->user['uid']);
         $strUpdateField = ($this->getForcedFullSync()) ? 'full' : 'incr';
 
         /* @var $connectionPool ConnectionPool */

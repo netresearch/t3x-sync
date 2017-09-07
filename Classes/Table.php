@@ -125,9 +125,9 @@ class Table
      * bForceFullSync: ignore last sync time and always do a full sync and
      *     no incremental sync
      *
-     * @param array  $arTables    Tables to dump.
-     * @param string $strDumpFile Target file for dump data.
-     * @param array  $arOptions   Additional options.
+     * @param string[] $arTables    Tables to dump.
+     * @param string   $strDumpFile Target file for dump data.
+     * @param array    $arOptions   Additional options.
      *
      * @return void
      */

@@ -2520,8 +2520,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         // Sind Tabellendefinitionen ungleich?
-        if (serialize($this->arTableDefinition[$strTableName]) !== serialize($arColumnNames)
-        ) {
+        if (serialize($this->arTableDefinition[$strTableName]) !== serialize($arColumnNames)) {
             return true;
         }
 
@@ -2571,62 +2570,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             ->listTableNames();
 
         $this->testTablesForDifferences($arTableNames);
-    }
-
-
-
-    /**
-     * Creates a <div> Element with the content and color of type and puts it in
-     * a section of the TYPO3 Template
-     *
-     * @param integer  $nStyle Style to use for the message
-     * @param string   $strText The text to output
-     * @param string   $strHeader TYPO3 Section Header text
-     * @param boolean  $noStrToUpper A flag that will prevent the header from
-     *                                    being converted to uppercase
-     * @param boolean  $sH Defines the type of header (if set, "<h3>"
-     *                                    rather than the default "h4")
-     * @param integer  $type The number of an icon to show with the
-     *                                    header (see the icon-function). -1,1,2,3
-     * @param boolean  $allowHTMLinHeader If set, HTML tags are allowed in $label
-     *                                    (otherwise this value is by default
-     *                                    htmlspecialchars()'ed)
-     *
-     * @return string The result in the TYPO3 template section.
-     */
-    protected function getDiv(
-        $nStyle = 0, $strText = '', $strHeader = '',
-        $noStrToUpper = false, $sH = false, $type = null, $allowHTMLinHeader = false
-    ) {
-        switch ($nStyle) {
-            case self::STYLE_OK:
-                $strBgColor = '#00AA00';
-                $strFgColor = '#FFFFFF';
-                break;
-            case self::STYLE_FAILURE:
-                $strBgColor = '#AA0000';
-                $strFgColor = '#FFFFFF';
-                break;
-            case self::STYLE_LIGHT:
-                $strBgColor = '#CCCCEE';
-                $strFgColor = '#000000';
-                break;
-            default:
-                $strBgColor = '#BBAA66';
-                $strFgColor = '#FFFFFF';
-                break;
-        }
-        if (null === $type) {
-            $type = $nStyle;
-        }
-        $strContent = $this->doc->section(
-            $strHeader,
-            '<div style="background-color:' . $strBgColor . '; '
-            . 'padding:5px; color:' . $strFgColor . ';">'
-            . $strText . '</div>',
-            $noStrToUpper, $sH, $type, $allowHTMLinHeader
-        );
-        return $strContent;
     }
 
 
@@ -2683,7 +2626,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         if ($BE_USER->isAdmin()) {
             // Lock
             $this->addButtonBarLockButton();
-
             $this->addButtonBarAreaLockButtons();
         }
 
@@ -2712,18 +2654,11 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
-        $lockButton = $buttonBar->makeLinkButton()
-            //->setForm()
-            //->setName('data[lock]')
-        ;
+        $lockButton = $buttonBar->makeLinkButton();
 
         $iconFactory = $this->getIconFactory();
 
-        /* @var $syncLock SyncLock */
-        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
-
         if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
-            //$lockButton->setValue(0);
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
                     'web_txnrsyncM1',
@@ -2737,7 +2672,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $lockButton->setIcon($iconFactory->getIcon('actions-unlock', Icon::SIZE_SMALL));
             $lockButton->setClasses('btn-alert');
         } else {
-            //$lockButton->setValue(1);
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
                     'web_txnrsyncM1',
@@ -2765,10 +2699,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
-        $lockButton = $buttonBar->makeLinkButton()
-            //->setForm()
-            //->setName('data[lock]')
-        ;
+        $lockButton = $buttonBar->makeLinkButton();
 
         $iconFactory = $this->getIconFactory();
 
@@ -2776,7 +2707,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
         if ($syncLock->isLocked()) {
-            //$lockButton->setValue(0);
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
                     'web_txnrsyncM1',
@@ -2789,7 +2719,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $lockButton->setTitle('Unlock sync module');
             $lockButton->setIcon($iconFactory->getIcon('actions-unlock', Icon::SIZE_SMALL));
         } else {
-            //$lockButton->setValue(1);
             $lockButton->setHref(
                 BackendUtility::getModuleUrl(
                     'web_txnrsyncM1',

@@ -18,6 +18,8 @@ namespace Netresearch\Sync\Controller;
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Module\BaseModule;
+use Netresearch\Sync\SyncList;
+use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
 use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
@@ -269,10 +271,15 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected $function;
 
+    /**
+     * @var SyncListManager
+     */
+    private $syncListManager;
+
 
 
     /**
-     * @return SyncModuleController
+     * SyncModuleController constructor.
      */
     public function __construct()
     {
@@ -288,7 +295,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->view->getRequest()->setControllerExtensionName('nr_sync');
         $this->view->setPartialRootPaths([ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Partials/Backend/SchedulerModule/']);
         */
-        $this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
+        //$this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
         $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
@@ -550,6 +557,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->getArea()->getId() . '">';
 
 
+        $strPreOutput .= '<h3>' . $strTitle . '</h3>';
         $strPreOutput .= '<div class="form-group">';
         if ($this->pageContainsData($this->id, $arTables)) {
             $strPreOutput .= '<div class="checkbox">';
@@ -593,7 +601,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 </div>';
 
             $strPreOutput .= '<div class="form-group col-xs-1">
-            <input class="form-control" type="input" name="data[levelmax]" value="'
+            <input class="form-control" type="number" name="data[levelmax]" value="'
                 . $this->nRecursion . '">'
                 . ' </div>
             <div class="form-group col-xs-4 form">
@@ -615,19 +623,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Manages adding and deleting of pages/trees to the sync list.
      *
-     * @param string $strName Name of the sync list to manage.
-     *
-     * @return array Sync list after processing.
+     * @return SyncList
      */
-    protected function manageSyncList($strName)
+    protected function manageSyncList()
     {
-        // Vorhandene Liste holen
-        $arSyncList = $this->getBackendUser()->getSessionData('nr_sync_synclist' . $strName);
-
         // ID hinzufügen
         if (isset($_POST['data']['add'])) {
             if (isset($_POST['data']['type'])) {
-                $this->addToSyncList($_POST['data'], $arSyncList);
+                $this->getSyncList()->addToSyncList($_POST['data']);
             } else {
                 $this->addError(
                     'Bitte wählen Sie aus, wie die Seite vorgemerkt werden soll.'
@@ -637,81 +640,27 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         // ID entfernen
         if (isset($_POST['data']['delete'])) {
-            $this->deleteFromSyncList($_POST['data'], $arSyncList);
+            $this->getSyncList()->deleteFromSyncList($_POST['data']);
         }
 
-        $this->saveSyncList($strName, $arSyncList);
+        $this->getSyncList()->saveSyncList();
 
-        return $arSyncList;
+        return $this->getSyncList();
     }
 
 
 
     /**
-     * Saves the sync list to user session.
+     * @param mixed $syncListId
      *
-     * @param string $strName    Name of the sync list to save.
-     * @param array  $arSynclist The sync list to save.
-     *
-     * @return void
+     * @return SyncList
      */
-    protected function saveSyncList($strName, $arSynclist)
+    protected function getSyncList($syncListId = null)
     {
-        $this->getBackendUser()->setAndSaveSessionData(
-            'nr_sync_synclist' . $strName, $arSynclist
-        );
-    }
-
-
-
-    /**
-     * Adds given data to sync list, if pageId doesn't already exists.
-     *
-     * @param array $arData      Data to add to sync list.
-     * @param array &$arSyncList The sync list to add to.
-     *
-     * @return void
-     */
-    protected function addToSyncList(array $arData, array &$arSyncList)
-    {
-        $arData['removeable'] = true;
-        // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
-        if (!$this->isInTree($arSyncList[$arData['areaID']], $arData['pageID'])) {
-            $arSyncList[$arData['areaID']][] = $arData;
-        } else {
-            $this->addError(
-                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.'
-            );
+        if (null === $syncListId) {
+            $syncListId = $this->MOD_SETTINGS['function'];
         }
-    }
-
-
-
-    /**
-     * Adds given data to sync list, if pageId does not already exists.
-     *
-     * @param array $arData      Data to add to sync list.
-     * @param array &$arSyncList The sync list to remove from.
-     *
-     * @return void
-     */
-    protected function deleteFromSyncList(array $arData, array &$arSyncList)
-    {
-        $arDeleteArea = array_keys($arData['delete']);
-        $arDeletePageID = array_keys(
-            $arData['delete'][$arDeleteArea[0]]
-        );
-        foreach ($arSyncList[$arDeleteArea[0]] as $key => $value) {
-            if ($value['removeable']
-                && $value['pageID'] == $arDeletePageID[0]
-            ) {
-                unset($arSyncList[$arDeleteArea[0]][$key]);
-                if (0 === count($arSyncList[$arDeleteArea[0]])) {
-                    unset($arSyncList[$arDeleteArea[0]]);
-                }
-                break;
-            }
-        }
+        return $this->getSyncListManager()->getSyncList($syncListId);
     }
 
 
@@ -792,7 +741,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $strDumpFile  = '';
         $bUseSyncList = false;
-        $arSyncList   = array();
 
         if (isset($this->arFunctions[(int) $this->MOD_SETTINGS['function']])) {
 
@@ -808,6 +756,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 BaseModule::class, $this->arFunctions[0]
             );
         }
+
+        $this->content .= '<h1>Create new sync</h1>';
+        $this->content .= '<form action="" method="POST">';
 
         switch ((int)$this->MOD_SETTINGS['function']) {
             /*
@@ -826,11 +777,11 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
              * Sync einzelner Pages/Pagetrees (TYPO3 6.2.x)
              */
             case self::FUNC_SINGLE_PAGE: {
-                $strPreOutput = $this->showPageSelection(
+                $this->content .= $this->showPageSelection(
                     $this->MOD_SETTINGS['function'],
                     $this->function->getTableNames()
                 );
-                $arSyncList = $this->manageSyncList($this->MOD_SETTINGS['function']);
+                $this->manageSyncList();
 
                 $bUseSyncList = true;
                 break;
@@ -840,11 +791,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 break;
             }
         }
-
-        $this->content .= '<h1>Create new sync</h1>';
-        $this->content .= '<form action="" method="POST">';
-
-        $this->content .= $strPreOutput;
 
         $this->testTablesForDifferences($this->function->getTableNames());
 
@@ -857,24 +803,22 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->content .= $this->function->getContent();
 
         // sync process
-
-        $bSyncResult = false;
-
         if (isset($_POST['data']['submit']) && $strDumpFile != '') {
             $strDumpFile = $this->addInformationToSyncfileName($strDumpFile);
             //set_time_limit(480);
-            $strSyncedPages = '';
 
             if ($bUseSyncList) {
-                if (is_array($arSyncList) && count($arSyncList) > 0) {
+                $syncList = $this->getSyncList();
+                if (! $syncList->isEmpty()) {
 
-                    foreach ($arSyncList as $areaID => $arSynclistArea) {
+                    $strDumpFileArea = date('YmdHis_') . $strDumpFile;
+
+                    foreach ($syncList->getAsArray() as $areaID => $arSynclistArea) {
 
                         /* @var $area Area */
                         $area = GeneralUtility::makeInstance(Area::class, $areaID);
 
-                        $arPageIDs = $this->getAllPageIDs($arSynclistArea);
-                        $strDumpFileArea = date('YmdHis_') . $strDumpFile;
+                        $arPageIDs = $syncList->getAllPageIDs($areaID);
 
                         $ret = $this->createShortDump(
                             $arPageIDs, $this->function->getTableNames(), $strDumpFileArea,
@@ -887,11 +831,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                                 $area->getDirectories()
                             )
                         ) {
-                            $strSyncedPages .= $this->getPagesAsString($arSyncList[$areaID]);
                             if ($area->informServer()) {
                                 if ($area->notifyMaster() == false) {
                                     $this->addError('Please re-try in a couple of minutes.');
-                                    foreach (Area::getAreaDirectories($this->areas[$areaID]) as $strDirectory) {
+                                    foreach ($area->getDirectories() as $strDirectory) {
                                         @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
                                         @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
                                     }
@@ -899,34 +842,30 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                                     $this->addSuccess(
                                         'Sync started - should be processed within in next 15 minutes.'
                                     );
-                                    unset($arSyncList[$areaID]);
+                                    $syncList->emptyArea($areaID);
                                 }
                             } else {
                                 $this->addSuccess(
                                     'Sync started - should be processed within in next 15 minutes.'
                                 );
-                                unset($arSyncList[$areaID]);
+                                $syncList->emptyArea($areaID);
                             }
-                            $this->saveSyncList(
-                                $this->MOD_SETTINGS['function'], $arSyncList
-                            );
+
+                            $syncList->saveSyncList();
                         }
                     }
                 }
             } elseif (self::FUNC_TABLE_DEF == $this->MOD_SETTINGS['function']) {
                 // Update der Defintionsdatei
 
-                $bSyncResult = $this->createNewDefinitions();
-
-                if ($bSyncResult) {
+                if ($this->createNewDefinitions()) {
                     $this->addSuccess(
                         'Neue Tabellendefinitionen geschrieben.'
                     );
                 }
             } elseif (self::FUNC_FILES == $this->MOD_SETTINGS['function']) {
                 // Send DB.txt and Files.txt
-                $bSyncResult = $this->getArea()->notifyMaster();
-                if ($bSyncResult) {
+                if ($this->getArea()->notifyMaster()) {
                     $this->addSuccess(
                         'Notify Master wurde erfolgreich ausgeführt.'
                     );
@@ -955,12 +894,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         // Syncliste anzeigen
         if ($bUseSyncList) {
-            if (is_array($arSyncList) && count($arSyncList) > 0) {
-                $this->showSyncList($arSyncList);
+            if (! $this->getSyncList()->isEmpty()) {
+                $this->content .= $this->getSyncList()->showSyncList();
             }
         }
 
-        if (($bUseSyncList && count($arSyncList) > 0)
+        if (($bUseSyncList && ! $this->getSyncList()->isEmpty())
             || (false === $bUseSyncList && count($this->function->getTableNames()))
         ) {
             $this->content .= '<div class="form-group">';
@@ -982,7 +921,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         if (!empty($this->MOD_SETTINGS['function'])) {
             $strDisabled  = '';
-            if ($bUseSyncList && count($arSyncList) == 0) {
+            if ($bUseSyncList && ! $this->getSyncList()->isEmpty()) {
                 $strDisabled = ' disabled="disabled"';
             }
 
@@ -994,104 +933,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         $this->showSyncState();
-    }
-
-
-
-    /**
-     * Adds the elements from the sync list as section into the content of the
-     * template of backend module.
-     *
-     * @param array $arSyncList The Sync list to show.
-     *
-     * @return void
-     */
-    protected function showSyncList(array $arSyncList)
-    {
-        $this->content .= '<h2>Sync list</h2>';
-
-        foreach ($arSyncList as $nAreaId => $arList) {
-            /* @var $area Area */
-            $area = GeneralUtility::makeInstance(Area::class, $nAreaId);
-            $this->content .= '<h3>' . $area->getName() . ' ' . $area->getDescription() . '</h3>';
-            $this->showSyncListArea($nAreaId, $arList);
-        }
-    }
-
-
-
-    /**
-     * Adds the elements of an Netresearch\Sync\Helper\Area from the synclist as section into the content
-     * of the template of backend module.
-     *
-     * @param integer $nAreaId Id of the area this list is from.
-     * @param array   $arList  Sync list of an Netresearch\Sync\Helper\Area.
-     *
-     * @return void
-     */
-    protected function showSyncListArea($nAreaId, array $arList)
-    {
-        $this->content .= '<div class="table-fit">';
-        $this->content .= '<table class="table table-striped table-hover" id="ts-overview">';
-        $this->content .= '<thead>';
-        $this->content .= '<tr><th>Item</th><th>Action</th></tr>';
-        $this->content .= '</thead>';
-        $this->content .= '<tbody>';
-
-        foreach ($arList as $syncItem) {
-            if ($syncItem['removeable']) {
-                $strLinkLoeschen = $this->getRemoveLink(
-                    $nAreaId, $syncItem['pageID']
-                );
-            } else {
-                $strLinkLoeschen = '';
-            }
-
-            $this->content .= '<tr class="bgColor4">';
-            $this->content .= '<td>';
-            $this->content .= '"' . htmlspecialchars(
-                BackendUtility::getRecordTitle(
-                    'pages',
-                    BackendUtility::getRecord('pages', $syncItem['pageID'])
-                ))
-                . '" pages:' . intval($syncItem['pageID']);
-            if ($syncItem['type'] == 'tree' && $syncItem['count'] > 0) {
-                $this->content .= ' (' . intval($syncItem['count'])
-                    . ' sub pages with ' . $syncItem['deleted']
-                    . ' deleted and ' . $syncItem['noaccess']
-                    . ' inaccessible.)';
-            }
-            $this->content .= '</td>';
-
-            $this->content .= '<td>';
-            $this->content .= $strLinkLoeschen;
-            $this->content .= '</td>';
-
-            $this->content .= '</tr>';
-        }
-
-        $this->content .= '</tbody>';
-        $this->content .= '</table>';
-        $this->content .= '</div>';
-    }
-
-
-
-    /**
-     * Generates HTML of removal button.
-     *
-     * @param integer $nAreaId    Id of the area to remove from list.
-     * @param integer $nElementId Id of the element to remove from list.
-     *
-     * @return string HTML button.
-     */
-    protected function getRemoveLink($nAreaId, $nElementId)
-    {
-        return '<button class="btn btn-default" type="submit" name="data[delete][' . $nAreaId . ']'
-            . '[' . $nElementId . ']"'
-            . ' value="Remove from sync list">'
-            . $this->getIconFactory()->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render()
-            . '</button>';
     }
 
 
@@ -1229,95 +1070,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
-     * Schaut nach ob eine $pid bereits in der Synliste liegt
-     *
-     * @param array   $arSynclist List of page IDs
-     * @param integer $pid        Page ID
-     *
-     * @return boolean
-     */
-    protected function isInTree(array $arSynclist = null, $pid)
-    {
-        if (is_array($arSynclist)) {
-            foreach ($arSynclist as $value) {
-                if ($value['pageID'] == $pid) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-
-
-    /**
-     * Gibt die erste Ebene der Syncliste als zeilenweisen String zurück
-     *
-     * @param array $arSynclist The synclist.
-     *
-     * @return string
-     */
-    protected function getPagesAsString(array $arSynclist)
-    {
-        $strReturn = '';
-        foreach ($arSynclist as $value) {
-            $title = BackendUtility::getRecordTitle(
-                'pages', BackendUtility::getRecord('pages', $value['pageID'])
-            );
-            $strReturn .= $value['pageID'] . ' - \'' . $title
-                . '\' Type: ' . $value['type'] . ' Count: ' . $value['count']
-                . ' Deleted: ' . $value['deleted']
-                . ' No Access: ' . $value['noaccess'] . "\r\n";
-        }
-        return $strReturn;
-    }
-
-
-
-    /**
-     * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
-     * Und Editiert werden dürfen
-     *
-     * @param array $arSyncList The synclist.
-     *
-     * @return array
-     */
-    protected function getAllPageIDs(array $arSyncList)
-    {
-        $arPageIDs = array();
-        foreach ($arSyncList as $arSyncPage) {
-            // Prüfen ob User Seite Bearbeiten darf
-            $arPage = BackendUtility::getRecord('pages', $arSyncPage['pageID']);
-            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                array_push($arPageIDs, $arSyncPage['pageID']);
-            }
-
-            // Wenn der ganze Baum syncronisiert werden soll
-            // getSubpagesAndCount liefert nur Pages zurück die Editiert werden
-            // dürfen
-            // @TODO
-            if ($arSyncPage['type'] == 'tree') {
-                /* @var $area Area */
-                $area = GeneralUtility::makeInstance(Area::class, $arSyncPage['areaID']);
-                $arCount = $this->getSubpagesAndCount(
-                    $arSyncPage['pageID'], $dummy, 0, $arSyncPage['levelmax'],
-                    $area->getNotDocType(),
-                    $area->getDocType()
-                );
-                $a = $this->getPageIDsFromTree($arCount);
-                $arPageIDs = array_merge($arPageIDs, $a);
-
-            }
-        }
-        $arPageIDs = array_unique($arPageIDs);
-        $this->arPageIds = $arPageIDs;
-        return $arPageIDs;
-    }
-
-
-
-    /**
      * Gibt alle ID's aus einem Pagetree zurück.
      *
      * @param array $arTree The pagetree to get IDs from.
@@ -1443,7 +1195,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
-     * FIXME
      *
      * @param string[] $arTables     Table names
      * @param string   $strDumpFile  Name of the dump file.
@@ -2491,6 +2242,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function testTablesForDifferences(array $arTables)
     {
+        $arErrorTables = [];
+
         foreach ($arTables as $strTableName) {
             if ($this->isTableDifferent($strTableName)) {
                 $arErrorTables[] = htmlspecialchars($strTableName);
@@ -2684,15 +2437,36 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
+     * @return ObjectManager
+     */
+    protected function getObjectManager()
+    {
+        /* @var $objectManager ObjectManager */
+        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+
+        return $objectManager;
+    }
+
+
+
+    protected function getSyncListManager()
+    {
+        if (null === $this->syncListManager) {
+            $this->syncListManager = $this->getObjectManager()->get(SyncListManager::class);
+        }
+
+        return $this->syncListManager;
+    }
+
+
+
+    /**
      * @return IconFactory
      */
     protected function getIconFactory()
     {
         if (null === $this->iconFactory) {
-            /* @var $objectManager ObjectManager */
-            $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-            $this->iconFactory = $objectManager->get(IconFactory::class);
+            $this->iconFactory = $this->getObjectManager()->get(IconFactory::class);
         }
 
         return $this->iconFactory;

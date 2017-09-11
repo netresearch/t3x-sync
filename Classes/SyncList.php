@@ -1,0 +1,326 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: sebastian.mendel
+ * Date: 2017-09-08
+ * Time: 12:58
+ */
+
+namespace Netresearch\Sync;
+
+
+use Netresearch\Sync\Helper\Area;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Imaging\Icon;
+use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Object\ObjectManager;
+
+class SyncList
+{
+    protected $arSyncList = [];
+
+    protected $id = '';
+    private $content = '';
+
+
+    /**
+     * @param string $syncListId
+     */
+    public function load($syncListId)
+    {
+        $this->arSyncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
+        $this->id = (string) $syncListId;
+    }
+
+
+
+    /**
+     * Saves the sync list to user session.
+     */
+    public function saveSyncList()
+    {
+        $this->getBackendUser()->setAndSaveSessionData(
+            'nr_sync_synclist' . $this->id, $this->arSyncList
+        );
+    }
+
+
+
+    /**
+     * Adds given data to sync list, if pageId doesn't already exists.
+     *
+     * @param array $arData Data to add to sync list.
+     *
+     * @return void
+     */
+    public function addToSyncList(array $arData)
+    {
+        $arData['removeable'] = true;
+
+        // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
+        if (!$this->isInTree($this->arSyncList[$arData['areaID']], $arData['pageID'])) {
+            $this->arSyncList[$arData['areaID']][] = $arData;
+        } else {
+            $this->addError(
+                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.'
+            );
+        }
+    }
+
+
+
+    /**
+     * Adds given data to sync list, if pageId does not already exists.
+     *
+     * @param array $arData Data to add to sync list.
+     *
+     * @return void
+     */
+    public function deleteFromSyncList(array $arData)
+    {
+        $arDeleteArea = array_keys($arData['delete']);
+        $arDeletePageID = array_keys(
+            $arData['delete'][$arDeleteArea[0]]
+        );
+        foreach ($this->arSyncList[$arDeleteArea[0]] as $key => $value) {
+            if ($value['removeable']
+                && $value['pageID'] == $arDeletePageID[0]
+            ) {
+                unset($this->arSyncList[$arDeleteArea[0]][$key]);
+                if (0 === count($this->arSyncList[$arDeleteArea[0]])) {
+                    unset($this->arSyncList[$arDeleteArea[0]]);
+                }
+                break;
+            }
+        }
+    }
+
+
+
+    /**
+     * Schaut nach ob eine $pid bereits in der Synliste liegt
+     *
+     * @param array   $arSynclist List of page IDs
+     * @param integer $pid        Page ID
+     *
+     * @return boolean
+     */
+    protected function isInTree(array $arSynclist = null, $pid)
+    {
+        if (is_array($arSynclist)) {
+            foreach ($arSynclist as $value) {
+                if ($value['pageID'] == $pid) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * @return BackendUserAuthentication
+     */
+    protected function getBackendUser()
+    {
+        /* @var $BE_USER BackendUserAuthentication */
+        global $BE_USER;
+
+        return $BE_USER;
+    }
+
+
+    /**
+     * @return bool
+     */
+    public function isEmpty()
+    {
+        return (bool) (count($this->arSyncList) < 1);
+    }
+
+
+
+    public function getAsArray()
+    {
+        return $this->arSyncList;
+    }
+
+
+
+    /**
+     * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
+     * Und Editiert werden dürfen
+     *
+     * @param integer $areaID Area
+     *
+     * @return array
+     */
+    public function getAllPageIDs($areaID)
+    {
+        $arSyncList = $this->arSyncList[$areaID]
+        ;
+        $arPageIDs = array();
+        foreach ($arSyncList as $arSyncPage) {
+            // Prüfen ob User Seite Bearbeiten darf
+            $arPage = BackendUtility::getRecord('pages', $arSyncPage['pageID']);
+            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
+                array_push($arPageIDs, $arSyncPage['pageID']);
+            }
+
+            // Wenn der ganze Baum syncronisiert werden soll
+            // getSubpagesAndCount liefert nur Pages zurück die Editiert werden
+            // dürfen
+            // @TODO
+            if ($arSyncPage['type'] == 'tree') {
+                /* @var $area Area */
+                $area = GeneralUtility::makeInstance(Area::class, $arSyncPage['areaID']);
+                $arCount = $this->getSubpagesAndCount(
+                    $arSyncPage['pageID'], $dummy, 0, $arSyncPage['levelmax'],
+                    $area->getNotDocType(),
+                    $area->getDocType()
+                );
+                $a = $this->getPageIDsFromTree($arCount);
+                $arPageIDs = array_merge($arPageIDs, $a);
+
+            }
+        }
+        $arPageIDs = array_unique($arPageIDs);
+        $this->arPageIds = $arPageIDs;
+        return $arPageIDs;
+    }
+
+    public function emptyArea($areaID)
+    {
+        unset($this->arSyncList[$areaID]);
+    }
+
+
+
+
+
+    /**
+     * Adds the elements from the sync list as section into the content of the
+     * template of backend module.
+     *
+     * @return string
+     */
+    public function showSyncList()
+    {
+        $this->content .= '<h2>Sync list</h2>';
+
+        foreach ($this->arSyncList as $nAreaId => $arList) {
+            /* @var $area Area */
+            $area = GeneralUtility::makeInstance(Area::class, $nAreaId);
+            $this->content .= '<h3>' . $area->getName() . ' ' . $area->getDescription() . '</h3>';
+            $this->showSyncListArea($nAreaId, $arList);
+        }
+
+        return $this->content;
+    }
+
+
+
+    /**
+     * Adds the elements of an Netresearch\Sync\Helper\Area from the synclist as section into the content
+     * of the template of backend module.
+     *
+     * @param integer $nAreaId Id of the area this list is from.
+     * @param array   $arList  Sync list of an Netresearch\Sync\Helper\Area.
+     *
+     * @return void
+     */
+    protected function showSyncListArea($nAreaId, array $arList)
+    {
+        $this->content .= '<div class="table-fit">';
+        $this->content .= '<table class="table table-striped table-hover" id="ts-overview">';
+        $this->content .= '<thead>';
+        $this->content .= '<tr><th>Item</th><th>Action</th></tr>';
+        $this->content .= '</thead>';
+        $this->content .= '<tbody>';
+
+        foreach ($arList as $syncItem) {
+            if ($syncItem['removeable']) {
+                $strLinkLoeschen = $this->getRemoveLink(
+                    $nAreaId, $syncItem['pageID']
+                );
+            } else {
+                $strLinkLoeschen = '';
+            }
+
+            $this->content .= '<tr class="bgColor4">';
+            $this->content .= '<td>';
+            $this->content .= '"' . htmlspecialchars(
+                    BackendUtility::getRecordTitle(
+                        'pages',
+                        BackendUtility::getRecord('pages', $syncItem['pageID'])
+                    ))
+                . '" pages:' . intval($syncItem['pageID']);
+            if ($syncItem['type'] == 'tree' && $syncItem['count'] > 0) {
+                $this->content .= ' (' . intval($syncItem['count'])
+                    . ' sub pages with ' . $syncItem['deleted']
+                    . ' deleted and ' . $syncItem['noaccess']
+                    . ' inaccessible.)';
+            }
+            $this->content .= '</td>';
+
+            $this->content .= '<td>';
+            $this->content .= $strLinkLoeschen;
+            $this->content .= '</td>';
+
+            $this->content .= '</tr>';
+        }
+
+        $this->content .= '</tbody>';
+        $this->content .= '</table>';
+        $this->content .= '</div>';
+    }
+
+
+
+    /**
+     * Generates HTML of removal button.
+     *
+     * @param integer $nAreaId    Id of the area to remove from list.
+     * @param integer $nElementId Id of the element to remove from list.
+     *
+     * @return string HTML button.
+     */
+    protected function getRemoveLink($nAreaId, $nElementId)
+    {
+        return '<button class="btn btn-default" type="submit" name="data[delete][' . $nAreaId . ']'
+            . '[' . $nElementId . ']"'
+            . ' value="Remove from sync list">'
+            . $this->getIconFactory()->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render()
+            . '</button>';
+    }
+
+
+
+    /**
+     * @return ObjectManager
+     */
+    protected function getObjectManager()
+    {
+        /* @var $objectManager ObjectManager */
+        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+
+        return $objectManager;
+    }
+
+
+
+    /**
+     * @return IconFactory
+     */
+    protected function getIconFactory()
+    {
+        /* @var $iconFactory IconFactory */
+        $iconFactory =  $this->getObjectManager()->get(IconFactory::class);
+
+        return $iconFactory;
+    }
+}

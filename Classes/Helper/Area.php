@@ -285,17 +285,15 @@ class Area
             return true;
         }
 
-        $bReturn = true;
-
         foreach ($this->getSystems() as $arSystem) {
             switch ($arSystem['notify']['type']) {
                 case 'ftp':
-                    $bReturn &= $this->notifyMasterViaFtp($arSystem['notify']);
+                    $this->notifyMasterViaFtp($arSystem['notify']);
                     break;
             }
         }
 
-        return $bReturn;
+        return true;
     }
 
 
@@ -303,22 +301,21 @@ class Area
     /**
      * Inform the Master(LIVE) Server per FTP
      *
-     * @param array $arFtpConfig Config of the ftp connection
-     *
-     * @return boolean True if all went well, false otherwise
+     * @param string[] $arFtpConfig Config of the ftp connection
+     * @throws \Exception
      */
     protected function notifyMasterViaFtp(array $arFtpConfig)
     {
         $conn_id = ftp_connect($arFtpConfig['host']);
 
         if (!$conn_id) {
-            return false;
+            throw new \Exception('Signal: FTP connection failed.');
         }
 
         $login_result = ftp_login($conn_id, $arFtpConfig['user'], $arFtpConfig['password']);
 
         if (!$login_result) {
-            return false;
+            throw new \Exception('Signal: FTP auth failed.');
         }
 
         // TYPO-3844: enforce passive mode
@@ -327,13 +324,16 @@ class Area
         // create trigger file
         $source_file = tmpfile();
 
-        $upload = true;
-        //$upload &= ftp_put($conn_id, $destination_file, $source_file, FTP_BINARY);
-        $upload &= ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY);
-        $upload &= ftp_put($conn_id, 'files.txt', $source_file, FTP_BINARY);
+        if (false === ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY)) {
+            ftp_quit($conn_id);
+            throw new \Exception('Signal: FTP put db.txt failed.');
+        }
+
+        if (false === ftp_put($conn_id, 'files.txt', $source_file, FTP_BINARY)) {
+            ftp_quit($conn_id);
+            throw new \Exception('Signal: FTP put files.txt failed.');
+        }
 
         ftp_quit($conn_id);
-
-        return $upload;
     }
 }

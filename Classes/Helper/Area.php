@@ -322,7 +322,7 @@ class Area
         ftp_pasv($conn_id, true);
 
         // create trigger file
-        $source_file = tmpfile();
+        $source_file = tempnam(sys_get_temp_dir(), 'prefix');
 
         if (false === ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY)) {
             ftp_quit($conn_id);

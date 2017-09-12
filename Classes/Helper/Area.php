@@ -35,9 +35,9 @@ class Area
                     'name'      => 'live',
                     'directory' => 'aida-aws-live',
                     'notify'    => array(
-                        'type'     => 'none',//'ftp',
+                        'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
-                        'user'     => 'aida-aws-prod-typo62',
+                        'user'     => 'aida-aws-prod-typo3_8',
                         'password' => 'Thu2phoh',
                     ),
                     'report_error' => true,
@@ -46,9 +46,9 @@ class Area
                     'name'      => 'itg',
                     'directory' => 'aida-aws-itg',
                     'notify'    => array(
-                        'type'     => 'none',//'ftp',
+                        'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
-                        'user'     => 'aida-aws-itg-typo62',
+                        'user'     => 'aida-aws-itg-typo3_8',
                         'password' => 'zo6Aelow',
                     ),
                     'report_error' => true,

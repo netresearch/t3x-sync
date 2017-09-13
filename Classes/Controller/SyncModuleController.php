@@ -671,7 +671,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function getArea()
     {
         if (null === $this->area) {
-            $this->area = GeneralUtility::makeInstance(
+            $this->area = $this->getObjectManager()->get(
                 Area::class, $this->id
             );
         }
@@ -816,7 +816,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     foreach ($syncList->getAsArray() as $areaID => $arSynclistArea) {
 
                         /* @var $area Area */
-                        $area = GeneralUtility::makeInstance(Area::class, $areaID);
+                        $area = $this->getObjectManager()->get(Area::class, $areaID);
 
                         $arPageIDs = $syncList->getAllPageIDs($areaID);
 

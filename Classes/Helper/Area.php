@@ -11,8 +11,13 @@
  */
 
 namespace Netresearch\Sync\Helper;
+
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\ApplicationContext;
+use TYPO3\CMS\Core\Core\Bootstrap;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Object\ObjectManager;
 
 /**
  * Methods to work with synchronization areas
@@ -39,6 +44,9 @@ class Area
                         'host'     => 'uzsync11.aida.de',
                         'user'     => 'aida-aws-prod-typo3_8',
                         'password' => 'Thu2phoh',
+                        'contexts' => [
+                            'Production/Stage',
+                        ],
                     ),
                     'report_error' => true,
                 ),
@@ -50,6 +58,9 @@ class Area
                         'host'     => 'uzsync11.aida.de',
                         'user'     => 'aida-aws-itg-typo3_8',
                         'password' => 'zo6Aelow',
+                        'contexts' => [
+                            'Production/Stage',
+                        ],
                     ),
                     'report_error' => true,
                 ),
@@ -82,6 +93,19 @@ class Area
         'sync_be_groups' => true,
         'sync_tables'    => true,
     ];
+
+    /**
+     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
+     * @inject
+     */
+    protected $objectManager;
+
+
+    /**
+     * @var \TYPO3\CMS\Core\Messaging\FlashMessageService
+     * @inject
+     */
+    protected $messageService;
 
 
     /**
@@ -196,8 +220,11 @@ class Area
      */
     public static function getMatchingAreas(array $arAreas = null, $strTableType = '')
     {
+        /* @var $objectManager ObjectManager */
+        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+
         return array(
-            new self(0)
+            $objectManager->get(self::class, 0),
         );
     }
 
@@ -278,22 +305,88 @@ class Area
      */
     public function notifyMaster()
     {
-        if (!isset($_SERVER['SERVER_ADDR'])
-            || preg_match("/(192\\.168\\.1\\.|127\\.)/", $_SERVER['SERVER_ADDR'])
-            || (isset($_SERVER['AIDA_ENV']) && $_SERVER['AIDA_ENV'] == 'cmstest')
-        ) {
-            return true;
-        }
-
         foreach ($this->getSystems() as $arSystem) {
-            switch ($arSystem['notify']['type']) {
-                case 'ftp':
-                    $this->notifyMasterViaFtp($arSystem['notify']);
-                    break;
+            if ($this->systemIsNotifyEnabled($arSystem)) {
+                switch ($arSystem['notify']['type']) {
+                    case 'ftp':
+                        $this->notifyMasterViaFtp($arSystem['notify']);
+                        $this->addMessage('Signaled "' . $arSystem['name'] . '" target for new sync.');
+                        break;
+                }
+            } else {
+                $this->addMessage(
+                    'Skipped signaling "' . $arSystem['name'] . '" target due to invalid context.'
+                );
             }
         }
 
         return true;
+    }
+
+
+
+    /**
+     * Returns true if current TYPO3_CONTEXT fits with context whitelist for system/target.
+     *
+     * given system.contexts = ['Production/Stage', 'Production/Foo']
+     *
+     * TYPO3_CONTEXT = Production/Live
+     * returns false
+     *
+     * TYPO3_CONTEXT = Production
+     * returns false
+     *
+     * TYPO3_CONTEXT = Production/Stage
+     * returns true
+     *
+     * TYPO3_CONTEXT = Production/Stage/Instance01
+     * returns true
+     *
+     * @param array $system
+     * @return bool
+     */
+    protected function systemIsNotifyEnabled(array $system)
+    {
+        if (empty($system['notify']['contexts'])) {
+            return false;
+        }
+
+        foreach ($system['notify']['contexts'] as $context) {
+            $configuredContext = $this->objectManager->get(ApplicationContext::class, $context);
+
+            $contextValid = strpos(
+                (string) Bootstrap::getInstance()->getApplicationContext(),
+                (string) $configuredContext
+            );
+
+            if ($contextValid) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * message types are defined as class constants self::STYLE_*
+     *
+     * @param string $strMessage message
+     * @param integer $type message type
+     *
+     * @return void
+     */
+    public function addMessage($strMessage, $type = FlashMessage::INFO)
+    {
+        /* @var $message FlashMessage */
+        $message = $this->objectManager->get(
+            FlashMessage::class, $strMessage, '', $type, true
+        );
+
+        $this->messageService->getMessageQueueByIdentifier()->addMessage($message);
     }
 
 

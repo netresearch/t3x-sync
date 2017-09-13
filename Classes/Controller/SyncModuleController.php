@@ -997,16 +997,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $strFiles .= '</table>';
             $strFiles .= '</div>';
 
-            /* @var $message1 FlashMessage */
-            $message1 = GeneralUtility::makeInstance(
-                FlashMessage::class,
-                $nDumpFiles . ' file'
-                . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
-                . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).',
-                '',
-                FlashMessage::INFO
-            );
-
             $nTime = filemtime(reset($arFiles));
             if ($nTime < time() - 60 * 15) {
                 // if oldest file time is older than 15 minutes display this in red
@@ -1016,9 +1006,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
 
             /* @var $message2 FlashMessage */
-            $message2 = GeneralUtility::makeInstance(
+            $message = $this->getObjectManager()->get(
                 FlashMessage::class,
-                'Oldest file from ' . date('d.m.Y H:i:s', $nTime)
+                $nDumpFiles . ' file'
+                . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
+                . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).'
+                . ' Oldest file from ' . date('Y-m-d H:i', $nTime)
                 . ' and therefor ' . ceil((time() - $nTime) / 60)
                 . ' minutes old.',
                 '',
@@ -1026,8 +1019,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             );
 
             /* @var $renderer BootstrapRenderer */
-            $renderer = GeneralUtility::makeInstance(BootstrapRenderer::class);
-            $this->content .= $renderer->render([$message1, $message2]);
+            $renderer = $this->getObjectManager()->get(BootstrapRenderer::class);
+            $this->content .= $renderer->render([$message]);
 
             $this->content .= $strFiles;
         }

@@ -2348,7 +2348,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     ]
                 )
             );
-            $lockButton->setTitle($systemName);
+            $lockButton->setTitle($system['name']);
             $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
             $lockButton->setClasses('btn btn-warning');
         } else {
@@ -2361,7 +2361,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     ]
                 )
             );
-            $lockButton->setTitle($systemName);
+            $lockButton->setTitle($system['name']);
             $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
         }
 

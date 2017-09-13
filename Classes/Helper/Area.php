@@ -37,7 +37,7 @@ class Area
             'not_doctype'          => array(199),
             'system'               => array(
                 'LIVE-AWS' => array(
-                    'name'      => 'live',
+                    'name'      => 'Live',
                     'directory' => 'aida-aws-live',
                     'notify'    => array(
                         'type'     => 'ftp',
@@ -51,7 +51,7 @@ class Area
                     'report_error' => true,
                 ),
                 'ITG-AWS'  => array(
-                    'name'      => 'itg',
+                    'name'      => 'ITG',
                     'directory' => 'aida-aws-itg',
                     'notify'    => array(
                         'type'     => 'ftp',
@@ -65,7 +65,7 @@ class Area
                     'report_error' => true,
                 ),
                 'archive'  => array(
-                    'name'      => 'archive',
+                    'name'      => 'Archive',
                     'directory' => 'archive',
                     'notify'    => array(
                         'type'     => 'none',

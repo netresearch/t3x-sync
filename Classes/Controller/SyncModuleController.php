@@ -856,18 +856,16 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     }
                 }
             } elseif (self::FUNC_TABLE_DEF == $this->MOD_SETTINGS['function']) {
-                // Update der Defintionsdatei
-
                 if ($this->createNewDefinitions()) {
                     $this->addSuccess(
-                        'Neue Tabellendefinitionen geschrieben.'
+                        'Update table state.'
                     );
                 }
             } elseif (self::FUNC_FILES == $this->MOD_SETTINGS['function']) {
                 // Send DB.txt and Files.txt
                 if ($this->getArea()->notifyMaster()) {
                     $this->addSuccess(
-                        'Notify Master wurde erfolgreich ausgeführt.'
+                        'Sync assets is initiated.'
                     );
                 }
             } else {
@@ -877,7 +875,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
                 if ($bSyncResult) {
                     $this->addSuccess(
-                        'Synchronisationsdateien wurde erfolgreich initiiert. Sie wird in den nächsten 15 Minuten ausgeführt.'
+                        'Sync initiated.'
                     );
                 }
             }

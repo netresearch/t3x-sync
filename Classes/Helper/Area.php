@@ -309,6 +309,7 @@ class Area
             } else {
                 $this->addMessage(
                     'Skipped signaling "' . $arSystem['name'] . '" target due to invalid context.'
+                    . ' Allowed contexts: ' . implode(', ', $arSystem['notify']['contexts'])
                 );
             }
         }
@@ -347,12 +348,12 @@ class Area
         foreach ($system['notify']['contexts'] as $context) {
             $configuredContext = $this->objectManager->get(ApplicationContext::class, $context);
 
-            $contextValid = strpos(
+            $contextCheck = strpos(
                 (string) Bootstrap::getInstance()->getApplicationContext(),
                 (string) $configuredContext
             );
 
-            if ($contextValid) {
+            if (0 === $contextCheck) {
                 return true;
             }
         }

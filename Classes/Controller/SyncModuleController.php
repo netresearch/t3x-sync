@@ -907,7 +907,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         if (!empty($this->MOD_SETTINGS['function'])) {
             $strDisabled  = '';
-            if ($bUseSyncList && ! $this->getSyncList()->isEmpty()) {
+            if ($bUseSyncList && $this->getSyncList()->isEmpty()) {
                 $strDisabled = ' disabled="disabled"';
             }
 

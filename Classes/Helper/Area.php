@@ -32,7 +32,7 @@ class Area
 {
     var $areas = array(
         0 => array(
-            'name'                 => 'AIDA',
+            'name'                 => 'All',
             'description'          => 'Sync mit Live Server',
             'not_doctype'          => array(199),
             'system'               => array(
@@ -72,7 +72,6 @@ class Area
                     ),
                 ),
             ),
-            'inform_server'        => true,
             'sync_fe_groups'       => true,
             'sync_be_groups'       => true,
             'sync_tables'          => true,
@@ -88,7 +87,6 @@ class Area
         'description'    => '',
         'not_doctype'    => [199],
         'system'         => [],
-        'inform_server'  => true,
         'sync_fe_groups' => true,
         'sync_be_groups' => true,
         'sync_tables'    => true,
@@ -284,11 +282,6 @@ class Area
     public function getDocType()
     {
         return (array) $this->area['doctype'];
-    }
-
-    public function informServer()
-    {
-        return (bool) $this->area['inform_server'];
     }
 
     public function getSystems()

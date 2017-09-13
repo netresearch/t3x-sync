@@ -702,11 +702,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->moduleTemplate->getDocHeaderComponent()->setMetaInformation($this->pageinfo);
         }
 
-        if (defined('TYPO3_TX_NR_SYNC_DISABLED') && TYPO3_TX_NR_SYNC_DISABLED) {
-            $this->addError('Netresearch Sync is disabled.');
-            return;
-        }
-
         /* @var $syncLock SyncLock */
         $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
@@ -831,18 +826,11 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                                 $area->getDirectories()
                             )
                         ) {
-                            if ($area->informServer()) {
-                                if ($area->notifyMaster() == false) {
-                                    $this->addError('Please re-try in a couple of minutes.');
-                                    foreach ($area->getDirectories() as $strDirectory) {
-                                        @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
-                                        @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
-                                    }
-                                } else {
-                                    $this->addSuccess(
-                                        'Sync started - should be processed within in next 15 minutes.'
-                                    );
-                                    $syncList->emptyArea($areaID);
+                            if ($area->notifyMaster() == false) {
+                                $this->addError('Please re-try in a couple of minutes.');
+                                foreach ($area->getDirectories() as $strDirectory) {
+                                    @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
+                                    @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
                                 }
                             } else {
                                 $this->addSuccess(

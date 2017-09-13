@@ -964,7 +964,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
             $nDumpFiles = count($arFiles);
             if ($nDumpFiles < 1) {
-                return;
+                continue;
             }
 
             $strFiles = '';

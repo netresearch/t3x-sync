@@ -1255,6 +1255,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                         . $filename . '.gz kopieren.');
                     return false;
                 }
+                chmod($this->strDBFolder . $strPath . '/' . $filename . '.gz', 0666);
             }
             if (false === $area->notifyMaster()) {
                 return false;

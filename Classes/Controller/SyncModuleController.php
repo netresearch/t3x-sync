@@ -1427,6 +1427,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 $this->strTempFolder . $strDumpFile,
                 $strTargetDir . $strDumpFile
             );
+            chmod($strTargetDir . $strDumpFile, 0666);
             if (!$bCopied) {
                 throw new Exception(
                     'Konnte ' . $this->strTempFolder . $strDumpFile
@@ -2077,7 +2078,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             return false;
         }
 
-        chmod($strDumpFile . '.gz', 0777);
+        chmod($strDumpFile . '.gz', 0666);
 
         return true;
     }

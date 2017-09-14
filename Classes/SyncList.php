@@ -12,13 +12,28 @@ namespace Netresearch\Sync;
 use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
 
 class SyncList
 {
+
+    /**
+     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
+     * @inject
+     */
+    protected $objectManager;
+
+    /**
+     * @var \TYPO3\CMS\Core\Messaging\FlashMessageService
+     * @inject
+     */
+    protected $messageService;
+
     protected $arSyncList = [];
 
     protected $id = '';
@@ -63,10 +78,33 @@ class SyncList
         if (!$this->isInTree($this->arSyncList[$arData['areaID']], $arData['pageID'])) {
             $this->arSyncList[$arData['areaID']][] = $arData;
         } else {
-            $this->addError(
-                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.'
+            $this->addMessage(
+                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.',
+                FlashMessage::ERROR
             );
         }
+    }
+
+
+
+    /**
+     * Adds error message to message queue.
+     *
+     * message types are defined as class constants self::STYLE_*
+     *
+     * @param string $strMessage message
+     * @param integer $type message type
+     *
+     * @return void
+     */
+    public function addMessage($strMessage, $type = FlashMessage::INFO)
+    {
+        /* @var $message FlashMessage */
+        $message = $this->objectManager->get(
+            FlashMessage::class, $strMessage, '', $type, true
+        );
+
+        $this->messageService->getMessageQueueByIdentifier()->addMessage($message);
     }
 
 
@@ -161,8 +199,8 @@ class SyncList
      */
     public function getAllPageIDs($areaID)
     {
-        $arSyncList = $this->arSyncList[$areaID]
-        ;
+        $arSyncList = $this->arSyncList[$areaID];
+
         $arPageIDs = array();
         foreach ($arSyncList as $arSyncPage) {
             // Prüfen ob User Seite Bearbeiten darf
@@ -189,9 +227,10 @@ class SyncList
             }
         }
         $arPageIDs = array_unique($arPageIDs);
-        $this->arPageIds = $arPageIDs;
         return $arPageIDs;
     }
+
+
 
     public function emptyArea($areaID)
     {
@@ -322,5 +361,175 @@ class SyncList
         $iconFactory =  $this->getObjectManager()->get(IconFactory::class);
 
         return $iconFactory;
+    }
+
+
+
+    /**
+     * Gibt die Seite, deren Unterseiten und ihre Zählung zu einer PageID zurück,
+     * wenn sie vom User editierbar ist.
+     *
+     * @param integer $pid               The page id to count on.
+     * @param array   &$arCount          Information about the count data.
+     * @param integer $nLevel            Depth on which we are.
+     * @param integer $nLevelMax         Maximum depth to search for.
+     * @param array   $arDocTypesExclude TYPO3 doc types to exclude.
+     * @param array   $arDocTypesOnly    TYPO3 doc types to count only.
+     * @param array   $arTables          Tables this task manages.
+     *
+     * @return array
+     */
+    protected function getSubpagesAndCount(
+        $pid, &$arCount, $nLevel = 0, $nLevelMax = 1, array $arDocTypesExclude = null,
+        array $arDocTypesOnly = null, array $arTables = null
+    ) {
+        $arCountDefault = array(
+            'count'      => 0,
+            'deleted'    => 0,
+            'noaccess'   => 0,
+            'falses'     => 0,
+            'other_area' => 0,
+        );
+
+        if (!is_array($arCount)) {
+            $arCount = $arCountDefault;
+        }
+
+        $return = array();
+
+        if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
+            return $return;
+        }
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+
+        $queryBuilder = $connectionPool->getQueryBuilderForTable('pages');
+
+        $result = $queryBuilder->select('*')
+            ->from('pages')
+            ->where(
+                $queryBuilder->expr()->eq('pid', intval($pid))
+            )
+            ->execute();
+
+        while ($arPage = $result->fetch()) {
+            if (is_array($arDocTypesExclude) && in_array($arPage['doktype'], $arDocTypesExclude)) {
+                continue;
+            }
+
+            if (isset($this->areas[$arPage['uid']])) {
+                $arCount['other_area']++;
+                continue;
+            }
+
+            if (count($arDocTypesOnly)
+                && !in_array($arPage['doktype'], $arDocTypesOnly)
+            ) {
+                $arCount['falses']++;
+                continue;
+            }
+
+            $arSub = $this->getSubpagesAndCount(
+                $arPage['uid'], $arCount, $nLevel + 1, $nLevelMax,
+                $arDocTypesExclude, $arDocTypesOnly, $arTables
+            );
+
+            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
+                $return[] = array(
+                    'page' => $arPage,
+                    'sub'  => $arSub,
+                );
+            } else {
+                $return[] = array(
+                    'sub' => $arSub,
+                );
+                $arCount['noaccess']++;
+            }
+
+            // Die Zaehlung fuer die eigene Seite
+            if ($this->pageContainsData($arPage['uid'], $arTables)) {
+                $arCount['count']++;
+                if ($arPage['deleted']) {
+                    $arCount['deleted']++;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+
+
+    /**
+     * Tests if given tables holds data on given page id.
+     * Returns true if "pages" is one of the tables to look for without checking
+     * if page exists.
+     *
+     * @param integer $nId      The page id to look for.
+     * @param array   $arTables Tables this task manages.
+     *
+     * @return boolean True if data exists otherwise false.
+     */
+    protected function pageContainsData($nId, array $arTables = null)
+    {
+        global $TCA;
+
+        /* @var $connectionPool ConnectionPool */
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+
+
+        if (null === $arTables) {
+            return false;
+        } elseif (false !== array_search('pages', $arTables)) {
+            return true;
+        } else {
+            foreach ($arTables as $strTableName) {
+                if (isset($TCA[$strTableName])) {
+                    $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+
+                    $nCount = $queryBuilder->count('pid')
+                        ->from($strTableName)
+                        ->where($queryBuilder->expr()->eq('pid', intval($nId)))
+                        ->execute()
+                        ->fetchColumn(0);
+
+                    if ($nCount > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * Gibt alle ID's aus einem Pagetree zurück.
+     *
+     * @param array $arTree The pagetree to get IDs from.
+     *
+     * @return array
+     */
+    protected function getPageIDsFromTree(array $arTree)
+    {
+        $arPageIDs = array();
+        foreach ($arTree as $value) {
+            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
+            // editierrechten fehlen)
+            if (isset($value['page'])) {
+                array_push($arPageIDs, $value['page']['uid']);
+            }
+
+            // Schauen ob es unter liegende Seiten gibt
+            if (is_array($value['sub'])) {
+                $arPageIDs = array_merge(
+                    $arPageIDs, $this->getPageIDsFromTree($value['sub'])
+                );
+            }
+        }
+        return $arPageIDs;
     }
 }

@@ -10,10 +10,16 @@ namespace Netresearch\Sync;
 
 
 use TYPO3\CMS\Core\SingletonInterface;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class SyncListManager implements SingletonInterface
 {
+
+    /**
+     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
+     * @inject
+     */
+    protected $objectManager;
+
     /**
      * @var SyncList[]
      */
@@ -27,7 +33,7 @@ class SyncListManager implements SingletonInterface
     public function getSyncList($syncListId)
     {
         if (null === $this->syncLists[$syncListId]) {
-            $this->syncLists[$syncListId] = GeneralUtility::makeInstance(SyncList::class);
+            $this->syncLists[$syncListId] = $this->objectManager->get(SyncList::class);
 
             $this->syncLists[$syncListId]->load($syncListId);
         }

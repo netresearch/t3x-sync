@@ -2395,7 +2395,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * @return array|boolean syncstats for an element or false if stats don't exist
      * @throws Exception
      */
-    protected static function getSyncStatsForElement($strTable, $nUid)
+    protected function getSyncStatsForElement($strTable, $nUid)
     {
         /* @var $connectionPool ConnectionPool */
         $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);

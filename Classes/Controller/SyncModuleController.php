@@ -933,6 +933,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->content .= '<h1>Waiting syncs</h1>';
 
         foreach ($this->getArea()->getSystems() as $systemKey => $system) {
+            if (! empty($system['hide'])) {
+                continue;
+            }
+
             $this->content .= '<h2>';
 
             if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
@@ -2327,6 +2331,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function addButtonBarAreaLockButtons()
     {
         foreach ($this->getArea()->getSystems() as $systemName => $system) {
+            if (! empty($system['hide'])) {
+                continue;
+            }
             $this->addButtonBarAreaLockButton($systemName, $system);
         }
     }

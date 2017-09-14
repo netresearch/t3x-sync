@@ -70,6 +70,7 @@ class Area
                     'notify'    => array(
                         'type'     => 'none',
                     ),
+                    'hide'      => true,
                 ),
             ),
             'sync_fe_groups'       => true,

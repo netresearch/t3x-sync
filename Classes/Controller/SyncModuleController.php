@@ -17,7 +17,10 @@ namespace Netresearch\Sync\Controller;
 
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Module\AssetModule;
 use Netresearch\Sync\Module\BaseModule;
+use Netresearch\Sync\Module\FalModule;
+use Netresearch\Sync\Module\StateModule;
 use Netresearch\Sync\SyncList;
 use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
@@ -66,8 +69,6 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
 class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 {
     const FUNC_SINGLE_PAGE = 46;
-    const FUNC_FILES       = 35;
-    const FUNC_TABLE_DEF   = 17;
 
     /**
      * key to use for storing insert statements
@@ -113,11 +114,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * @var string Dummy file
      */
     var $strDummyFile = '';
-
-    /**
-     * @var string file where to store table information
-     */
-    protected $strTableSerializedFile = 'tables_serialized.txt';
 
     /**
      * @var string path to temp folder
@@ -189,10 +185,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     protected $arFunctions = [
-        0 => [
-            'name'         => 'Please select',
-            'accessLevel'  => 0,
-        ],
+        0 => BaseModule::class,
         31 => [
             'name'         => 'Domain Records',
             'tables'       => [
@@ -211,9 +204,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             ],
             'dumpFileName' => 'partly-pages.sql',
         ],
-        8 => [
-            'class'        => '\\Netresearch\\Sync\\Controller\\Module\\FalModule',
-        ],
+        8 => FalModule::class,
         9 => [
             'name'         => 'FE groups',
             'type'         => 'sync_fe_groups',
@@ -222,12 +213,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             ],
             'dumpFileName' => 'fe_groups.sql',
         ],
-        35 => [
-            'name'         => 'fileadmin',
-            'target'       => 'sync server',
-            'dumpFileName' => '.lock',
-            'accessLevel'  => 100,
-        ],
+        35 => AssetModule::class,
         10 => [
             'name'         => 'BE users and groups',
             'type'         => 'sync_be_groups',
@@ -238,12 +224,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             'dumpFileName' => 'be_users_groups.sql',
             'accessLevel'  => 100,
         ],
-        17 => [
-            'name'         => 'Update table definitions',
-            'target'       => 'local',
-            'dumpFileName' => '',
-            'accessLevel'  => 100,
-        ],
+        17 => StateModule::class,
         40 => [
             'name'         => 'Scheduler',
             'tables'       => [
@@ -283,7 +264,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     public function __construct()
     {
-        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
+        $this->moduleTemplate = $this->getObjectManager()->get(ModuleTemplate::class);
         $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
         $this->MCONF = [
             'name' => $this->moduleName,
@@ -291,13 +272,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         /*
         $this->cshKey = '_MOD_' . $this->moduleName;
         $this->backendTemplatePath = ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Templates/Backend/SchedulerModule/';
-        $this->view = GeneralUtility::makeInstance(\TYPO3\CMS\Fluid\View\StandaloneView::class);
+        $this->view = $this->getObjectManager()->get(\TYPO3\CMS\Fluid\View\StandaloneView::class);
         $this->view->getRequest()->setControllerExtensionName('nr_sync');
         $this->view->setPartialRootPaths([ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Partials/Backend/SchedulerModule/']);
         */
         //$this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
 
-        $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
+        $pageRenderer = $this->getObjectManager()->get(PageRenderer::class);
         $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
         $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/SplitButtons');
     }
@@ -364,8 +345,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         foreach ($this->arFunctions as $functionKey => $function) {
-            if ($nAccessLevel >= $function['accessLevel']) {
-                $this->MOD_MENU['function'][$functionKey] = $function['name'];
+            $function = $this->getFunctionObject($functionKey);
+            if ($nAccessLevel >= $function->getAccessLevel()) {
+                $this->MOD_MENU['function'][$functionKey] = $function->getName();
             }
         }
 
@@ -375,6 +357,27 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             = array('0' => 'Please select') + $this->MOD_MENU['function'];
 
         parent::menuConfig();
+    }
+
+
+
+    /**
+     * @param int $functionKey
+     * @return BaseModule
+     */
+    protected function getFunctionObject($functionKey)
+    {
+        /* @var $function BaseModule */
+        if (is_string($this->arFunctions[(int) $functionKey])) {
+            $function = $this->getObjectManager()->get($this->arFunctions[(int) $functionKey]);
+        } else {
+            $function = $this->getObjectManager()->get(
+                BaseModule::class,
+                $this->arFunctions[(int) $functionKey]
+            );
+        }
+
+        return $function;
     }
 
 
@@ -426,7 +429,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function getFluidTemplateObject($extensionName, $controllerExtensionName, $templateName = 'Main')
     {
         /** @var StandaloneView $view */
-        $view = GeneralUtility::makeInstance(StandaloneView::class);
+        $view = $this->getObjectManager()->get(StandaloneView::class);
         $view->setLayoutRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Layouts')]);
         $view->setPartialRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Partials')]);
         $view->setTemplateRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates')]);
@@ -455,7 +458,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         global $TCA;
 
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
 
         if (null === $arTables) {
@@ -703,7 +706,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         /* @var $syncLock SyncLock */
-        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
+        $syncLock = $this->getObjectManager()->get(SyncLock::class);
 
         if ($this->getBackendUser()->isAdmin()) {
             $syncLock->handleLockRequest();
@@ -734,40 +737,20 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
         }
 
-        $strDumpFile  = '';
         $bUseSyncList = false;
 
-        if (isset($this->arFunctions[(int) $this->MOD_SETTINGS['function']])) {
-
-            $this->function = GeneralUtility::makeInstance(
-                BaseModule::class,
-                $this->arFunctions[(int) $this->MOD_SETTINGS['function']]
-            );
-
-            // BC
-            $strDumpFile  = $this->function->getDumpFileName();
-        } else {
-            $this->function = GeneralUtility::makeInstance(
-                BaseModule::class, $this->arFunctions[0]
-            );
+        if (! isset($this->arFunctions[(int) $this->MOD_SETTINGS['function']])) {
+            $this->MOD_SETTINGS['function'] = 0;
         }
+
+        $this->function = $this->getFunctionObject($this->MOD_SETTINGS['function']);
+
+        $strDumpFile    = $this->function->getDumpFileName();
 
         $this->content .= '<h1>Create new sync</h1>';
         $this->content .= '<form action="" method="POST">';
 
         switch ((int)$this->MOD_SETTINGS['function']) {
-            /*
-             * Tabellendefinition updaten
-             */
-            case self::FUNC_TABLE_DEF: {
-                if (!isset($_POST['data']['submit'])) {
-                    $this->testAllTablesForDifferences();
-                }
-
-                $strDumpFile = $this->strTableSerializedFile;
-                break;
-            }
-
             /**
              * Sync einzelner Pages/Pagetrees (TYPO3 6.2.x)
              */
@@ -781,15 +764,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 $bUseSyncList = true;
                 break;
             }
-
-            default: {
-                break;
-            }
         }
 
-        $this->testTablesForDifferences($this->function->getTableNames());
-
-        $this->function->run();
+        $this->function->run($this->getArea());
 
         if ($this->function->hasError()) {
             $this->addError($this->function->getError());
@@ -843,19 +820,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                         }
                     }
                 }
-            } elseif (self::FUNC_TABLE_DEF == $this->MOD_SETTINGS['function']) {
-                if ($this->createNewDefinitions()) {
-                    $this->addSuccess(
-                        'Update table state.'
-                    );
-                }
-            } elseif (self::FUNC_FILES == $this->MOD_SETTINGS['function']) {
-                // Send DB.txt and Files.txt
-                if ($this->getArea()->notifyMaster()) {
-                    $this->addSuccess(
-                        'Sync assets is initiated.'
-                    );
-                }
             } else {
                 $bSyncResult = $this->createDumpToAreas(
                     $this->function->getTableNames(), $strDumpFile
@@ -873,7 +837,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
             /* @var $syncStats SyncStats */
-            $syncStats = GeneralUtility::makeInstance(SyncStats::class, $this->function->getTableNames());
+            $syncStats = $this->getObjectManager()->get(SyncStats::class, $this->function->getTableNames());
             $syncStats->createTableSyncStats();
             $this->content .= $syncStats->getContent();
         }
@@ -1114,7 +1078,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         $queryBuilder = $connectionPool->getQueryBuilderForTable('pages');
 
@@ -1427,6 +1391,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 $this->strTempFolder . $strDumpFile,
                 $strTargetDir . $strDumpFile
             );
+            chmod($strTargetDir . $strDumpFile, 0666);
             if (!$bCopied) {
                 throw new Exception(
                     'Konnte ' . $this->strTempFolder . $strDumpFile
@@ -1462,7 +1427,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         $this->nDumpTableRecursion++;
         $arDeleteLine = array();
@@ -1579,7 +1544,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $strRefTableName, array $arContent, $fpDumpFile
     ) {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         $arDeleteLine = array();
         $arInsertLine = array();
@@ -1660,7 +1625,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($strTableName);
@@ -1975,7 +1940,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function buildDeleteLine($strTableName, $uid)
     {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($strTableName);
@@ -1999,7 +1964,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function buildInsertUpdateLine($strTableName, array $arColumnNames, array $arContent)
     {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($strTableName);
@@ -2037,7 +2002,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function buildInsertLine($strTableName, $arTableStructure, $arContent)
     {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($strTableName);
@@ -2077,184 +2042,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             return false;
         }
 
-        chmod($strDumpFile . '.gz', 0777);
+        chmod($strDumpFile . '.gz', 0666);
 
         return true;
-    }
-
-
-
-    /**
-     * Writes the table definition of database into an file.
-     *
-     * @return boolean True if file was written else false.
-     */
-    protected function createNewDefinitions()
-    {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $arTableNames = $connectionPool->getConnectionForTable('pages')
-            ->getSchemaManager()
-            ->listTableNames();
-
-        $arTables = [];
-        foreach ($arTableNames as $strTableName) {
-            $arColumns = $connectionPool->getConnectionForTable($strTableName)
-                ->getSchemaManager()
-                ->listTableColumns($strTableName);
-
-            $arColumnNames = [];
-            foreach ($arColumns as $column) {
-                $arColumnNames[] = $column->getName();
-            }
-            $arTables[$strTableName] = $arColumnNames;
-        }
-
-        $strTables = serialize($arTables);
-
-        if (!file_exists($this->strDBFolder)) {
-            $this->addError('Tabellendefinitionsordner existiert nicht!'
-                . ' ' . $this->strDBFolder);
-            return false;
-        }
-        $strFile = $this->strDBFolder . $this->strTableSerializedFile;
-        if (file_exists($strFile) && !is_writable($strFile)) {
-            $this->addError('Tabellendefinitionsdatei ist nicht schreibar!'
-                . ' ' . $strFile);
-            return false;
-        }
-        $fpDumpFile = fopen($strFile, 'w');
-        if (false === $fpDumpFile) {
-            $this->addError('Konnte Tabellendefinitionsdatei nicht öffnen!'
-                . ' ' . $strFile);
-            return false;
-        }
-        $ret = fwrite($fpDumpFile, $strTables);
-        if (false === $ret) {
-            $this->addError('Konnte Tabellendefinitionsdatei nicht schreiben!'
-                . ' ' . $strFile);
-            return false;
-        }
-        fclose($fpDumpFile);
-
-        return true;
-    }
-
-
-
-    /**
-     * Loads the last saved definition of the tables.
-     *
-     * @return void
-     */
-    protected function loadTableDefinition()
-    {
-        $strFile = $this->strDBFolder . $this->strTableSerializedFile;
-        if (!file_exists($strFile)) {
-            $this->arTableDefinition = array();
-            return;
-        }
-
-        $fpDumpFile = fopen($strFile, 'r');
-        $strAllTables = fread(
-            $fpDumpFile,
-            filesize($this->strDBFolder . $this->strTableSerializedFile)
-        );
-        fclose($fpDumpFile);
-        $this->arTableDefinition = unserialize($strAllTables);
-    }
-
-
-
-    /**
-     * Tests if a table in the DB differs from last saved state.
-     *
-     * @param string $strTableName Name of table.
-     *
-     * @return boolean True if file differs otherwise false.
-     */
-    protected function isTableDifferent($strTableName)
-    {
-        if (!isset($this->arTableDefinition)) {
-            $this->loadTableDefinition();
-        }
-
-        // Tabelle existierte vorher nicht
-        if (!isset($this->arTableDefinition[$strTableName])) {
-            return true;
-        }
-
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $arColumns = $connectionPool->getConnectionForTable($strTableName)
-            ->getSchemaManager()
-            ->listTableColumns($strTableName);
-
-        $arColumnNames = [];
-        foreach ($arColumns as $column) {
-            $arColumnNames[] = $column->getName();
-        }
-
-        // Tabelle existiert jetzt nicht
-        if (count($arColumnNames) == 0) {
-            return true;
-        }
-
-        // Sind Tabellendefinitionen ungleich?
-        if (serialize($this->arTableDefinition[$strTableName]) !== serialize($arColumnNames)) {
-            return true;
-        }
-
-        // Alles in Ordnung
-        return false;
-    }
-
-
-
-    /**
-     * Test if the given tables in the DB differs from last saved state.
-     *
-     * @param array $arTables Names of tables to test
-     *
-     * @return void
-     */
-    protected function testTablesForDifferences(array $arTables)
-    {
-        $arErrorTables = [];
-
-        foreach ($arTables as $strTableName) {
-            if ($this->isTableDifferent($strTableName)) {
-                $arErrorTables[] = htmlspecialchars($strTableName);
-            }
-        }
-
-        if (count($arErrorTables)) {
-            $this->addError(
-                'Following tables have changed, please contact your TYPO3 admin: '
-                . implode(', ', $arErrorTables)
-            );
-        }
-    }
-
-
-
-    /**
-     * Tests if the tables of db differs from saved file.
-     *
-     * @return void
-     */
-    protected function testAllTablesForDifferences()
-    {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $arTableNames = $connectionPool->getConnectionForTable('pages')
-            ->getSchemaManager()
-            ->listTableNames();
-
-        $this->testTablesForDifferences($arTableNames);
     }
 
 
@@ -2382,7 +2172,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $lockButton = $buttonBar->makeLinkButton();
 
         /* @var $syncLock SyncLock */
-        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
+        $syncLock = $this->getObjectManager()->get(SyncLock::class);
 
         if ($syncLock->isLocked()) {
             $lockButton->setHref(
@@ -2509,12 +2299,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     public function addMessage($strMessage, $type)
     {
         /* @var $message FlashMessage */
-        $message = GeneralUtility::makeInstance(
+        $message = $this->getObjectManager()->get(
             FlashMessage::class, $strMessage, '', $type, true
         );
 
         /* @var $messageService FlashMessageService */
-        $messageService = GeneralUtility::makeInstance(
+        $messageService = $this->getObjectManager()->get(
             FlashMessageService::class
         );
 
@@ -2568,7 +2358,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $strUpdateField = ($this->getForcedFullSync()) ? 'full' : 'incr';
 
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
@@ -2601,7 +2391,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected static function getSyncStatsForElement($strTable, $nUid)
     {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         $queryBuilder = $connectionPool->getQueryBuilderForTable('tx_nrsync_syncstat');
 
@@ -2631,7 +2421,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected function getTimestampOfElement($strTable, $nUid)
     {
         /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
         $queryBuilder = $connectionPool->getQueryBuilderForTable($strTable);
 

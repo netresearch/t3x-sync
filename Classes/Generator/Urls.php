@@ -50,10 +50,7 @@ class Urls
             return;
         }
 
-        $arMatchingAreas = Area::getMatchingAreas(
-            $arParams['arAreas'], $arParams['strTableType']
-        );
-        $arFolders = $this->getFolders($arMatchingAreas, $sync);
+        $arFolders = $this->getFolders(Area::getMatchingAreas(), $sync);
 
         list($strContent, $strPath) = $this->prepareFile(
             $arParams['arUrlsOnce'], '%s-once.txt'

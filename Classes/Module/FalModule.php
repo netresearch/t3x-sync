@@ -9,6 +9,7 @@
 namespace Netresearch\Sync\Module;
 
 
+use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -32,7 +33,7 @@ class FalModule extends BaseModule
     protected $accessLevel = 0;
 
 
-    public function run()
+    public function run(Area $area = null)
     {
         // http://jira.aida.de/jira/browse/SDM-2099
         if (isset($_POST['data']['dam_cleanup'])) {

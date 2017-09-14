@@ -30,16 +30,16 @@ use TYPO3\CMS\Extbase\Object\ObjectManager;
  */
 class Area
 {
-    var $areas = array(
-        0 => array(
+    var $areas = [
+        0 => [
             'name'                 => 'All',
-            'description'          => 'Sync mit Live Server',
-            'not_doctype'          => array(199),
-            'system'               => array(
-                'LIVE-AWS' => array(
+            'description'          => 'Sync to live server',
+            'not_doctype'          => [],
+            'system'               => [
+                'LIVE-AWS' => [
                     'name'      => 'Live',
                     'directory' => 'aida-aws-live',
-                    'notify'    => array(
+                    'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
                         'user'     => 'aida-aws-prod-typo3_8',
@@ -47,13 +47,12 @@ class Area
                         'contexts' => [
                             'Production/Stage',
                         ],
-                    ),
-                    'report_error' => true,
-                ),
-                'ITG-AWS'  => array(
+                    ],
+                ],
+                'ITG-AWS'  => [
                     'name'      => 'ITG',
                     'directory' => 'aida-aws-itg',
-                    'notify'    => array(
+                    'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
                         'user'     => 'aida-aws-itg-typo3_8',
@@ -61,23 +60,22 @@ class Area
                         'contexts' => [
                             'Production/Stage',
                         ],
-                    ),
-                    'report_error' => true,
-                ),
-                'archive'  => array(
+                    ],
+                ],
+                'archive'  => [
                     'name'      => 'Archive',
                     'directory' => 'archive',
-                    'notify'    => array(
+                    'notify'    => [
                         'type'     => 'none',
-                    ),
+                    ],
                     'hide'      => true,
-                ),
-            ),
+                ],
+            ],
             'sync_fe_groups'       => true,
             'sync_be_groups'       => true,
             'sync_tables'          => true,
-        ),
-    );
+        ],
+    ];
 
     /**
      * @var array active area configuration
@@ -86,7 +84,7 @@ class Area
         'id'             => 0,
         'name'           => '',
         'description'    => '',
-        'not_doctype'    => [199],
+        'not_doctype'    => [],
         'system'         => [],
         'sync_fe_groups' => true,
         'sync_be_groups' => true,
@@ -115,7 +113,6 @@ class Area
     public function __construct(int $pId)
     {
         if (isset($this->areas[$pId])) {
-            // Seite ist ein Startelement eines Bereiches
             $this->area = $this->areas[$pId];
             $this->area['id'] = $pId;
         } else {
@@ -128,82 +125,6 @@ class Area
                 }
             }
         }
-    }
-
-
-
-    /**
-     * Fetches the area that a content element belongs to.
-     *
-     * @param integer $contentID Content element ID
-     *
-     * @return array|false Array with keys: element, page, areaID
-     */
-    public static function getAreaFromContentId($contentID)
-    {
-        global $TYPO3_DB, $AREA;
-        $ret = $TYPO3_DB->exec_SELECTquery(
-            '*', 'tt_content', 'uid = ' . (int)$contentID
-        );
-
-        if (empty($ret)) {
-            return false;
-        }
-
-        $arContent = $TYPO3_DB->sql_fetch_assoc($ret);
-        $TYPO3_DB->sql_free_result($ret);
-
-        if (!is_array($arContent)) {
-            return false;
-        }
-
-        $ret = $TYPO3_DB->exec_SELECTquery(
-            '*', 'pages', 'uid = ' . (int)$arContent['pid']
-        );
-        if (empty($ret)) {
-            return false;
-        }
-
-        $arPage = $TYPO3_DB->sql_fetch_assoc($ret);
-        $TYPO3_DB->sql_free_result($ret);
-
-        if (! is_array($arPage)) {
-            return false;
-        }
-
-        $rootline = BackendUtility::BEgetRootLine($arPage['uid']);
-        foreach ($rootline as $element) {
-            if (isset($AREA[$element['uid']])) {
-                $arAreaConfig = $AREA[$element['uid']];
-                $arAreaConfig['id'] = $element['uid'];
-                break;
-            }
-        }
-        $arReturn = array(
-            'element' => $arContent,
-            'page'    => $arPage,
-            'areaID'  => $arAreaConfig['id'],
-        );
-
-        return $arReturn;
-    }
-
-
-
-    /**
-     * Returns array of directories, this area have to write to
-     *
-     * @param array $arAreaConfig Config of the area in use
-     *
-     * @return array With the path names
-     */
-    public static function getAreaDirectories(array $arAreaConfig)
-    {
-        $arPaths = array();
-        foreach ($arAreaConfig['system'] as $arSystem) {
-            array_push($arPaths, $arSystem['directory']);
-        }
-        return $arPaths;
     }
 
 
@@ -306,6 +227,11 @@ class Area
                         $this->notifyMasterViaFtp($arSystem['notify']);
                         $this->addMessage('Signaled "' . $arSystem['name'] . '" target for new sync.');
                         break;
+                    default:
+                        $this->addMessage(
+                            'Skipped signaling "' . $arSystem['name'] . '" target.'
+                            . ' Unknown notify type: "' . $arSystem['notify']['type'] . '".'
+                        );
                 }
             } else {
                 $this->addMessage(
@@ -343,6 +269,9 @@ class Area
     protected function systemIsNotifyEnabled(array $system)
     {
         if (empty($system['notify']['contexts'])) {
+            $this->addMessage(
+                'Skipped signaling "' . $system['name'] . '" target due to signaling disabled.'
+            );
             return false;
         }
 
@@ -358,6 +287,11 @@ class Area
                 return true;
             }
         }
+
+        $this->addMessage(
+            'Skipped signaling "' . $system['name'] . '" target due to invalid context.'
+            . ' Allowed contexts: ' . implode(', ', $system['notify']['contexts'])
+        );
 
         return false;
     }

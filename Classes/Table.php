@@ -448,8 +448,7 @@ class Table
             )
             ->from('tx_nrsync_syncstat')
             ->where(
-                $queryBuilder->expr()->eq('tab', $queryBuilder->quote('*')),
-                $queryBuilder->expr()->eq('tab', $queryBuilder->quote($this->strTableName))
+                $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->strTableName)])
             )
             ->execute()
             ->fetch(\PDO::FETCH_ASSOC);

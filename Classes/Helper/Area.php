@@ -39,6 +39,7 @@ class Area
                 'LIVE-AWS' => [
                     'name'      => 'Live',
                     'directory' => 'aida-aws-live',
+                    'url-path'  => 'aida-aws-live/url',
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
@@ -52,6 +53,7 @@ class Area
                 'ITG-AWS'  => [
                     'name'      => 'ITG',
                     'directory' => 'aida-aws-itg',
+                    'url-path'  => 'aida-aws-itg/url',
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync11.aida.de',
@@ -65,6 +67,7 @@ class Area
                 'archive'  => [
                     'name'      => 'Archive',
                     'directory' => 'archive',
+                    'url-path'  => 'url/archive',
                     'notify'    => [
                         'type'     => 'none',
                     ],
@@ -165,26 +168,51 @@ class Area
         return true;
     }
 
+    /**
+     * Returns the name of AREA
+     *
+     * @return mixed
+     */
     public function getName()
     {
         return $this->area['name'];
     }
 
+    /**
+     * Returns the ID of the area
+     *
+     * @return mixed
+     */
     public function getId()
     {
         return $this->area['id'];
     }
 
+    /**
+     * Returns the description of the area
+     *
+     * @return mixed
+     */
     public function getDescription()
     {
         return $this->area['description'];
     }
 
+    /**
+     * Returns the files which should be synced
+     *
+     * @return mixed
+     */
     public function getFilesToSync()
     {
         return $this->area['files_to_sync'];
     }
 
+    /**
+     * Returns a array with the directories where the syncfiles are stored
+     *
+     * @return array
+     */
     public function getDirectories()
     {
         $arPaths = array();
@@ -196,16 +224,50 @@ class Area
         return $arPaths;
     }
 
+    /**
+     * Returns a array with the directories where the url files should be stored
+     *
+     * @return array
+     */
+    public function getUrlDirectories()
+    {
+        $arPaths = [];
+
+        foreach ($this->area['system'] as  $arSystem) {
+            if (empty($arSystem['url-path'])) {
+                continue;
+            }
+            array_push($arPaths, $arSystem['url-path']);
+        }
+
+        return $arPaths;
+    }
+
+    /**
+     * Returns the doctypes wich should be ignored for sync
+     *
+     * @return array
+     */
     public function getNotDocType()
     {
         return (array) $this->area['not_doctype'];
     }
 
+    /**
+     * Returns the syncabel docktypes
+     *
+     * @return array
+     */
     public function getDocType()
     {
         return (array) $this->area['doctype'];
     }
 
+    /**
+     * Returns the systems
+     *
+     * @return array
+     */
     public function getSystems()
     {
         return (array) $this->area['system'];
@@ -233,11 +295,6 @@ class Area
                             . ' Unknown notify type: "' . $arSystem['notify']['type'] . '".'
                         );
                 }
-            } else {
-                $this->addMessage(
-                    'Skipped signaling "' . $arSystem['name'] . '" target due to invalid context.'
-                    . ' Allowed contexts: ' . implode(', ', $arSystem['notify']['contexts'])
-                );
             }
         }
 

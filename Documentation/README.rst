@@ -51,6 +51,29 @@ Ablauf eines Syncprozesses
    Mit diesen URLs ist es möglich, hook-mäßig Aktionen auf dem Zielsystem
    auszuführen - wie z.B. die Regenerierung der Webservicekonfigurationen.
 
+   Der Pfad in dem die Dateien  abgelegt weden kann für jedes Zielsystem in der AREA
+   configuration überschrieben werden. ::
+
+        'system'               => array(
+         // enable error logging for this environment
+            'LIVE' => array(
+                'directory' => 'sync-live',
+                'url-path'  => 'sycn-live/url'
+                'notify'    => array(
+                    .....
+                ),
+                'report_error' => true,
+            ),
+            // disable error logging for this environment
+            'TEST' => array(
+                'directory' => 'sync-test',
+                'url-path'  => 'url/sync-test'
+                'notify'    => array(
+                    .....
+                ),
+                'report_error' => false,
+            )
+
 
 =====
 Hooks

@@ -16,6 +16,7 @@
 namespace Netresearch\Sync\Controller;
 
 use Netresearch\Sync\Exception;
+use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Module\AssetModule;
 use Netresearch\Sync\Module\BaseModule;
@@ -100,10 +101,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     public $strUrlFolder = '';
 
     /**
-     *
-     * @var string Where to put clear cache urls
+     * @var string clearCache url format
      */
-    public $strClearCacheFolder = '';
+    public $strClearCacheUrl = '?eID=nr_sync&task=clearCache&data=%s&v8=true';
 
     /**
      * @var integer Access rights for new folders
@@ -257,6 +257,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     private $syncListManager;
 
+    /**
+     * @var Urls;
+     */
+    private $urlGenerator;
 
 
     /**
@@ -265,6 +269,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     public function __construct()
     {
         $this->moduleTemplate = $this->getObjectManager()->get(ModuleTemplate::class);
+        $this->urlGenerator   = $this->getObjectManager()->get(Urls::class);
         $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
         $this->MCONF = [
             'name' => $this->moduleName,
@@ -313,7 +318,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->strDummyFile = $strRootPath . '/db.txt';
         $this->strDBFolder = $strRootPath . '/db/';
         $this->strUrlFolder = $this->strDBFolder . 'url/';
-        $this->strClearCacheFolder = $this->strDBFolder . 'clearcache/';
         $this->strTempFolder = $this->strDBFolder . 'tmp/';
 
         if (!file_exists($this->strTempFolder)) {
@@ -321,10 +325,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
         if (!file_exists($this->strUrlFolder)) {
             mkdir($this->strUrlFolder, $this->nFolderRights, true);
-        }
-
-        if (!file_exists($this->strClearCacheFolder)) {
-            mkdir($this->strClearCacheFolder, $this->nFolderRights, true);
         }
     }
 
@@ -737,16 +737,22 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             foreach ($_REQUEST['lock'] as $systemName => $lockState) {
                 $systems = $this->getArea()->getSystems();
                 $system = $systems[$systemName];
+                $systemDirectory = $this->strDBFolder . $system['directory'];
+                $lockFilePath    = $systemDirectory . '/.lock';
                 if ($lockState) {
-                    mkdir($this->strDBFolder . $system['directory'], 0777, true);
-                    $handle = fopen($this->strDBFolder . $system['directory'] . '/.lock', 'w');
+                    if (!is_dir($systemDirectory)) {
+                        mkdir($systemDirectory, 0777, true);
+                    }
+                    $handle = fopen($lockFilePath, 'w');
                     if ($handle) {
                         fclose($handle);
                     }
                     $this->addSuccess('Target ' . $systemName . ' disabled for sync.');
                 } else {
-                    unlink($this->strDBFolder . $system['directory'] . '/.lock');
-                    $this->addSuccess('Target ' . $systemName . ' enabled for sync.');
+                    if (file_exists($lockFilePath)) {
+                        unlink($lockFilePath);
+                        $this->addSuccess('Target ' . $systemName . ' enabled for sync.');
+                    }
                 }
             }
         }
@@ -812,10 +818,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                         );
 
                         if ($ret
-                            && $this->createClearCacheFile(
-                                $strDumpFileArea, 'pages', $arPageIDs,
-                                $area->getDirectories()
-                            )
+                            && $this->createClearCacheFile('pages', $arPageIDs)
                         ) {
                             if ($area->notifyMaster() == false) {
                                 $this->addError('Please re-try in a couple of minutes.');
@@ -942,7 +945,9 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->content .= ' Sync target: "' . htmlspecialchars($system['name']) . '"</h2>';
 
 
-            $arFiles = $this->removeLinksFromFileList(glob($this->strDBFolder . $system['directory'] . '/*'));
+            $arFiles = $this->removeLinksAndFoldersFromFileList(
+                glob($this->strDBFolder . $system['directory'] . '/*')
+            );
 
             $nDumpFiles = count($arFiles);
             if ($nDumpFiles < 1) {
@@ -1011,16 +1016,16 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
 
     /**
-     * Remove links from fileList for displaying SyncStat
+     * Remove links and folders from fileList for displaying SyncStat
      *
      * @param array $arFiles
      *
      * @return array
      */
-    protected function removeLinksFromFileList(array $arFiles)
+    protected function removeLinksAndFoldersFromFileList(array $arFiles)
     {
         foreach ($arFiles as $index => $strPath) {
-            if (is_link($strPath)) {
+            if (is_link($strPath) || is_dir($strPath)) {
                 unset($arFiles[$index]);
             }
         }
@@ -1228,43 +1233,27 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Generates the file with the content for the clear cache task.
      *
-     * @param string   $strFileName Name of the sql dump file.
      * @param string   $strTable    Name of the table which cache should be cleared.
      * @param int[]    $arUids      Array with the uids to clear cache.
-     * @param string[] $arPath      Array with path names to propagate the file.
      *
      * @return boolean True if file was generateable otherwise false.
      */
-    private function createClearCacheFile($strFileName, $strTable, array $arUids, $arPath)
+    private function createClearCacheFile($strTable, array $arUids)
     {
         $arClearCacheData = array();
-        $strFileName = str_replace('.sql', '.cache', $strFileName);
-
-        // Open file
-        $fpClearCacheFile = fopen(
-            $this->strTempFolder . $strFileName, 'a'
-        );
-        if ($fpClearCacheFile === false) {
-            $this->addError($this->strTempFolder
-                . $strFileName . ' konnte nicht angelegt werden.');
-            return false;
-        }
 
         // Create data
         foreach ($arUids as $strUid) {
             $arClearCacheData[] = $strTable . ':' . $strUid;
         }
 
-        // Write into file
-        fwrite($fpClearCacheFile, implode(',', $arClearCacheData) . "\n");
-        fclose($fpClearCacheFile);
+        $strClearCacheData = implode(',', $arClearCacheData);
+        $clearCacheUrl = sprintf($this->strClearCacheUrl, $strClearCacheData);
 
-        try {
-            $this->finalizeDumpFile($strFileName, $arPath, false);
-        } catch (Exception $e) {
-            $this->addError($e->getMessage());
-            return false;
-        }
+        $this->urlGenerator->postProcessSync(
+            ['arUrlsOnce' => [$clearCacheUrl], 'bProcess' => true, 'bSyncResult' => true],
+            $this
+        );
 
         return true;
     }

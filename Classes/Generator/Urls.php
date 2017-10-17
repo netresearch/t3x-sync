@@ -28,6 +28,16 @@ use Netresearch\Sync\Controller\SyncModuleController;
 class Urls
 {
     /**
+     * @var string Filename-format for once files
+     */
+    const FILE_FORMAT_ONCE = '%s-once.txt';
+
+    /**
+     * @var string Filename-format for per-machine files
+     */
+    const FILE_FORMAT_PERMACHINE = '%s-per-machine.txt';
+
+    /**
      * Called after the sync button has been pressed.
      * We generate the URL files here.
      *
@@ -38,9 +48,7 @@ class Urls
      */
     public function postProcessSync(array $arParams, SyncModuleController $sync)
     {
-        if ($arParams['bProcess'] == false
-            || $arParams['bSyncResult'] == false
-        ) {
+        if ($arParams['bProcess'] == false || $arParams['bSyncResult'] == false) {
             return;
         }
 
@@ -50,23 +58,44 @@ class Urls
             return;
         }
 
-        $arFolders = $this->getFolders(Area::getMatchingAreas(), $sync);
-
-        list($strContent, $strPath) = $this->prepareFile(
-            $arParams['arUrlsOnce'], '%s-once.txt'
+        $arMatchingAreas = Area::getMatchingAreas(
+            $arParams['arAreas'], $arParams['strTableType']
         );
-        $nCount = $this->saveFile($strContent, $strPath, $arFolders);
+        $arFolders = $this->getFolders($arMatchingAreas, $sync);
 
-        list($strContent, $strPath) = $this->prepareFile(
-            $arParams['arUrlsPerMachine'], '%s-per-machine.txt'
-        );
-        $nCount += $this->saveFile($strContent, $strPath, $arFolders);
+        $nCount = 0;
+
+        if (isset($arParams['arUrlsOnce'])) {
+            $nCount = $this->generateUrlFile(
+                $arParams['arUrlsOnce'], $arFolders, self::FILE_FORMAT_ONCE
+            );
+        }
+        if (isset($arParams['arUrlsPerMachine'])) {
+            $nCount += $this->generateUrlFile(
+                $arParams['arUrlsPerMachine'], $arFolders, self::FILE_FORMAT_PERMACHINE
+            );
+        }
 
         $sync->addSuccess(
             sprintf('Created %d hook URL files', $nCount)
         );
     }
 
+
+    /**
+     * Generates the url files for a given format
+     *
+     * @param array  $urls    Array with urls to write onto file
+     * @param array  $folders Folders in which the files should be stored
+     * @param string $format  Format of filename
+     *
+     * @return int
+     */
+    private function generateUrlFile(array $urls, array $folders, $format)
+    {
+        list($strContent, $strPath) = $this->prepareFile($urls, $format);
+        return $this->saveFile($strContent, $strPath, $folders);
+    }
 
 
     /**
@@ -130,8 +159,8 @@ class Urls
         $arPaths = [];
 
         foreach ($arAreas as $area) {
-            foreach ($area->getDirectories() as $strDirectory) {
-                $arPaths[] = $sync->strUrlFolder . $strDirectory . '/';
+            foreach ($area->getUrlDirectories() as $strDirectory) {
+                $arPaths[] = $sync->strDBFolder . $strDirectory . '/';
             }
         }
         $arPaths = array_unique($arPaths);

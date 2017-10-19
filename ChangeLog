@@ -1,0 +1,3 @@
+2017-08-08  Axel Kummer  <axel.kummer@netresearch.de>
+
+	* TYPO-6272:  Implement QueryBuilder method to return QueryBuilder without restrictions from enablefields in TCA.

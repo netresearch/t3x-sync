@@ -328,7 +328,25 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
     }
 
+    /**
+     * Returns a TYPO3 QueryBuilder instance for a given table, without any restrcition.
+     *
+     * @param $tableName
+     *
+     * @return \TYPO3\CMS\Core\Database\Query\QueryBuilder
+     */
+    private function getQueryBuilderForTable($tableName)
+    {
+        /**
+         * @var ConnectionPool $connectionPool
+         */
+        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
 
+        $queryBuilder = $connectionPool->getQueryBuilderForTable($tableName);
+        $queryBuilder->getRestrictions()->removeAll();
+
+        return $queryBuilder;
+    }
 
     /**
      * Adds items to the ->MOD_MENU array. Used for the function menu selector.
@@ -457,10 +475,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     {
         global $TCA;
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-
         if (null === $arTables) {
             return false;
         } elseif (false !== array_search('pages', $arTables)) {
@@ -468,7 +482,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         } else {
             foreach ($arTables as $strTableName) {
                 if (isset($TCA[$strTableName])) {
-                    $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+                    $queryBuilder = $this->getQueryBuilderForTable($strTableName);
 
                     $nCount = $queryBuilder->count('pid')
                         ->from($strTableName)
@@ -1081,10 +1095,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             return $return;
         }
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        $queryBuilder = $connectionPool->getQueryBuilderForTable('pages');
+        $queryBuilder = $this->getQueryBuilderForTable('pages');
 
         $result = $queryBuilder->select('*')
             ->from('pages')
@@ -1446,7 +1457,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $arColumnNames[] = $column->getName();
         }
 
-        $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+        $queryBuilder = $this->getQueryBuilderForTable($strTableName);
 
         // In pages und pages_language_overlay entspricht die pageID der uid
         // pid ist ja der Parent (Elternelement) ... so mehr oder weniger *lol*
@@ -1647,6 +1658,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         $queryBuilder = $connection->createQueryBuilder();
+        $queryBuilder->getRestrictions()->removeAll();
         $refTableContent = $queryBuilder->select('*')
             ->from($strTableName)
             ->where($strWhere)
@@ -2397,10 +2409,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function getSyncStatsForElement($strTable, $nUid)
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        $queryBuilder = $connectionPool->getQueryBuilderForTable('tx_nrsync_syncstat');
+        $queryBuilder = $this->getQueryBuilderForTable($strTable);
 
         $arRow = $queryBuilder->select('*')
             ->from('tx_nrsync_syncstat')
@@ -2415,7 +2424,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     }
 
 
-
     /**
      * Returns time stamp of this element.
      *
@@ -2427,10 +2435,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected function getTimestampOfElement($strTable, $nUid)
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        $queryBuilder = $connectionPool->getQueryBuilderForTable($strTable);
+        $queryBuilder = $this->getQueryBuilderForTable($strTable);
 
         $arRow = $queryBuilder->select('tstamp')
             ->from($strTable)
@@ -2442,7 +2447,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         return $arRow['tstamp'];
     }
-
 
 
     /**
@@ -2460,6 +2464,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $arDeleteLine = $this->removeNotSyncableEntries($arDeleteLine);
             $arInsertLine = $this->removeNotSyncableEntries($arInsertLine);
         }
+
         // Remove Deletes which has a corresponding Insert statement
         $this->diffDeleteLinesAgainstInsertLines(
             $arDeleteLine,

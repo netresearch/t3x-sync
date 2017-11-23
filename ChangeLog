@@ -1,9 +1,13 @@
 2017-11-23  Axel Kummer  <axel.kummer@netresearch.de>
-	
+
+	* Version: 0.10.1
+
+2017-11-23  Axel Kummer  <axel.kummer@netresearch.de>
+
 	* AR2-81: Change ClearCache file gereation to url/*-once.txt files
 
 2017-11-09  Axel Kummer  <axel.kummer@netresearch.de>
-	
+
 	* Version: 0.9.1
 
 2017-11-08  Axel Kummer  <axel.kummer@netresearch.de>

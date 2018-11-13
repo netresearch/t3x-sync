@@ -42,7 +42,7 @@ class Area
                     'url-path'  => 'aida-aws-live/url',
                     'notify'    => [
                         'type'     => 'ftp',
-                        'host'     => 'uzsync11.aida.de',
+                        'host'     => 'uzsync12.aida.de',
                         'user'     => 'aida-aws-prod-typo3_8',
                         'password' => 'Thu2phoh',
                         'contexts' => [
@@ -56,7 +56,7 @@ class Area
                     'url-path'  => 'aida-aws-itg/url',
                     'notify'    => [
                         'type'     => 'ftp',
-                        'host'     => 'uzsync11.aida.de',
+                        'host'     => 'uzsync12.aida.de',
                         'user'     => 'aida-aws-itg-typo3_8',
                         'password' => 'zo6Aelow',
                         'contexts' => [

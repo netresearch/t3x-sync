@@ -15,6 +15,7 @@
 
 namespace Netresearch\Sync\Controller;
 
+use Netresearch\NrcMksearch\Hooks\Sync;
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
@@ -41,6 +42,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
@@ -298,7 +300,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     public function init()
     {
         parent::init();
-
         $this->initFolders();
     }
 
@@ -360,6 +361,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $nAccessLevel = 50;
         if ($this->getBackendUser()->isAdmin()) {
             $nAccessLevel = 100;
+        }
+
+        DebuggerUtility::var_dump(class_exists(Sync::class));
+
+        foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'] as $extKey => $hookClass) {
+            GeneralUtility::callUserFunction($hookClass . '->postProcessMenu',$this->MOD_MENU, $this);
         }
 
         foreach ($this->arFunctions as $functionKey => $function) {

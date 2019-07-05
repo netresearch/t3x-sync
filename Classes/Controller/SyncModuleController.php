@@ -183,6 +183,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      */
     protected $area = null;
 
+    /**
+     * Hook Objects
+     *
+     * @var array
+     */
+    protected $hookObjects;
+
 
     protected $arFunctions = [
         0 => BaseModule::class,
@@ -366,6 +373,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             foreach($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'] as $id => $hookObject) {
                 if (!is_null($hookObject)) {
                     $this->arFunctions[$id] = $hookObject;
+                    $this->hookObjects[$id] = $hookObject;
                 }
             }
         }
@@ -771,7 +779,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         $this->function = $this->getFunctionObject($this->MOD_SETTINGS['function']);
-
         $strDumpFile    = $this->function->getDumpFileName();
 
         $this->content .= '<h1>Create new sync</h1>';
@@ -800,12 +807,10 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         $this->content .= $this->function->getContent();
-
         // sync process
         if (isset($_POST['data']['submit']) && $strDumpFile != '') {
             $strDumpFile = $this->addInformationToSyncfileName($strDumpFile);
             //set_time_limit(480);
-
             if ($bUseSyncList) {
                 $syncList = $this->getSyncList();
                 if (! $syncList->isEmpty()) {
@@ -818,7 +823,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                         $area = $this->getObjectManager()->get(Area::class, $areaID);
 
                         $arPageIDs = $syncList->getAllPageIDs($areaID);
-
                         $ret = $this->createShortDump(
                             $arPageIDs, $this->function->getTableNames(), $strDumpFileArea,
                             $area->getDirectories()
@@ -845,6 +849,12 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     }
                 }
             } else {
+                foreach ($this->hookObjects as $hookClass) {
+                    $hookObject = $this->getObjectManager()->get($hookClass);
+                    if (method_exists($hookObject, 'preProcessSync')) {
+                        $hookObject->preProcessSync($arContent['uid'], $this->function->getTableNames(), $this->getPreSyncParams(), $this->getSyncList(), $this);
+                    }
+                }
                 $bSyncResult = $this->createDumpToAreas(
                     $this->function->getTableNames(), $strDumpFile
                 );
@@ -1467,9 +1477,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             ->from($strTableName)
             ->where($strWhere)
             ->execute();
-
         if ($refTableContent) {
             while ($arContent = $refTableContent->fetch()) {
+                foreach ($this->hookObjects as $hookClass) {
+                    $hookObject = $this->getObjectManager()->get($hookClass);
+                    if (method_exists($hookObject, 'preProcessSync')) {
+                        $hookObject->preProcessSync($arContent['uid'], $strTableName, $this->getPreSyncParams(), $this->getSyncList(), $this);
+                    }
+                }
                 $arDeleteLine[$strTableName][$arContent['uid']]
                     = $this->buildDeleteLine($strTableName, $arContent['uid']);
                 $arInsertLine[$strTableName][$arContent['uid']]
@@ -1497,6 +1512,21 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->nDumpTableRecursion--;
     }
 
+    /**
+     * Get params for the presync hook.
+     *
+     * @return array
+     */
+    public function getPreSyncParams()
+    {
+        $postData = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('data');
+        return array(
+            'area' => $this->getArea(),
+            'function' => $this->MOD_SETTINGS['function'],
+            'dbFolder' => $this->strDBFolder,
+            'forceFullSync' => $postData['force_full_sync']
+        );
+    }
 
 
     /**
@@ -1580,6 +1610,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                 );
             }
         }
+
         $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
     }
 
@@ -1685,7 +1716,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
             unset($refTableContent);
         }
-
         $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
     }
 

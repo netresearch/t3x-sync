@@ -231,6 +231,42 @@ class Table
     }
 
 
+    /**
+     * Fetches a list of every updateable entry that could be found.
+     * If force full sync is set to true, this will return every entry found.
+     *
+     * @return array
+     */
+    public function getUpdateableEntries()
+    {
+        /* @var $TYPO3_DB t3lib_DB */
+        global $TYPO3_DB;
+
+        $strWhere = '';
+        if (false === $this->bForceFullSync && $this->hasTstampField()) {
+            $strWhere = $this->getDumpWhereCondition();
+        }
+
+        $TYPO3_DB->store_lastBuiltQuery = 1;
+        // Doing a grouped concatenation and exploding for performance reasons, otherwise the
+        // request would use too much memory and would probably also run into a timeout.
+        $data = $TYPO3_DB->exec_SELECTquery(
+            'GROUP_CONCAT(uid SEPARATOR \',\') AS uid_list',
+            $this->strTableName,
+            $strWhere
+        )->fetch_assoc();
+
+        $list = array_filter(explode(',', $data['uid_list']));
+
+        $arData = [];
+        foreach ($list as $row) {
+            $arData[] = [
+                'uid' => $row,
+            ];
+        }
+        return $arData;
+    }
+
 
     /**
      * Appends table dump data to file.

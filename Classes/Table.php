@@ -239,6 +239,14 @@ class Table
      */
     public function getUpdateableEntries()
     {
+        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
+        $connection = $connectionPool->getConnectionForTable($this->strTableName);
+
+        $queryBuilder = $connection->createQueryBuilder();
+
         /* @var $TYPO3_DB t3lib_DB */
         global $TYPO3_DB;
 
@@ -246,17 +254,17 @@ class Table
         if (false === $this->bForceFullSync && $this->hasTstampField()) {
             $strWhere = $this->getDumpWhereCondition();
         }
+        $statement = $queryBuilder
+            ->selectLiteral('GROUP_CONCAT(uid SEPARATOR \',\') AS uid_list')
+            ->from($this->strTableName);
 
-        $TYPO3_DB->store_lastBuiltQuery = 1;
-        // Doing a grouped concatenation and exploding for performance reasons, otherwise the
-        // request would use too much memory and would probably also run into a timeout.
-        $data = $TYPO3_DB->exec_SELECTquery(
-            'GROUP_CONCAT(uid SEPARATOR \',\') AS uid_list',
-            $this->strTableName,
-            $strWhere
-        )->fetch_assoc();
+        if (!empty($strWhere)) {
+            $statement->where($strWhere);
+        }
+        $data = $statement->execute()->fetchAll();
 
-        $list = array_filter(explode(',', $data['uid_list']));
+        $list = array_filter(explode(',', $data['0']['uid_list']));
+
 
         $arData = [];
         foreach ($list as $row) {

@@ -1,204 +1,194 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-04
- * Time: 18:23
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+/**
+ * Class SyncStats
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class SyncStats
 {
-    protected $tables = [];
-
-    protected $content = '';
+    /**
+     * @var string[]
+     */
+    private array $tables;
 
     /**
      * SyncStats constructor.
      *
-     * @param array $arTables Table names
+     * @param string[] $tables Table names
      */
-    public function __construct(array $arTables)
+    public function __construct(array $tables)
     {
-        $this->tables = (array) $arTables;
+        $this->tables = $tables;
     }
-
-
 
     /**
      * Render sync stats for given tables.
      *
-     * @return void
+     * @return string
      */
-    public function createTableSyncStats()
+    public function createTableSyncStats(): string
     {
-        $this->content .= '<h3>Table sync status:</h3>';
+        $content = '<h3>Table sync status:</h3>';
+        $content .= '<div class="table-fit">';
+        $content .= '<table class="table table-striped table-hover" id="ts-overview">';
+        $content .= '<thead>';
+        $content .= '<tr><th>Table</th><th>Last sync time</th><th>Last sync type</th><th>Last sync user</th></tr>';
+        $content .= '</thead>';
+        $content .= '<tbody>';
 
-        $this->content .= '<div class="table-fit">';
-        $this->content .= '<table class="table table-striped table-hover" id="ts-overview">';
-        $this->content .= '<thead>';
-        $this->content .= '<tr><th>Table</th><th>Last sync time</th><th>Last sync type</th><th>Last sync user</th></tr>';
-        $this->content .= '</thead>';
-        $this->content .= '<tbody>';
-
-        foreach ($this->getSyncStats() as $strTable => $arTableSyncStats) {
-
-            $this->content .= '<tr class="bgColor4">';
-            $this->content .= '<td>';
-            $this->content .= htmlspecialchars($strTable);
-            $this->content .= '</td>';
+        foreach ($this->getSyncStats() as $table => $arTableSyncStats) {
+            $content .= '<tr class="bgColor4">';
+            $content .= '<td>';
+            $content .= htmlspecialchars($table);
+            $content .= '</td>';
 
             if ($arTableSyncStats['last_time']) {
-                $this->content .= '<td>';
-                $this->content .= static::fmtTime($arTableSyncStats['last_time']);
-                $this->content .= '</td>';
-                $this->content .= '<td>';
-                $this->content .= $arTableSyncStats['last_type'];
-                $this->content .= '</td>';
-                $this->content .= '<td>';
-                $this->content .= static::fmtUser($arTableSyncStats['last_user']);
-                $this->content .= '</td>';
+                $content .= '<td>';
+                $content .= $this->fmtTime($arTableSyncStats['last_time']);
+                $content .= '</td>';
+                $content .= '<td>';
+                $content .= $arTableSyncStats['last_type'];
+                $content .= '</td>';
+                $content .= '<td>';
+                $content .= $this->fmtUser($arTableSyncStats['last_user']);
+                $content .= '</td>';
             } else {
-                $this->content .= '<td colspan="3">n/a</td>';
+                $content .= '<td colspan="3">n/a</td>';
             }
 
-            $this->content .= '</tr>';
+            $content .= '</tr>';
         }
-        $this->content .= '</tbody>';
-        $this->content .= '</table>';
-        $this->content .= '</div>';
+        $content .= '</tbody>';
+        $content .= '</table>';
+        $content .= '</div>';
+
+        return $content;
     }
-
-
-
-
-
-
 
     /**
      * Returns time formatted to be displayed in table sync stats.
      *
-     * @param integer $nTime Unix timestamp.
+     * @param int $time Unix timestamp.
      *
      * @return string
      */
-    protected static function fmtTime($nTime)
+    private function fmtTime(int $time): string
     {
-        if ($nTime) {
-            return date('Y-m-d H:i:s', $nTime);
+        if ($time) {
+            return date('Y-m-d H:i:s', $time);
         }
 
         return 'n/a';
     }
 
-
-
     /**
      * Returns human readable user name.
      *
-     * @param integer $nUser USer ID.
+     * @param int $userId The User ID
      *
      * @return string
      */
-    protected static function fmtUser($nUser)
+    private function fmtUser(int $userId): string
     {
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
-        global $BE_USER;
-
-        if ($nUser) {
-            //return date('Y-m-d H:i:s', $nTime);
-            $arUser = $BE_USER->getRawUserByUid($nUser);
-            return $arUser['realName'] . ' #' . $nUser;
-        } elseif ($nUser === 0) {
-            return 'SYSTEM';
-        } else {
-            return 'UNKNOWN';
+        if ($userId) {
+            $arUser = $this->getBackendUser()->getRawUserByUid($userId);
+            return $arUser['realName'] . ' #' . $userId;
         }
+
+        if ($userId === 0) {
+            return 'SYSTEM';
+        }
+
+        return 'UNKNOWN';
     }
 
-
-
-    public function getContent()
+    /**
+     * @return BackendUserAuthentication
+     */
+    private function getBackendUser(): BackendUserAuthentication
     {
-        return $this->content;
+        return $GLOBALS['BE_USER'];
     }
-
-
 
     /**
      * Returns table sync statistics.
      *
-     * @throws Exception
      * @return array
      */
-    protected function getSyncStats()
+    private function getSyncStats(): array
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
 
-        $arResult = array();
-
         $queryBuilder = $connection->createQueryBuilder();
-        $arRow = $queryBuilder->select('*')
+        $row = $queryBuilder
+            ->select('*')
             ->from('tx_nrsync_syncstat')
             ->where(
                 $queryBuilder->expr()->eq('tab', $queryBuilder->quote('*'))
             )
             ->execute()
-            ->fetch();
+            ->fetchAssociative();
 
-        $arDefault = array(
-            'full' => $arRow['full'],
-            'incr' => $arRow['incr'],
-            'last_time' => max($arRow['incr'], $arRow['full']),
-            'last_type' => ($arRow['full'] > $arRow['incr'] ? 'full' : 'incr'),
-            'last_user' => $arRow['cruser_id'],
-        );
+        $default = [
+            'full' => $row['full'],
+            'incr' => $row['incr'],
+            'last_time' => max($row['incr'], $row['full']),
+            'last_type' => ($row['full'] > $row['incr'] ? 'full' : 'incr'),
+            'last_user' => $row['cruser_id'],
+        ];
 
-        foreach ($this->tables as $strTable) {
+        $result = [];
 
-            $arResult[$strTable] = $arDefault;
+        foreach ($this->tables as $table) {
+            $result[$table] = $default;
 
             $queryBuilder = $connection->createQueryBuilder();
-            $arRow = $queryBuilder->select('*')
+            $row = $queryBuilder->select('*')
                 ->from('tx_nrsync_syncstat')
                 ->where(
-                    $queryBuilder->expr()->eq('tab', $queryBuilder->quote($strTable))
+                    $queryBuilder->expr()->eq('tab', $queryBuilder->quote($table))
                 )
                 ->execute()
-                ->fetch();
+                ->fetchAssociative();
 
-            $arResultRow = array(
-                'full' => $arRow['full'],
-                'incr' => $arRow['incr'],
-                'last_time' => max($arRow['incr'], $arRow['full']),
-                'last_type' => ($arRow['full'] > $arRow['incr'] ? 'full' : 'incr'),
-                'last_user' => $arRow['cruser_id'],
-            );
+            $resultRow = [
+                'full'      => $row['full'],
+                'incr'      => $row['incr'],
+                'last_time' => max($row['incr'], $row['full']),
+                'last_type' => ($row['full'] > $row['incr'] ? 'full' : 'incr'),
+                'last_user' => $row['cruser_id'],
+            ];
 
-            $arResult[$strTable] = array(
-                'full' => max($arResultRow['full'], $arDefault['full']),
-                'incr' => max($arResultRow['incr'], $arDefault['incr']),
-                'last_time' => max($arResultRow['last_time'], $arDefault['last_time']),
-                'last_type' => (
-                $arResultRow['last_time'] > $arDefault['last_time']
-                    ? $arResultRow['last_type'] : $arDefault['last_type']
-                ),
-                'last_user' => (
-                $arResultRow['last_time'] > $arDefault['last_time']
-                    ? $arResultRow['last_user'] : $arDefault['last_user']
-                ),
-            );
+            $result[$table] = [
+                'full'      => max($resultRow['full'], $default['full']),
+                'incr'      => max($resultRow['incr'], $default['incr']),
+                'last_time' => max($resultRow['last_time'], $default['last_time']),
+                'last_type' => $resultRow['last_time'] > $default['last_time'] ? $resultRow['last_type'] : $default['last_type'],
+                'last_user' => $resultRow['last_time'] > $default['last_time'] ? $resultRow['last_user'] : $default['last_user'],
+            ];
         }
 
-        return $arResult;
+        return $result;
     }
 }

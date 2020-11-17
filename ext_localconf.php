@@ -1,25 +1,30 @@
 <?php
+
 /**
- * Extension config script
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Alexander Opitz <alexander.opitz@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
 
-defined('TYPO3_MODE') or die('Access denied.');
+defined('TYPO3_MODE') || die();
 
-$TYPO3_CONF_VARS['FE']['eID_include'][$_EXTKEY]
-    = 'EXT:' . $_EXTKEY . '/eid/nr_sync.php';
+// Register icons
+$iconRegistry = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+    \TYPO3\CMS\Core\Imaging\IconRegistry::class
+);
+
+$iconRegistry->registerIcon(
+    'nr_sync_extension_icon',
+    \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
+    ['source' => 'EXT:nr_sync/Resources/Public/Icons/Extension.svg']
+);
 
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
-    $_EXTKEY,
+    'nr_sync',
     'nrClearCache' /* sv type */,
     'tx_nrsync_clearcache' /* sv key */,
-    array(
+    [
 
         'title' => 'NrSync Cache clear',
         'description' => 'Clears the cache of given tables',
@@ -33,6 +38,9 @@ $TYPO3_CONF_VARS['FE']['eID_include'][$_EXTKEY]
         'os' => '',
         'exec' => '',
 
-        'className' => Netresearch\Sync\Service\clearCache::class,
-    )
+        'className' => Netresearch\Sync\Service\ClearCache::class,
+    ]
 );
+
+
+$TYPO3_CONF_VARS['FE']['eID_include']['nr_sync'] = 'EXT:nr_sync/eid/nr_sync.php';

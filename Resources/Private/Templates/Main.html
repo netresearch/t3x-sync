@@ -1,4 +1,12 @@
-<form action="{moduleName}" method="post" id="SyncModuleController">
-    <input type="hidden" name="id" value="{id}" />
-    <f:format.raw>{functionMenuModuleContent}</f:format.raw>
-</form>
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers">
+
+    <f:form method="post" id="SyncModuleController">
+        <input type="hidden" name="route" value="{moduleName}" />
+        <input type="hidden" name="id" value="{id}" />
+
+        <f:format.raw>{functionMenuModuleContent}</f:format.raw>
+    </f:form>
+
+</html>

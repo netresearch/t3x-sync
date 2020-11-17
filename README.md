@@ -1,6 +1,6 @@
-*********
+*******
 nr_sync
-*********
+*******
 
 .. contents:: Inhaltsverzeichnis
 

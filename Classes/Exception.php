@@ -1,26 +1,23 @@
 <?php
+
 /**
- * Part of Nr_Sync package.
- * General Sync Exception
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Alexander Opitz <alexander.opitz@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
 /**
  * Sync exception.
  *
- * @package  Netresearch/TYPO3/Sync
- * @author   Alexander Opitz <alexander.opitz@netresearch.de>
- * @license  https://www.gnu.org/licenses/agpl AGPL v3
- * @link     http://www.netresearch.de
+ * @author  Alexander Opitz <alexander.opitz@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
  */
 class Exception extends \Exception
 {

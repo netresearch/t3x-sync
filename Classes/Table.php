@@ -29,18 +29,18 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class Table
 {
     /** @var string $strTableName Name of table * */
-    protected $strTableName = null;
+    protected $strTableName;
 
     /** @var string $strDumpFile Name of dump file * */
-    protected $strDumpFile = null;
+    protected $strDumpFile;
 
-    /** @var boolean $bForceFullSync force a complete sync * */
+    /** @var bool $bForceFullSync force a complete sync * */
     protected $bForceFullSync = false;
 
     /**
      * add the --no-create-info option to the dump
      *
-     * @var boolean
+     * @var bool
      */
     protected $bNoCreateInfo = true;
 
@@ -48,7 +48,7 @@ class Table
      * delete rows which are not used on live system
      * (delete,disabled,endtime), default is true
      *
-     * @var boolean
+     * @var bool
      */
     protected $bDeleteObsoleteRows = true;
 
@@ -78,7 +78,7 @@ class Table
         $this->strTableName = (string) $strTableName;
         $this->strDumpFile = (string) $strDumpFile;
 
-        if (is_array($arOptions)) {
+        if (\is_array($arOptions)) {
             if (isset($arOptions['bForceFullSync'])) {
                 $this->bForceFullSync = (bool)$arOptions['bForceFullSync'];
             }
@@ -106,13 +106,9 @@ class Table
      *
      * @return bool
      */
-    protected function useReplace()
+    protected function useReplace(): bool
     {
-        if ($this->strTableName === 'sys_file_metadata') {
-            return true;
-        }
-
-        return false;
+        return $this->strTableName === 'sys_file_metadata';
     }
 
 
@@ -133,10 +129,10 @@ class Table
      */
     public static function writeDumps(
         array $arTables, $strDumpFile, array $arOptions = null
-    )
+    ): void
     {
         /** @var Table[] $arInstances */
-        $arInstances = array();
+        $arInstances = [];
         foreach ($arTables as $strTable) {
             $table = new static($strTable, $strDumpFile, $arOptions);
             $arInstances[] = $table;
@@ -159,14 +155,14 @@ class Table
      *
      * @return void
      */
-    public function writeDump()
+    public function writeDump(): void
     {
-        if (false === $this->bForceFullSync && $this->hasTstampField()) {
+        if ($this->bForceFullSync === false && $this->hasTstampField()) {
             if ($this->hasUpdatedRows()) {
                 $this->appendUpdateToFile();
                 $this->setLastDumpTime();
             } else {
-                static::notifySkippedEmptyTable();
+                $this->notifySkippedEmptyTable();
             }
         } else {
             $this->appendDumpToFile();
@@ -181,7 +177,7 @@ class Table
      *
      * @return void
      */
-    protected function notifySkippedEmptyTable()
+    protected function notifySkippedEmptyTable(): void
     {
         /** @var FlashMessage $message */
         $message = GeneralUtility::makeInstance(
@@ -192,7 +188,7 @@ class Table
         );
 
 
-        /* @var $messageService \TYPO3\CMS\Core\Messaging\FlashMessageService */
+        /** @var \TYPO3\CMS\Core\Messaging\FlashMessageService $messageService */
         $messageService = GeneralUtility::makeInstance(
             \TYPO3\CMS\Core\Messaging\FlashMessageService::class
         );
@@ -205,15 +201,14 @@ class Table
     /**
      * Returns row count affected for sync/dump.
      *
-     * @return integer|false
+     * @return int|false
      * @throws Exception
      */
     protected function hasUpdatedRows()
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($this->strTableName);
 
         $strWhere = $this->getDumpWhereCondition();
@@ -227,7 +222,12 @@ class Table
 
         $queryBuilder = $connection->createQueryBuilder();
 
-        return $queryBuilder->count('tstamp')->from($this->strTableName)->where($strWhere)->execute()->fetchColumn(0);
+        return $queryBuilder
+            ->count('tstamp')
+            ->from($this->strTableName)
+            ->where($strWhere)
+            ->execute()
+            ->fetchOne();
     }
 
 
@@ -237,21 +237,20 @@ class Table
      *
      * @return array
      */
-    public function getUpdateableEntries()
+    public function getUpdateableEntries(): array
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($this->strTableName);
 
         $queryBuilder = $connection->createQueryBuilder();
 
-        /* @var $TYPO3_DB t3lib_DB */
+        /** @var t3lib_DB $TYPO3_DB */
         global $TYPO3_DB;
 
         $strWhere = '';
-        if (false === $this->bForceFullSync && $this->hasTstampField()) {
+        if ($this->bForceFullSync === false && $this->hasTstampField()) {
             $strWhere = $this->getDumpWhereCondition();
         }
         $statement = $queryBuilder
@@ -261,7 +260,7 @@ class Table
         if (!empty($strWhere)) {
             $statement->where($strWhere);
         }
-        $data = $statement->execute()->fetchAll();
+        $data = $statement->execute()->fetchAllAssociative();
 
         $list = array_filter(explode(',', $data['0']['uid_list']));
 
@@ -284,12 +283,11 @@ class Table
      * @return void
      * @throws Exception
      */
-    protected function appendDumpToFile()
+    protected function appendDumpToFile(): void
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($this->strTableName);
 
         $r = file_put_contents(
@@ -298,7 +296,7 @@ class Table
             FILE_APPEND
         );
 
-        if (false == $r) {
+        if ($r == false) {
             throw new Exception('Could not write into dump file.');
         }
 
@@ -344,12 +342,11 @@ class Table
      * @return void
      * @throws Exception
      */
-    protected function appendUpdateToFile()
+    protected function appendUpdateToFile(): void
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable($this->strTableName);
 
         $strWhere = $this->getDumpWhereCondition();
@@ -396,11 +393,11 @@ class Table
      *
      * @return void
      */
-    public function appendDeleteObsoleteRowsToFile()
+    public function appendDeleteObsoleteRowsToFile(): void
     {
         $strSqlObsoleteRows = $this->getSqlDroppingObsoleteRows();
 
-        if (true === empty($strSqlObsoleteRows)) {
+        if (empty($strSqlObsoleteRows) === true) {
             return;
         }
         file_put_contents(
@@ -423,7 +420,7 @@ class Table
         // load TCA and check for tstamp field
         $strTableTstampField = $this->getTstampField();
 
-        if (false === $strTableTstampField) {
+        if ($strTableTstampField === false) {
             return false;
         }
 
@@ -460,11 +457,11 @@ class Table
     /**
      * Returns whether a table has tstamp field or not.
      *
-     * @return boolean
+     * @return bool
      */
-    protected function hasTstampField()
+    protected function hasTstampField(): bool
     {
-        return false !== $this->getTstampField();
+        return $this->getTstampField() !== false;
     }
 
 
@@ -472,15 +469,13 @@ class Table
     /**
      * Returns time stamp for last sync/dump of this table
      *
-     * @return integer
-     * @throws Exception
+     * @return int
      */
-    protected function getLastDumpTime()
+    protected function getLastDumpTime(): int
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
 
         $queryBuilder = $connection->createQueryBuilder();
@@ -495,7 +490,7 @@ class Table
                 $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->strTableName)])
             )
             ->execute()
-            ->fetch(\PDO::FETCH_ASSOC);
+            ->fetchAssociative();
 
         // DEFAULT: date of last full dump - facelift 2013
         $nTime = mktime(0, 0, 0, 2, 1, 2013);
@@ -518,24 +513,21 @@ class Table
     /**
      * Sets time of last dump/sync for this table.
      *
-     * @param integer $nTime Time of last table dump/sync.
-     * @param boolean $bIncr Set time for last incremental or full dump/sync.
+     * @param int $nTime Time of last table dump/sync.
+     * @param bool $bIncr Set time for last incremental or full dump/sync.
      *
      * @return void
-     * @throws Exception
      */
-    protected function setLastDumpTime($nTime = null, $bIncr = true)
+    protected function setLastDumpTime($nTime = null, $bIncr = true): void
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
 
-        /* @var $BE_USER \TYPO3\CMS\Core\Authentication\BackendUserAuthentication */
         global $BE_USER;
 
-        if (null === $nTime) {
+        if ($nTime === null) {
             $nTime = $GLOBALS['EXEC_TIME'];
         }
 
@@ -549,10 +541,10 @@ class Table
             $strUpdateField = 'full';
         }
 
-        $nUserId = intval($BE_USER->user['uid']);
-        $nTime = intval($nTime);
+        $nUserId = (int)$BE_USER->user['uid'];
+        $nTime = (int)$nTime;
 
-        $connection->exec(
+        $connection->executeStatement(
             'INSERT INTO tx_nrsync_syncstat'
             . "(tab, $strUpdateField, cruser_id) VALUES "
             . '('
@@ -571,17 +563,16 @@ class Table
      *
      * @return string
      */
-    public function getSqlDroppingObsoleteRows()
+    public function getSqlDroppingObsoleteRows(): ?string
     {
-        /* @var $connectionPool \TYPO3\CMS\Core\Database\ConnectionPool */
+        /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
 
         $arControlFields = $this->getControlFieldsFromTcaByTableName();
 
-        if (0 === count($arControlFields)) {
+        if (\count($arControlFields) === 0) {
             return null;
         }
 
@@ -592,7 +583,7 @@ class Table
 
         $strStatement = 'DELETE FROM '
             . $connection->quoteIdentifier($this->strTableName);
-        $arWhereClauseParts = array();
+        $arWhereClauseParts = [];
         if (isset($arControlFields['delete'])) {
             $arWhereClauseParts[] = $arControlFields['delete'] . ' = 1';
         }
@@ -609,7 +600,7 @@ class Table
                 . ')';
         }
 
-        if (0 === count($arWhereClauseParts)) {
+        if (\count($arWhereClauseParts) === 0) {
             return null;
         }
 
@@ -629,18 +620,18 @@ class Table
      * @return array An array with controlfield key and the name of the keyfield
      *               in the current table
      */
-    public function getControlFieldsFromTcaByTableName()
+    public function getControlFieldsFromTcaByTableName(): array
     {
         global $TCA;
 
         if (!isset($TCA[$this->strTableName])) {
-            return array();
+            return [];
         }
 
         $arControl = $TCA[$this->strTableName]['ctrl'];
         $arEnableFields = $arControl['enablecolumns'];
 
-        $arReturn = array();
+        $arReturn = [];
 
         if (!empty($arControl['delete'])) {
             $arReturn['delete'] = $arControl['delete'];
@@ -662,11 +653,11 @@ class Table
     /**
      * Setter for bNoCreateInfo
      *
-     * @param boolean $bNoCreateInfo True if do not add CREATE TABLE
+     * @param bool $bNoCreateInfo True if do not add CREATE TABLE
      *
      * @return void
      */
-    public function setNoCreateInfo($bNoCreateInfo)
+    public function setNoCreateInfo($bNoCreateInfo): void
     {
         $this->bNoCreateInfo = $bNoCreateInfo;
     }

@@ -10,7 +10,7 @@
  * @link       http://www.netresearch.de
  */
 
-use Netresearch\Sync\Service\clearCache;
+use Netresearch\Sync\Service\ClearCache;
 
 defined('TYPO3_cliMode') or die('You cannot run this script directly!');
 
@@ -25,29 +25,29 @@ defined('TYPO3_cliMode') or die('You cannot run this script directly!');
 class Nr_Sync_Cli extends t3lib_cli
 {
     /**
-     * @var integer CLI return code: All okay.
+     * @var int CLI return code: All okay.
      */
-    const CLI_OK            = 0;
+    public const CLI_OK            = 0;
 
     /**
-     * @var integer CLI return code: Error on given command.
+     * @var int CLI return code: Error on given command.
      */
-    const CLI_ERROR_COMMAND = 1;
+    public const CLI_ERROR_COMMAND = 1;
 
     /**
-     * @var integer CLI return code: Error with given file.
+     * @var int CLI return code: Error with given file.
      */
-    const CLI_ERROR_FILE    = 2;
+    public const CLI_ERROR_FILE    = 2;
 
     /**
-     * @var integer CLI return code: Error unknown.
+     * @var int CLI return code: Error unknown.
      */
-    const CLI_ERROR_UNKNOWN = 255;
+    public const CLI_ERROR_UNKNOWN = 255;
 
     /**
-     * @var clearCache Service object to call.
+     * @var ClearCache Service object to call.
      */
-    private $service = null;
+    private $service;
 
     /**
      * Constructor
@@ -72,9 +72,9 @@ class Nr_Sync_Cli extends t3lib_cli
         $this->cli_help['available tasks'] = 'clearCache';
 
         $this->cli_options[]
-            = array('-f filename', 'Filename with listed "table:uid" form.');
+            = ['-f filename', 'Filename with listed "table:uid" form.'];
         $this->cli_options[]
-            = array('-d data', 'Data in the "table:uid" form.');
+            = ['-d data', 'Data in the "table:uid" form.'];
     }
 
     /**
@@ -82,7 +82,7 @@ class Nr_Sync_Cli extends t3lib_cli
      *
      * @return void
      */
-    public function CLI_main()
+    public function CLI_main(): void
     {
         // validate input
         $this->cli_validateArgs();
@@ -90,14 +90,11 @@ class Nr_Sync_Cli extends t3lib_cli
         // get task (function)
         $strTask = (string) $this->cli_args['_DEFAULT'][1];
 
-        switch ($strTask) {
-        case 'clearCache':
+        if ($strTask === 'clearCache') {
             $nResult = $this->cliClearCache();
-            break;
-        default:
+        } else {
             $this->cli_help();
             $nResult = self::CLI_OK;
-            break;
         }
 
         exit ($nResult);
@@ -106,9 +103,9 @@ class Nr_Sync_Cli extends t3lib_cli
     /**
      * Function for the clearCache task. With echo output.
      *
-     * @return integer CLI Error code.
+     * @return int CLI Error code.
      */
-    private function cliClearCache()
+    private function cliClearCache(): int
     {
         if ($this->cli_isArg('-f')) {
             $strFilename = $this->cli_argValue('-f');
@@ -135,9 +132,9 @@ class Nr_Sync_Cli extends t3lib_cli
     /**
      * Setups the needed ClearCacheService with echo output.
      *
-     * @return boolean True if initialization was ok otherwise false.
+     * @return bool True if initialization was ok otherwise false.
      */
-    private function setupClearCacheService()
+    private function setupClearCacheService(): bool
     {
         $this->service = t3lib_div::makeInstanceService('nrClearCache');
 
@@ -160,9 +157,9 @@ class Nr_Sync_Cli extends t3lib_cli
      *
      * @return array Array of the "table:uid" values.
      */
-    private function getDataFromFile($strFilename)
+    private function getDataFromFile(string $strFilename): array
     {
-        $arData = array();
+        $arData = [];
         $arFileLines = file($strFilename);
         foreach ($arFileLines as $strFileLine) {
             $arData = array_merge(
@@ -181,7 +178,7 @@ class Nr_Sync_Cli extends t3lib_cli
      *
      * @return void
      */
-    private function runClearCacheService(array $arData)
+    private function runClearCacheService(array $arData): void
     {
         $this->cli_echo('TYPO3 cache clearing...'."\n");
         $this->service->clearCaches($arData);

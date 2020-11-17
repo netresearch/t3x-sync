@@ -1,4 +1,7 @@
 <?php
+
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+
 /**
  * eID Robot
  *
@@ -10,7 +13,7 @@
  * @link       http://www.netresearch.de
  */
 
-use Netresearch\Sync\Service\clearCache;
+use Netresearch\Sync\Service\ClearCache;
 use TYPO3\CMS\Core\Utility\GeneralUtility,
     TYPO3\CMS\Frontend\Utility\EidUtility;
 
@@ -27,37 +30,37 @@ class Nr_Sync_Eid
     /**
      * @var string Same as class name
      */
-    var $prefixId      = 'Nr_Sync_Eid';
+    public $prefixId      = 'Nr_Sync_Eid';
 
     /**
      * @var string Path to this script relative to the extension dir.
      */
-    var $scriptRelPath = 'eid/nr_sync.php';
+    public $scriptRelPath = 'eid/nr_sync.php';
 
     /**
      * @var string The extension key.
      */
-    var $extKey        = 'nr_sync';
+    public $extKey        = 'nr_sync';
 
     /**
-     * @var integer HTTP return code: All ok.
+     * @var int HTTP return code: All ok.
      */
-    const HTTP_OK            = 200;
+    public const HTTP_OK            = 200;
 
     /**
-     * @var integer HTTP return code: Error Bad Request.
+     * @var int HTTP return code: Error Bad Request.
      */
-    const HTTP_ERROR_COMMAND = 400;
+    public const HTTP_ERROR_COMMAND = 400;
 
     /**
-     * @var integer HTTP return code: Unknown.
+     * @var int HTTP return code: Unknown.
      */
-    const HTTP_ERROR_UNKNOWN = 500;
+    public const HTTP_ERROR_UNKNOWN = 500;
 
     /**
      * @var clearCache Service object to call.
      */
-    private $service = null;
+    private $service;
 
 
 
@@ -66,7 +69,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    public function main()
+    public function main(): void
     {
         // header will be set to 200 later if no error occurs
         header('HTTP/1.1 500 Internal Server error');
@@ -78,13 +81,10 @@ class Nr_Sync_Eid
             // get task (function)
             $strTask = (string) $_REQUEST['task'];
 
-            switch ($strTask) {
-            case 'clearCache':
+            if ($strTask === 'clearCache') {
                 $this->taskClearCache();
-                break;
-            default:
+            } else {
                 static::triggerErrorUnknownTask();
-                break;
             }
         } catch (Exception $e) {
             static::triggerErrorUnknownException($e);
@@ -103,12 +103,12 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    protected static function triggerErrorUnknownException(Exception $e)
+    protected static function triggerErrorUnknownException(Exception $e): void
     {
         GeneralUtility::devLog(
             'Caught unknown Exception', 'nr_sync',
             GeneralUtility::SYSLOG_SEVERITY_ERROR,
-            array('exception' => $e)
+            ['exception' => $e]
         );
         static::triggerError(self::HTTP_ERROR_UNKNOWN, 'Unknown Exception logged');
     }
@@ -120,7 +120,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    protected static function triggerErrorUnknownTask()
+    protected static function triggerErrorUnknownTask(): void
     {
         static::triggerError(self::HTTP_ERROR_COMMAND, 'Task unknown');
     }
@@ -132,7 +132,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    protected static function triggerErrorNoService()
+    protected static function triggerErrorNoService(): void
     {
         static::triggerError(
             self::HTTP_ERROR_UNKNOWN,
@@ -147,7 +147,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    protected static function triggerErrorNoParameter()
+    protected static function triggerErrorNoParameter(): void
     {
         static::triggerError(
             self::HTTP_ERROR_COMMAND,
@@ -162,12 +162,12 @@ class Nr_Sync_Eid
      *
      * Exit execution.
      *
-     * @param integer $nCode      Error code.
+     * @param int $nCode      Error code.
      * @param string  $strMessage Error message.
      *
      * @return void
      */
-    protected static function triggerError($nCode, $strMessage)
+    protected static function triggerError(int $nCode, string $strMessage): void
     {
         header('HTTP/1.1 ' . $nCode . ' ' . $strMessage);
         echo 'Error: ' . $strMessage;
@@ -181,7 +181,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    private function taskClearCache()
+    private function taskClearCache(): void
     {
         if (! isset($_REQUEST['data'])) {
             static::triggerErrorNoParameter();
@@ -199,7 +199,7 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    private function requireClearCacheService()
+    private function requireClearCacheService(): void
     {
         $this->service = GeneralUtility::makeInstanceService('nrClearCache');
 
@@ -217,12 +217,12 @@ class Nr_Sync_Eid
      *
      * @return void
      */
-    private function runClearCacheService(array $arData)
+    private function runClearCacheService(array $arData): void
     {
         global $BE_USER;
 
-        /** @var \TYPO3\CMS\Core\Authentication\BackendUserAuthentication $BE_USER */
-        $BE_USER = GeneralUtility::makeInstance('TYPO3\CMS\Core\Authentication\BackendUserAuthentication');
+        /** @var BackendUserAuthentication $BE_USER */
+        $BE_USER = GeneralUtility::makeInstance(BackendUserAuthentication::class);
         $BE_USER->start();
 
         // SDM-12632 try increased memory limit

@@ -1,0 +1,49 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:v="http://typo3.org/ns/FluidTYPO3/Vhs/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+
+>
+    <f:section name="Main">
+        <f:for each="{syncList.asArray}" key="areaId" as="syncList2">
+            <v:variable.set name="area" value="{nrs:area(id: areaId)}" />
+            <h3>{area.name} - {area.description}</h3>
+
+            <div class="table-fit">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <f:for each="{syncList2}" as="syncItem">
+                            <tr class="bgColor4">
+                                <td>
+                                    <nrs:backend.recordTitle pid="{syncItem.pageID}" />
+                                    pages:{syncItem.pageID}
+                                    <f:if condition="{syncItem.type} == 'tree' && {syncItem.count} > 0">
+                                        ({syncItem.count} sub pages with {syncItem.deleted} deleted and {syncItem.noaccess} inaccessible.)
+                                    </f:if>
+                                </td>
+                                <td>
+                                    <f:if condition="{syncItem.removeable}">
+                                        <button class="btn btn-default"
+                                                type="submit"
+                                                name="data[delete][{areaId}][{syncItem.pageID}]"
+                                                value="Remove from sync list">
+                                            <core:icon identifier="actions-selection-delete" size="small" />
+                                        </button>
+                                    </f:if>
+                                </td>
+                            </tr>
+                        </f:for>
+                    </tbody>
+                </table>
+            </div>
+        </f:for>
+    </f:section>
+</html>

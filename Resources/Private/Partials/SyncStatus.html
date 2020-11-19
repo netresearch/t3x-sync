@@ -1,0 +1,51 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+>
+    <f:section name="Main">
+        <div class="table-fit">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Last sync time</th>
+                        <th>Last sync type</th>
+                        <th>Last sync user</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <f:for each="{tableSyncStats.syncStats}" key="table" as="arTableSyncStats">
+                        <tr class="bgColor4">
+                            <td>{table}</td>
+
+                            <f:if condition="{arTableSyncStats.last_time}">
+                                <f:then>
+                                    <td>
+                                        <f:if condition="{arTableSyncStats.last_time}">
+                                            <f:then>
+                                                <f:format.date date="{arTableSyncStats.last_time}" format="Y-m-d H:i:s" />
+                                            </f:then>
+                                            <f:else>
+                                                n/a
+                                            </f:else>
+                                        </f:if>
+                                    </td>
+                                    <td>
+                                        {arTableSyncStats.last_type}
+                                    </td>
+                                    <td>
+                                        <nrs:format.username id="{arTableSyncStats.last_user}" />
+                                    </td>
+                                </f:then>
+                                <f:else>
+                                    <td colspan="3">n/a</td>
+                                </f:else>
+                            </f:if>
+                        </tr>
+                    </f:for>
+                </tbody>
+            </table>
+        </div>
+    </f:section>
+</html>

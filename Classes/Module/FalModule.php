@@ -56,6 +56,7 @@ class FalModule extends BaseModule
         if ($this->hasError()) {
             $this->content = '<input type="Submit" name="data[dam_cleanup]" value="clean up FAL">';
         }
+        $this->content = '<input type="Submit" name="data[dam_cleanup]" value="clean up FAL">';
 
         return true;
     }

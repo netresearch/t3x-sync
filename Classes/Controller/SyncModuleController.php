@@ -530,16 +530,16 @@ class SyncModuleController extends ActionController
 
         $this->view->assign('moduleName', $this->getModuleUrl());
         $this->view->assign('id', $this->id);
-        $this->view->assign('functionMenuModuleContent', $this->content);
+//        $this->view->assign('functionMenuModuleContent', $this->content);
 
         // Setting up the buttons and markers for document header
 //        $this->getButtons();
 //        $this->generateMenu();
 
-        $this->view->getModuleTemplate()->setContent(
-            $this->content
-            . '</form>'
-        );
+//        $this->view->getModuleTemplate()->setContent(
+//            $this->content
+//            . '</form>'
+//        );
 
 //        $response->getBody()->write($this->view->getModuleTemplate()->renderContent());
 //
@@ -574,8 +574,8 @@ class SyncModuleController extends ActionController
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param int $nId      The page id to look for.
-     * @param array   $tables Tables this task manages.
+     * @param int   $nId    The page id to look for
+     * @param array $tables The tables this task manages
      *
      * @return bool True if data exists otherwise false.
      */
@@ -617,30 +617,28 @@ class SyncModuleController extends ActionController
      * @param string $strName  Name of this page selection (Depends on task).
      * @param array  $tables Tables this task manages.
      *
-     * @return string HTML Output for the selection box.
+     * @return void
      */
-    protected function showPageSelection(string $strName, array $tables): string
+    protected function showPageSelection(string $strName, array $tables): void
     {
         if ($this->id === 0) {
             $this->addError('Please select a page from the page tree.');
-            return '';
+            return;
         }
 
         $record = BackendUtility::getRecord('pages', $this->id);
 
         if ($record === null) {
             $this->addError('Could not load record for selected page: ' . $this->id . '.');
-            return '';
+            return;
         }
 
         if ($this->getArea()->isDocTypeAllowed($record) === false) {
             $this->addError('Page type not allowed to sync.');
-            return '';
+            return;
         }
 
-        $strPreOutput = '';
         $bShowButton = false;
-
         $recursion = (int) $this->getBackendUser()->getSessionData('nr_sync_synclist_levelmax' . $strName);
 
         if (isset($_POST['data']['rekursion'])) {
@@ -671,73 +669,85 @@ class SyncModuleController extends ActionController
             $strTitle .= ' - LINK';
         }
 
-        $strPreOutput .= '<div class="form-section">';
-        $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
-        $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[noaccess]" value="' . $arCount['noaccess'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->getArea()->getId() . '">';
+        $this->view->assign('pageValid', true);
+        $this->view->assign('title', $strTitle);
+        $this->view->assign('arCount', $arCount);
+        $this->view->assign('record', $record);
 
+//        $strPreOutput .= '<div class="form-section">';
+//        $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
+//        $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
+//        $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
+//        $strPreOutput .= '<input type="hidden" name="data[noaccess]" value="' . $arCount['noaccess'] . '">';
+//        $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->getArea()->getId() . '">';
 
-        $strPreOutput .= '<h3>' . $strTitle . '</h3>';
-        $strPreOutput .= '<div class="form-group">';
+//        $strPreOutput .= '<h3>' . $strTitle . '</h3>';
+//        $strPreOutput .= '<div class="form-group">';
         if ($this->pageContainsData($this->id, $tables)) {
-            $strPreOutput .= '<div class="checkbox">';
-            $strPreOutput .= '<label for="data_type_alone">'
-                . '<input type="radio" name="data[type]" value="alone" id="data_type_alone">'
-                . ' Only selected page</label>';
-            $strPreOutput .= '</div>';
+            $this->view->assign('pageContainsData', true);
+//            $strPreOutput .= '<div class="checkbox">';
+//            $strPreOutput .= '<label for="data_type_alone">'
+//                . '<input type="radio" name="data[type]" value="alone" id="data_type_alone">'
+//                . ' Only selected page</label>';
+//            $strPreOutput .= '</div>';
             $bShowButton = true;
         }
 
         if ($arCount['count'] > 0) {
-            $strPreOutput .= '<div class="checkbox">';
-            $strPreOutput .= '<label for="data_type_tree">'
-                . '<input type="radio" name="data[type]" value="tree" id="data_type_tree">'
-                . ' Selected page and all ' . $arCount['count']
-                . ' sub pages</label> <small>(thereof are '
-                . $arCount['deleted'] . ' deleted, '
-                . $arCount['noaccess'] . ' are inaccessible and '
-                . $arCount['falses'] . ' have wrong document type)</small>';
-            $strPreOutput .= '</div>';
+//            $strPreOutput .= '<div class="checkbox">';
+//            $strPreOutput .= '<label for="data_type_tree">'
+//                . '<input type="radio" name="data[type]" value="tree" id="data_type_tree">'
+//                . ' Selected page and all ' . $arCount['count']
+//                . ' sub pages</label> <small>(thereof are '
+//                . $arCount['deleted'] . ' deleted, '
+//                . $arCount['noaccess'] . ' are inaccessible and '
+//                . $arCount['falses'] . ' have wrong document type)</small>';
+//            $strPreOutput .= '</div>';
             $bShowButton = true;
+
             if ($arCount['other_area'] > 0) {
-                $strPreOutput .= '<br><b>There are restricted sub areas which are excluded from sync.</b>';
+//                $strPreOutput .= '<br><b>There are restricted sub areas which are excluded from sync.</b>';
             }
         }
-        $strPreOutput .= '</div>';
+
+        $this->view->assign('bShowButton', $bShowButton);
+
+//        $strPreOutput .= '</div>';
 
         if ($bShowButton) {
-            $strPreOutput .= '<div class="form-group">';
-            $strPreOutput .= '<div class="row">';
+            $this->view->assign('iconFactory', $this->getIconFactory());
+            $this->view->assign('recursion', $recursion);
 
-            $strPreOutput .= '<div class="form-group col-xs-6">';
-            $strPreOutput .= '<button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">';
-            $strPreOutput .= $this->getIconFactory()->getIcon('actions-add', Icon::SIZE_SMALL)->render();
-            $strPreOutput .= 'Add to sync list';
-            $strPreOutput .= '</button>
-                </div>';
 
-            $strPreOutput .= '<div class="form-group col-xs-1">
-            <input class="form-control" type="number" name="data[levelmax]" value="'
-                . $recursion . '">'
-                . ' </div>
-            <div class="form-group col-xs-4 form">
-            <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">
-            </div>
-            </div>';
+//            $strPreOutput .= '<div class="form-group">';
+//            $strPreOutput .= '<div class="row">';
+//
+//            $strPreOutput .= '<div class="form-group col-xs-6">';
+//            $strPreOutput .= '<button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">';
+//            $strPreOutput .= $this->getIconFactory()->getIcon('actions-add', Icon::SIZE_SMALL)->render();
+//            $strPreOutput .= 'Add to sync list';
+//            $strPreOutput .= '</button>
+//                </div>';
 
-            $strPreOutput .= '</div>';
+//            $strPreOutput .= '<div class="form-group col-xs-1">
+//            <input class="form-control" type="number" name="data[levelmax]" value="'
+//                . $recursion . '">'
+//                . ' </div>
+//            <div class="form-group col-xs-4 form">
+//            <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">
+//            </div>
+//            </div>';
+//
+//            $strPreOutput .= '</div>';
         } else {
             $this->addError(
                 'Bitte wählen Sie eine Seite mit entsprechendem Inhalt aus.'
             );
         }
 
+//        $strPreOutput .= '</div>';
 
-        $strPreOutput .= '</div>';
-
-        return $strPreOutput;
+//        return $strPreOutput;
     }
 
     /**
@@ -827,9 +837,6 @@ class SyncModuleController extends ActionController
         $this->view->assign('syncLock', $syncLock);
 
         if ($syncLock->isLocked()) {
-            $this->content .= '<div class="alert alert-warning">';
-            $this->content .= $syncLock->getLockMessage();
-            $this->content .= '</div>';
             return;
         }
 
@@ -871,16 +878,16 @@ class SyncModuleController extends ActionController
         }
 
         $this->function = $this->getFunctionObject((int) $this->MOD_SETTINGS['function']);
-        $dumpFile    = $this->function->getDumpFileName();
-
-        $this->content .= '<h1>Create new sync</h1>';
-        $this->content .= '<form action="" method="POST">';
+        $dumpFile       = $this->function->getDumpFileName();
 
         $this->view->assign('function', (int) $this->MOD_SETTINGS['function']);
+        $this->view->assign('id', $this->id);
+        $this->view->assign('area', $this->getArea());
+        $this->view->assign('dbFolder', $this->dbFolder);
 
         // Sync single pages/page trees (TYPO3 6.2.x)
         if (((int) $this->MOD_SETTINGS['function']) === self::FUNC_SINGLE_PAGE) {
-            $this->content .= $this->showPageSelection(
+            $this->showPageSelection(
                 $this->MOD_SETTINGS['function'],
                 $this->function->getTableNames()
             );
@@ -894,6 +901,8 @@ class SyncModuleController extends ActionController
         if ($this->function->hasError()) {
             $this->addError($this->function->getError());
         }
+
+DebuggerUtility::var_dump($this->function->getContent());
 
         $this->content .= $this->function->getContent();
 
@@ -920,7 +929,7 @@ class SyncModuleController extends ActionController
                         if ($ret && $this->createClearCacheFile('pages', $pageIDs)) {
                             if ($area->notifyMaster() !== false) {
                                 $this->addSuccess(
-                                    'Sync started - should be processed within in next 15 minutes.'
+                                    'Sync started - should be processed within next 15 minutes.'
                                 );
                                 $syncList->emptyArea($areaID);
                             } else {
@@ -957,179 +966,24 @@ class SyncModuleController extends ActionController
             }
         }
 
-        $this->content .= '<div class="form-section">';
-
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
             /** @var SyncStats $syncStats */
             $syncStats = GeneralUtility::makeInstance(SyncStats::class, $this->function->getTableNames());
-            $this->content .= $syncStats->createTableSyncStats();
+
+            $this->view->assign('tableSyncStats', $syncStats);
+            $this->view->assign('showTableSyncStats', true);
         }
 
-        // Syncliste anzeigen
-        if ($bUseSyncList && !$this->getSyncList()->isEmpty()) {
-            $this->content .= $this->getSyncList()->showSyncList();
-        }
+        $this->view->assign('bUseSyncList', $bUseSyncList);
+        $this->view->assign('syncList', $this->getSyncList());
 
-        if (($bUseSyncList && ! $this->getSyncList()->isEmpty())
+        if (($bUseSyncList && !$this->getSyncList()->isEmpty())
             || ($bUseSyncList === false && \count($this->function->getTableNames()))
         ) {
-            $this->content .= '<div class="form-group">';
-            $this->content .= '<div class="checkbox">';
-            $this->content .= '<label for="force_full_sync">'
-                . '<input type="checkbox" name="data[force_full_sync]" value="1" id="force_full_sync">'
-                . 'Force full sync. A full sync of this element will be initiated even if an incremental sync is possible. This should be avoided.'
-                . '</label>';
-            $this->content .= '</div>';
-            $this->content .= '<div class="checkbox">'
-                . '<label for="delete_obsolete_rows">'
-                . '<input type="checkbox" checked="checked" name="data[delete_obsolete_rows]" value="1" id="delete_obsolete_rows">'
-                . 'Delete obsolete Rows on LIVE system. All Rows which are hidden or deleted or where endtime is a date in past will be deleted on live system'
-                . '</label>';
-            $this->content .= '</div>';
-            $this->content .= '</div>';
-        }
-        $this->content .= '</div>';
-
-        if (!empty($this->MOD_SETTINGS['function'])) {
-            $strDisabled  = '';
-            if ($bUseSyncList && $this->getSyncList()->isEmpty()) {
-                $strDisabled = ' disabled="disabled"';
-            }
-
-            $this->content .= '<div class="form-section">';
-            $this->content .= '<div class="form-group">';
-            $this->content .= '<input class="btn btn-primary" type="Submit" name="data[submit]" value="Create sync" ' . $strDisabled . '>';
-            $this->content .= '</div>';
-            $this->content .= '</div>';
+            $this->view->assign('showCheckBoxes', true);
         }
 
-        $this->showSyncState();
-    }
-
-    /**
-     * Shows how many files are waiting for sync and how old the oldest file is.
-     *
-     * @return void
-     */
-    private function showSyncState(): void
-    {
-        $this->content .= '<h1>Waiting syncs</h1>';
-
-        foreach ($this->getArea()->getSystems() as $systemKey => $system) {
-            if (! empty($system['hide'])) {
-                continue;
-            }
-
-            $this->content .= '<h2>';
-
-            if (is_file($this->dbFolder . $system['directory'] . '/.lock')) {
-                $href =  $this->getModuleUrl(
-                    [
-                        'lock' => [$systemKey => '0'],
-                        'id'   => $this->id,
-                    ]
-                );
-                $icon = $this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL);
-                $this->content .= '<a href="' . $href . '" class="btn btn-warning" title="Sync disabled, click to enable">' . $icon . '</a>';
-            } else {
-                $href =  $this->getModuleUrl(
-                    [
-                        'lock' => [$systemKey => '1'],
-                        'id'   => $this->id,
-                    ]
-                );
-                $icon = $this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL);
-                $this->content .= '<a href="' . $href . '" class="btn btn-success" title="Sync enabled, click to disable">' . $icon . '</a>';
-            }
-
-            $this->content .= ' Sync target: "' . htmlspecialchars($system['name']) . '"</h2>';
-
-
-            $arFiles = $this->removeLinksAndFoldersFromFileList(
-                glob($this->dbFolder . $system['directory'] . '/*')
-            );
-
-            $nDumpFiles = \count($arFiles);
-            if ($nDumpFiles < 1) {
-                continue;
-            }
-
-            $strFiles = '';
-            $nSyncSize = 0;
-
-            $strFiles .= '<div class="table-fit">';
-            $strFiles .= '<table class="table table-striped table-hover" id="ts-overview">';
-            $strFiles .= '<thead>';
-            $strFiles .= '<tr><th>File</th><th>Size</th></tr>';
-            $strFiles .= '</thead>';
-            $strFiles .= '<tbody>';
-
-            foreach ($arFiles as $strFile) {
-                $nSize = filesize($strFile);
-                $nSyncSize += $nSize;
-
-                $strFiles .= '<tr class="bgColor4">';
-                $strFiles .= '<td>';
-                $strFiles .= htmlspecialchars(basename($strFile));
-                $strFiles .= '</td>';
-
-                $strFiles .= '<td>';
-                $strFiles .= number_format($nSize / 1024 / 1024, 2, '.', ',') . ' MiB';
-                $strFiles .= '</td>';
-
-                $strFiles .= '</tr>';
-            }
-
-            $strFiles .= '</tbody>';
-            $strFiles .= '</table>';
-            $strFiles .= '</div>';
-
-            $nTime = filemtime(reset($arFiles));
-
-            if ($nTime < time() - 60 * 15) {
-                // if oldest file time is older than 15 minutes display this in red
-                $type = FlashMessage::ERROR;
-            } else {
-                $type = FlashMessage::INFO;
-            }
-
-            /** @var FlashMessage $message2 */
-            $message = GeneralUtility::makeInstance(
-                FlashMessage::class,
-                $nDumpFiles . ' file'
-                . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
-                . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).'
-                . ' Oldest file from ' . date('Y-m-d H:i', $nTime)
-                . ' and therefor ' . ceil((time() - $nTime) / 60)
-                . ' minutes old.',
-                '',
-                $type
-            );
-
-            /** @var BootstrapRenderer $renderer */
-            $renderer = GeneralUtility::makeInstance(BootstrapRenderer::class);
-
-            $this->content .= $renderer->render([$message]);
-            $this->content .= $strFiles;
-        }
-    }
-
-    /**
-     * Remove links and folders from fileList for displaying SyncStat
-     *
-     * @param array $arFiles
-     *
-     * @return array
-     */
-    protected function removeLinksAndFoldersFromFileList(array $arFiles): array
-    {
-        foreach ($arFiles as $index => $strPath) {
-            if (is_link($strPath) || is_dir($strPath)) {
-                unset($arFiles[$index]);
-            }
-        }
-
-        return $arFiles;
+        $this->view->assign('moduleRoute', $this->moduleName);
     }
 
     /**
@@ -1989,6 +1843,10 @@ class SyncModuleController extends ActionController
 
         foreach ($insertLines as $table => $arInsertStatements) {
             foreach ($arInsertStatements as $uid => $strStatement) {
+                if (strpos($table, '_mm') !== false) {
+                    continue;
+                }
+
                 $this->setLastDumpTimeForElement($table, $uid);
             }
         }
@@ -2466,6 +2324,10 @@ class SyncModuleController extends ActionController
 
         foreach ($lines as $table => $arStatements) {
             foreach ($arStatements as $uid => $strStatement) {
+                if (strpos($table, '_mm') !== false) {
+                    continue;
+                }
+
                 if (!$this->isElementSyncable($table, $uid)) {
                     unset($result[$table][$uid]);
                 }

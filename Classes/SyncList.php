@@ -16,13 +16,10 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 
 /**
  * Class SyncList
@@ -52,7 +49,6 @@ class SyncList
     private $syncList = [];
 
     private $id = '';
-    private $content = '';
 
     /**
      * SyncList constructor.
@@ -147,8 +143,6 @@ class SyncList
             }
         }
     }
-
-
 
     /**
      * Checks whether the given page ID is already in the sync list.
@@ -246,102 +240,6 @@ class SyncList
     public function emptyArea($areaID): void
     {
         unset($this->syncList[$areaID]);
-    }
-
-    /**
-     * Adds the elements from the sync list as section into the content of the
-     * template of backend module.
-     *
-     * @return string
-     */
-    public function showSyncList(): string
-    {
-        $this->content .= '<h2>Sync list</h2>';
-
-        foreach ($this->syncList as $areaId => $syncList) {
-            /** @var Area $area */
-            $area = GeneralUtility::makeInstance(Area::class, $areaId);
-
-            $this->content .= '<h3>' . $area->getName() . ' ' . $area->getDescription() . '</h3>';
-
-            $this->showSyncListArea($areaId, $syncList);
-        }
-
-        return $this->content;
-    }
-
-    /**
-     * Adds the elements of an Netresearch\Sync\Helper\Area from the synclist as section into the content
-     * of the template of backend module.
-     *
-     * @param int $areaId Id of the area this list is from.
-     * @param array $syncList Sync list of an Netresearch\Sync\Helper\Area.
-     *
-     * @return void
-     */
-    protected function showSyncListArea(int $areaId, array $syncList): void
-    {
-        $this->content .= '<div class="table-fit">';
-        $this->content .= '<table class="table table-striped table-hover" id="ts-overview">';
-        $this->content .= '<thead>';
-        $this->content .= '<tr><th>Item</th><th>Action</th></tr>';
-        $this->content .= '</thead>';
-        $this->content .= '<tbody>';
-
-        foreach ($syncList as $syncItem) {
-            if ($syncItem['removeable']) {
-                $strLinkLoeschen = $this->getRemoveLink(
-                    $areaId, (int) $syncItem['pageID']
-                );
-            } else {
-                $strLinkLoeschen = '';
-            }
-
-            $this->content .= '<tr class="bgColor4">';
-            $this->content .= '<td>';
-            $this->content .= '"' . htmlspecialchars(
-                    BackendUtility::getRecordTitle(
-                        'pages',
-                        BackendUtility::getRecord('pages', (int) $syncItem['pageID'])
-                    ))
-                . '" pages:' . (int) $syncItem['pageID'];
-            if ($syncItem['type'] === 'tree' && ((int) $syncItem['count']) > 0) {
-                $this->content .= ' (' . (int) $syncItem['count']
-                    . ' sub pages with ' . (int) $syncItem['deleted']
-                    . ' deleted and ' . (int) $syncItem['noaccess']
-                    . ' inaccessible.)';
-            }
-            $this->content .= '</td>';
-
-            $this->content .= '<td>';
-            $this->content .= $strLinkLoeschen;
-            $this->content .= '</td>';
-
-            $this->content .= '</tr>';
-        }
-
-        $this->content .= '</tbody>';
-        $this->content .= '</table>';
-        $this->content .= '</div>';
-    }
-
-    /**
-     * Generates HTML of removal button.
-     *
-     * @param int $areaId    The ID of the area to remove from list
-     * @param int $elementId The ID of the element to remove from list
-     *
-     * @return string
-     */
-    private function getRemoveLink(int $areaId, int $elementId): string
-    {
-        $icon = $this->iconFactory->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render();
-
-        return <<<HTML
-<button class="btn btn-default" type="submit" name="data[delete][{$areaId}][{$elementId}]" value="Remove from sync list">
-    {$icon}
-</button>
-HTML;
     }
 
     /**

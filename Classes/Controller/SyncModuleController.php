@@ -40,7 +40,6 @@ use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
 
 /**
  * Module 'Netresearch Sync' for the 'nr_sync' extension.
@@ -80,10 +79,27 @@ class SyncModuleController extends ActionController
      */
     public const STATEMENT_TYPE_DELETE = 'delete';
 
+
+    /**
+     * @var ConnectionPool
+     */
+    private $connectionPool;
+
     /**
      * @var FlashMessageService
      */
     private $flashMessageService;
+
+    /**
+     * @var SyncListManager
+     */
+    private $syncListManager;
+
+    /**
+     * @var Urls;
+     */
+    private $urlGenerator;
+
 
     /**
      * @var int
@@ -252,16 +268,6 @@ class SyncModuleController extends ActionController
     protected $function;
 
     /**
-     * @var SyncListManager
-     */
-    private $syncListManager;
-
-    /**
-     * @var Urls;
-     */
-    private $urlGenerator;
-
-    /**
      * BackendTemplateContainer
      *
      * @var BackendTemplateView
@@ -316,15 +322,22 @@ class SyncModuleController extends ActionController
     /**
      * SyncModuleController constructor.
      *
+     * @param ConnectionPool $connectionPool
      * @param FlashMessageService $flashMessageService
+     * @param SyncListManager $syncListManager
+     * @param Urls $urlGenerator
      */
     public function __construct(
-        FlashMessageService $flashMessageService
+        ConnectionPool $connectionPool,
+        FlashMessageService $flashMessageService,
+        SyncListManager $syncListManager,
+        Urls $urlGenerator
     ) {
+        $this->connectionPool = $connectionPool;
         $this->flashMessageService = $flashMessageService;
+        $this->syncListManager = $syncListManager;
+        $this->urlGenerator = $urlGenerator;
 
-//        $this->view->moduleTemplate = $this->getObjectManager()->get(ModuleTemplate::class);
-        $this->urlGenerator   = $this->getObjectManager()->get(Urls::class);
 //        $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
 
         $this->MCONF = [
@@ -332,7 +345,6 @@ class SyncModuleController extends ActionController
         ];
 
         $this->id = (int) GeneralUtility::_GP('id');
-        $this->CMD = GeneralUtility::_GP('CMD');
 
         $this->perms_clause = $this->getBackendUser()->getPagePermsClause(1);
     }
@@ -451,10 +463,7 @@ class SyncModuleController extends ActionController
         $this->MOD_SETTINGS = BackendUtility::getModuleData(
             $this->MOD_MENU,
             GeneralUtility::_GP('SET'),
-            $this->MCONF['name'],
-            '',
-            '',
-            ''
+            $this->MCONF['name']
         );
     }
 
@@ -464,15 +473,10 @@ class SyncModuleController extends ActionController
      * @param string $tableName The table name
      *
      * @return QueryBuilder
-     *
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     private function getQueryBuilderForTable(string $tableName): QueryBuilder
     {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        $queryBuilder = $connectionPool->getQueryBuilderForTable($tableName);
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($tableName);
         $queryBuilder->getRestrictions()->removeAll();
 
         return $queryBuilder;
@@ -485,7 +489,6 @@ class SyncModuleController extends ActionController
      */
     private function getFunctionObject(int $functionKey): BaseModule
     {
-        /** @var BaseModule $function */
         if (\is_string($this->functions[$functionKey])) {
             $function = GeneralUtility::makeInstance($this->functions[$functionKey]);
         } else {
@@ -557,15 +560,13 @@ class SyncModuleController extends ActionController
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param int   $nId    The page id to look for
-     * @param array $tables The tables this task manages
+     * @param int        $nId    The page id to look for
+     * @param null|array $tables The tables this task manages
      *
      * @return bool True if data exists otherwise false.
      */
     protected function pageContainsData(int $nId, array $tables = null): bool
     {
-        global $TCA;
-
         if ($tables === null) {
             return false;
         }
@@ -575,7 +576,7 @@ class SyncModuleController extends ActionController
         }
 
         foreach ($tables as $tableName) {
-            if (isset($TCA[$tableName])) {
+            if (isset($GLOBALS['TCA'][$tableName])) {
                 $queryBuilder = $this->getQueryBuilderForTable($tableName);
 
                 $count = $queryBuilder
@@ -657,80 +658,24 @@ class SyncModuleController extends ActionController
         $this->view->assign('arCount', $arCount);
         $this->view->assign('record', $record);
 
-//        $strPreOutput .= '<div class="form-section">';
-//        $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
-//        $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
-//        $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
-//        $strPreOutput .= '<input type="hidden" name="data[noaccess]" value="' . $arCount['noaccess'] . '">';
-//        $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->getArea()->getId() . '">';
-
-//        $strPreOutput .= '<h3>' . $strTitle . '</h3>';
-//        $strPreOutput .= '<div class="form-group">';
         if ($this->pageContainsData($this->id, $tables)) {
             $this->view->assign('pageContainsData', true);
-//            $strPreOutput .= '<div class="checkbox">';
-//            $strPreOutput .= '<label for="data_type_alone">'
-//                . '<input type="radio" name="data[type]" value="alone" id="data_type_alone">'
-//                . ' Only selected page</label>';
-//            $strPreOutput .= '</div>';
             $bShowButton = true;
         }
 
         if ($arCount['count'] > 0) {
-//            $strPreOutput .= '<div class="checkbox">';
-//            $strPreOutput .= '<label for="data_type_tree">'
-//                . '<input type="radio" name="data[type]" value="tree" id="data_type_tree">'
-//                . ' Selected page and all ' . $arCount['count']
-//                . ' sub pages</label> <small>(thereof are '
-//                . $arCount['deleted'] . ' deleted, '
-//                . $arCount['noaccess'] . ' are inaccessible and '
-//                . $arCount['falses'] . ' have wrong document type)</small>';
-//            $strPreOutput .= '</div>';
             $bShowButton = true;
-
-            if ($arCount['other_area'] > 0) {
-//                $strPreOutput .= '<br><b>There are restricted sub areas which are excluded from sync.</b>';
-            }
         }
 
         $this->view->assign('bShowButton', $bShowButton);
 
-//        $strPreOutput .= '</div>';
-
         if ($bShowButton) {
-            $this->view->assign('iconFactory', $this->getIconFactory());
             $this->view->assign('recursion', $recursion);
-
-
-//            $strPreOutput .= '<div class="form-group">';
-//            $strPreOutput .= '<div class="row">';
-//
-//            $strPreOutput .= '<div class="form-group col-xs-6">';
-//            $strPreOutput .= '<button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">';
-//            $strPreOutput .= $this->getIconFactory()->getIcon('actions-add', Icon::SIZE_SMALL)->render();
-//            $strPreOutput .= 'Add to sync list';
-//            $strPreOutput .= '</button>
-//                </div>';
-
-//            $strPreOutput .= '<div class="form-group col-xs-1">
-//            <input class="form-control" type="number" name="data[levelmax]" value="'
-//                . $recursion . '">'
-//                . ' </div>
-//            <div class="form-group col-xs-4 form">
-//            <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">
-//            </div>
-//            </div>';
-//
-//            $strPreOutput .= '</div>';
         } else {
             $this->addError(
                 'Bitte wählen Sie eine Seite mit entsprechendem Inhalt aus.'
             );
         }
-
-//        $strPreOutput .= '</div>';
-
-//        return $strPreOutput;
     }
 
     /**
@@ -768,7 +713,7 @@ class SyncModuleController extends ActionController
             $syncListId = $this->MOD_SETTINGS['function'];
         }
 
-        return $this->getSyncListManager()->getSyncList($syncListId);
+        return $this->syncListManager->getSyncList($syncListId);
     }
 
     /**
@@ -939,9 +884,7 @@ class SyncModuleController extends ActionController
                 );
 
                 if ($bSyncResult) {
-                    $this->addSuccess(
-                        'Sync initiated.'
-                    );
+                    $this->addSuccess('Sync initiated.');
                 }
             }
         }
@@ -1036,7 +979,8 @@ class SyncModuleController extends ActionController
 
         $queryBuilder = $this->getQueryBuilderForTable('pages');
 
-        $result = $queryBuilder->select('*')
+        $result = $queryBuilder
+            ->select('*')
             ->from('pages')
             ->where(
                 $queryBuilder->expr()->eq('pid', $pid)
@@ -1044,7 +988,8 @@ class SyncModuleController extends ActionController
             ->execute();
 
         while ($arPage = $result->fetchAssociative()) {
-            if (\is_array($arDocTypesExclude) && \in_array($arPage['doktype'], $arDocTypesExclude, true)) {
+            if (\is_array($arDocTypesExclude)
+                && \in_array($arPage['doktype'], $arDocTypesExclude, true)) {
                 continue;
             }
 
@@ -1189,7 +1134,13 @@ class SyncModuleController extends ActionController
         $clearCacheUrl = sprintf($this->strClearCacheUrl, $strClearCacheData);
 
         $this->urlGenerator->postProcessSync(
-            ['arUrlsOnce' => [$clearCacheUrl], 'bProcess' => true, 'bSyncResult' => true],
+            [
+                'arUrlsOnce' => [
+                    $clearCacheUrl
+                ],
+                'bProcess' => true,
+                'bSyncResult' => true
+            ],
             $this
         );
 
@@ -1259,7 +1210,7 @@ class SyncModuleController extends ActionController
      * @return resource The opened dump file
      * @throws Exception If file can't be opened or last sync is in progress.
      */
-    private function openTempDumpFile($strFileName, array $arDirectories)
+    private function openTempDumpFile(string $strFileName, array $arDirectories)
     {
         if (file_exists($this->strTempFolder . $strFileName)
             || file_exists($this->strTempFolder . $strFileName . '.gz')
@@ -1295,19 +1246,17 @@ class SyncModuleController extends ActionController
         return $fp;
     }
 
-
-
     /**
      * Zips the tmp dump file and copy it to given directories.
      *
-     * @param string  $dumpFile Name of the dump file.
-     * @param array   $arDirectories The directories to copy files into.
-     * @param bool $bZipFile The directories to copy files into.
+     * @param string $dumpFile      Name of the dump file.
+     * @param array  $arDirectories The directories to copy files into.
+     * @param bool   $bZipFile      The directories to copy files into.
      *
      * @return void
      * @throws Exception If file can't be zipped or copied.
      */
-    private function finalizeDumpFile($dumpFile, array $arDirectories, $bZipFile): void
+    private function finalizeDumpFile(string $dumpFile, array $arDirectories, bool $bZipFile): void
     {
         if ($bZipFile) {
             // Dateien komprimieren
@@ -1350,18 +1299,17 @@ class SyncModuleController extends ActionController
                 );
             }
         }
+
         unlink($this->strTempFolder . $dumpFile);
     }
-
-
 
     /**
      * Erzeugt ein Dump durch Seiten IDs.
      *
-     * @param array    $pageIDs    Page ids to dump.
-     * @param string   $tableName Name of table to dump from.
-     * @param resource $fpDumpFile   File pointer to the SQL dump file.
-     * @param bool  $bContentIDs  True to interpret pageIDs as content IDs.
+     * @param array    $pageIDs     Page ids to dump.
+     * @param string   $tableName   Name of table to dump from.
+     * @param resource $fpDumpFile  File pointer to the SQL dump file.
+     * @param bool     $bContentIDs True to interpret pageIDs as content IDs.
      *
      * @return void
      * @throws Exception
@@ -1375,14 +1323,12 @@ class SyncModuleController extends ActionController
             );
         }
 
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
         $this->nDumpTableRecursion++;
         $deleteLines = [];
         $insertLines = [];
 
-        $arColumns = $connectionPool->getConnectionForTable($tableName)
+        $arColumns = $this->connectionPool
+            ->getConnectionForTable($tableName)
             ->getSchemaManager()
             ->listTableColumns($tableName);
 
@@ -1503,18 +1449,15 @@ class SyncModuleController extends ActionController
     /**
      * Writes the references of a table to the sync data.
      *
-     * @param string $strRefTableName Table to reference.
-     * @param array $arContent The database row to find MM References.
-     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     * @param string   $strRefTableName Table to reference.
+     * @param array    $arContent       The database row to find MM References.
+     * @param resource $fpDumpFile      File pointer to the SQL dump file.
      *
      * @return void
      */
     protected function writeMMReferences(
-        $strRefTableName, array $arContent, $fpDumpFile
+        string $strRefTableName, array $arContent, $fpDumpFile
     ): void {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
         $deleteLines = [];
         $insertLines = [];
 
@@ -1522,7 +1465,7 @@ class SyncModuleController extends ActionController
         $this->addMMReferenceTables($strRefTableName);
 
         foreach ($this->arReferenceTables as $strMMTableName => $arTableFields) {
-            $arColumns = $connectionPool
+            $arColumns = $this->connectionPool
                 ->getConnectionForTable($strMMTableName)
                 ->getSchemaManager()
                 ->listTableColumns($strMMTableName);
@@ -1546,8 +1489,6 @@ class SyncModuleController extends ActionController
 
         $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
     }
-
-
 
     /**
      * Writes the data of a MM table to the sync data.
@@ -1597,10 +1538,7 @@ class SyncModuleController extends ActionController
 
         $strFieldName = $arMMConfig['foreign_field'] ?? 'uid_foreign';
 
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $connection = $connectionPool->getConnectionForTable($tableName);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         $strAdditionalWhere = ' AND ' . $connection->quoteIdentifier('tablenames')
             . ' = ' . $connection->quote($strRefTableName);
@@ -1616,19 +1554,21 @@ class SyncModuleController extends ActionController
 
         $queryBuilder = $connection->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
-        $refTableContent = $queryBuilder->select('*')
+
+        $refTableContent = $queryBuilder
+            ->select('*')
             ->from($tableName)
             ->where($strWhere)
             ->execute();
 
-//        $deleteLines[$tableName][$strWhere]
-        $deleteLines[$tableName][$uid]
-            = 'DELETE FROM ' . $connection->quoteIdentifier($tableName) . ' WHERE ' . $strWhere . ';';
+        $deleteLines[$tableName][$uid] = sprintf(
+            'DELETE FROM %s WHERE %s;',
+            $connection->quoteIdentifier($tableName),
+            $strWhere
+        );
 
         if ($refTableContent) {
             while ($arContent = $refTableContent->fetchAssociative()) {
-//                $strContentKey = implode('-', $arContent);
-
                 $insertLines[$tableName][$arContent['uid']]
                     = $this->buildInsertUpdateLine($tableName, $arColumnNames, $arContent);
 
@@ -1649,6 +1589,7 @@ class SyncModuleController extends ActionController
                     );
                 }
             }
+
             unset($refTableContent);
         }
 
@@ -1663,15 +1604,13 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addMMReferenceTables($tableName): void
+    protected function addMMReferenceTables(string $tableName): void
     {
-        global $TCA;
-
-        if ( ! isset($TCA[$tableName]['columns'])) {
+        if (!isset($GLOBALS['TCA'][$tableName]['columns'])) {
             return;
         }
 
-        foreach ($TCA[$tableName]['columns'] as $strFieldName => $arColumn) {
+        foreach ($GLOBALS['TCA'][$tableName]['columns'] as $strFieldName => $arColumn) {
             if (isset($arColumn['config']['type'])) {
                 if ($arColumn['config']['type'] === 'inline') {
                     $this->addForeignTableToReferences($arColumn);
@@ -1682,8 +1621,6 @@ class SyncModuleController extends ActionController
         }
     }
 
-
-
     /**
      * Adds Column config to references table, if a foreign_table reference config
      * like in inline-fields exists.
@@ -1692,15 +1629,13 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addForeignTableToReferences($arColumn): void
+    protected function addForeignTableToReferences(array $arColumn): void
     {
         if (isset($arColumn['config']['foreign_table'])) {
             $strForeignTable = $arColumn['config']['foreign_table'];
             $this->arReferenceTables[$strForeignTable][] = $arColumn['config'];
         }
     }
-
-
 
     /**
      * Adds Column config to references table, if a MM reference config exists.
@@ -1717,8 +1652,6 @@ class SyncModuleController extends ActionController
         }
     }
 
-
-
     /**
      * Add the passed $arSqlLines to the $arGlobalSqlLineStorage in unique way.
      *
@@ -1727,19 +1660,18 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addLinesToLineStorage($strStatementType, array $arSqlLines): void
+    protected function addLinesToLineStorage(string $strStatementType, array $arSqlLines): void
     {
         foreach ($arSqlLines as $tableName => $lines) {
             if (!\is_array($lines)) {
                 return;
             }
+
             foreach ($lines as $strIdentifier => $strLine) {
                 $this->arGlobalSqlLineStorage[$strStatementType][$tableName][$strIdentifier] = $strLine;
             }
         }
     }
-
-
 
     /**
      * Removes all entries from $arSqlLines which already exists in $arGlobalSqlLineStorage
@@ -1749,7 +1681,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    public function clearDuplicateLines($strStatementType, array &$arSqlLines): void
+    public function clearDuplicateLines(string $strStatementType, array &$arSqlLines): void
     {
         foreach ($arSqlLines as $tableName => $lines) {
             foreach ($lines as $strIdentifier => $strStatement) {
@@ -1757,6 +1689,7 @@ class SyncModuleController extends ActionController
                     unset($arSqlLines[$tableName][$strIdentifier]);
                 }
             }
+
             // unset tablename key if no statement exists anymore
             if (\count($arSqlLines[$tableName]) === 0) {
                 unset($arSqlLines[$tableName]);
@@ -1764,16 +1697,14 @@ class SyncModuleController extends ActionController
         }
     }
 
-
-
     /**
      * Writes the data into dump file. Line per line.
      *
-     * @param array $deleteLiness The lines with the delete statements.
+     * @param array $deleteLines The lines with the delete statements.
      *                                        Expected structure:
-     *                                        $deleteLiness['table1']['uid1'] = 'STATMENT1'
-     *                                        $deleteLiness['table1']['uid2'] = 'STATMENT2'
-     *                                        $deleteLiness['table2']['uid2'] = 'STATMENT3'
+     *                                        $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                                        $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                                        $deleteLines['table2']['uid2'] = 'STATMENT3'
      * @param array $insertLines The lines with the insert statements.
      *                                        Expected structure:
      *                                        $insertLines['table1']['uid1'] = 'STATMENT1'
@@ -1786,17 +1717,17 @@ class SyncModuleController extends ActionController
      * @return void
      */
     private function writeToDumpFile(
-        array $deleteLiness,
+        array $deleteLines,
         array $insertLines,
         $fpDumpFile,
         array $arDeleteObsoleteRows = []
     ): void {
-
         // Keep the current lines in mind
         $this->addLinesToLineStorage(
             self::STATEMENT_TYPE_DELETE,
-            $deleteLiness
+            $deleteLines
         );
+
         // Keep the current lines in mind
         $this->addLinesToLineStorage(
             self::STATEMENT_TYPE_INSERT,
@@ -1804,7 +1735,7 @@ class SyncModuleController extends ActionController
         );
 
         // Foreach Table in DeleteArray
-        foreach ($deleteLiness as $arDelLines) {
+        foreach ($deleteLines as $arDelLines) {
             if (\count($arDelLines)) {
                 $strDeleteLines = implode("\n", $arDelLines);
                 fwrite($fpDumpFile, $strDeleteLines . "\n\n");
@@ -1840,89 +1771,82 @@ class SyncModuleController extends ActionController
      */
     protected function writeInsertLines($fpDumpFile): void
     {
-        if (!\is_array(
-            $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
-        )) {
+        if (!\is_array($this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT])) {
             return;
         }
 
-        $insertLines
-            = $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT];
+        $insertLines = $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT];
+
         // Foreach Table in InsertArray
         foreach ($insertLines as $table => $arTableInsLines) {
             if (\count($arTableInsLines)) {
-                $strInsertLines
-                    = '-- Insert lines for Table: '
-                    . $table
-                    . "\n";
-                $strInsertLines .= implode("\n", $arTableInsLines);
+                $strInsertLines = '-- Insert lines for Table: '
+                    . $table . "\n"
+                    . implode("\n", $arTableInsLines);
+
                 fwrite($fpDumpFile, $strInsertLines . "\n\n");
             }
         }
     }
 
     /**
-     * Removes all delete statements from $deleteLiness where an insert statement
+     * Removes all delete statements from $deleteLines where an insert statement
      * exists in $insertLines.
      *
-     * @param array &$deleteLiness referenced array with delete statements
+     * @param array &$deleteLines referenced array with delete statements
      *                              structure should be
-     *                              $deleteLiness['table1']['uid1'] = 'STATMENT1'
-     *                              $deleteLiness['table1']['uid2'] = 'STATMENT2'
-     *                              $deleteLiness['table2']['uid2'] = 'STATMENT3'
-     * @param array &$insertLines referenced array with insert statements
+     *                              $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $deleteLines['table2']['uid2'] = 'STATMENT3'
+     * @param array $insertLines referenced array with insert statements
      *                              structure should be
-     *                              $deleteLiness['table1']['uid1'] = 'STATMENT1'
-     *                              $deleteLiness['table1']['uid2'] = 'STATMENT2'
-     *                              $deleteLiness['table2']['uid2'] = 'STATMENT3'
+     *                              $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $deleteLines['table2']['uid2'] = 'STATMENT3'
      *
      * @return void
      */
-    protected function diffDeleteLinesAgainstInsertLines(
-        array &$deleteLiness, array &$insertLines
-    ): void
-    {
+    private function diffDeleteLinesAgainstInsertLines(
+        array &$deleteLines,
+        array $insertLines
+    ): void {
         foreach ($insertLines as $tableName => $arElements) {
             // no modification for arrays with old flat structure
             if (!\is_array($arElements)) {
                 return;
             }
+
             // UNSET each delete line where an insert exists
             foreach ($arElements as $strUid => $strStatement) {
-                if (!empty($deleteLiness[$tableName][$strUid])) {
-                    unset($deleteLiness[$tableName][$strUid]);
+                if (!empty($deleteLines[$tableName][$strUid])) {
+                    unset($deleteLines[$tableName][$strUid]);
                 }
             }
 
-            if (\count($deleteLiness[$tableName]) === 0) {
-                unset($deleteLiness[$tableName]);
+            if (\count($deleteLines[$tableName]) === 0) {
+                unset($deleteLines[$tableName]);
             }
         }
     }
 
-
-
     /**
      * Returns SQL DELETE query.
      *
-     * @param string $tableName name of table to delete from
-     * @param int $uid uid of row to delete
+     * @param string $tableName The name of table to delete from
+     * @param int    $uid       The UID of row to delete
      *
      * @return string
      */
-    protected function buildDeleteLine($tableName, $uid): string
+    protected function buildDeleteLine(string $tableName, int $uid): string
     {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
-        $connection = $connectionPool->getConnectionForTable($tableName);
-
-        return 'DELETE FROM '
-            . $connection->quoteIdentifier($tableName)
-            . ' WHERE uid = ' . (int) $uid . ';';
+        return sprintf(
+            'DELETE FROM %s WHERE uid = %d;',
+            $connection->quoteIdentifier($tableName),
+            $uid
+        );
     }
-
-
 
     /**
      * Returns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
@@ -1935,28 +1859,27 @@ class SyncModuleController extends ActionController
      */
     private function buildInsertUpdateLine(string $tableName, array $arColumnNames, array $arContent): string
     {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-        $connection     = $connectionPool->getConnectionForTable($tableName);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         $arUpdateParts = [];
+
         foreach ($arContent as $key => $value) {
             if (!is_numeric($value)) {
                 $arContent[$key] = $connection->quote($value);
             }
+
             // TYPO-2215 - Match the column to its update value
             $arUpdateParts[$key] = $key . ' = VALUES(' . $key . ')';
         }
 
-        return 'INSERT INTO '
-            . $connection->quoteIdentifier($tableName)
-            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
-            . implode(', ', $arContent) . ')' . "\n"
-            . ' ON DUPLICATE KEY UPDATE '
-            . implode(', ', $arUpdateParts) . ';';
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
+            $connection->quoteIdentifier($tableName),
+            implode(', ', $arColumnNames),
+            implode(', ', $arContent),
+            implode(', ', $arUpdateParts)
+        );
     }
-
-
 
     /**
      * Returns SQL INSERT query.
@@ -1967,12 +1890,9 @@ class SyncModuleController extends ActionController
      *
      * @return string
      */
-    protected function buildInsertLine($tableName, $arTableStructure, $arContent): string
+    protected function buildInsertLine(string $tableName, array $arTableStructure, array $arContent): string
     {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $connection = $connectionPool->getConnectionForTable($tableName);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         foreach ($arContent as $key => $value) {
             if (!is_numeric($value)) {
@@ -1981,13 +1901,14 @@ class SyncModuleController extends ActionController
         }
 
         $arColumnNames = array_keys($arTableStructure);
-        return 'REPLACE INTO '
-            . $connection->quoteIdentifier($tableName)
-            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
-            . implode(', ', $arContent) . ');';
+
+        return sprintf(
+            'REPLACE INTO %s (%s) VALUES (%s);',
+            $connection->quoteIdentifier($tableName),
+            implode(', ', $arColumnNames),
+            implode(', ', $arContent)
+        );
     }
-
-
 
     /**
      * Erzeugt ein gzip vom Dump File
@@ -1996,7 +1917,7 @@ class SyncModuleController extends ActionController
      *
      * @return bool success
      */
-    protected function createGZipFile($dumpFile): bool
+    protected function createGZipFile(string $dumpFile): bool
     {
         $strExec = 'gzip ' . escapeshellarg($dumpFile);
 
@@ -2125,34 +2046,50 @@ class SyncModuleController extends ActionController
         $lockButton = $buttonBar->makeLinkButton();
 
         if (is_file($this->dbFolder . $system['directory'] . '/.lock')) {
-            $lockButton->setHref(
-                $this->getModuleUrl(
-                    [
-                        'id' => $this->id,
-                        'lock' => [
-                            $systemName => '0',
-                        ],
-                    ]
+            $lockButton
+                ->setTitle($system['name'])
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'lock' => [
+                                $systemName => '0',
+                            ],
+                        ]
+                    )
                 )
-            );
-
-            $lockButton->setTitle($system['name'])
-                ->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL))
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon(
+                            'actions-lock',
+                            Icon::SIZE_SMALL
+                        )
+                )
                 ->setClasses('btn btn-warning');
         } else {
-            $lockButton->setHref(
-                $this->getModuleUrl(
-                    [
-                        'id' => $this->id,
-                        'lock' => [
-                            $systemName => '1',
-                        ],
-                    ]
+            $lockButton
+                ->setTitle($system['name'])
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'lock' => [
+                                $systemName => '1',
+                            ],
+                        ]
+                    )
                 )
-            );
-
-            $lockButton->setTitle($system['name'])
-                ->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon(
+                            'actions-unlock',
+                            Icon::SIZE_SMALL
+                        )
+                );
         }
 
         $lockButton->setShowLabelText(true);
@@ -2175,70 +2112,47 @@ class SyncModuleController extends ActionController
         $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
         if ($syncLock->isLocked()) {
-            $lockButton->setHref(
-                $this->getModuleUrl(
-                    [
-                        'id' => $this->id,
-                        'data' => [
-                            'lock' => '0',
-                        ],
-                    ]
+            $lockButton
+                ->setTitle('Unlock sync module')
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'data' => [
+                                'lock' => '0',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle('Unlock sync module');
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
-            $lockButton->setClasses('btn-warning');
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon('actions-lock', Icon::SIZE_SMALL)
+                )
+                ->setClasses('btn-warning');
         } else {
-            $lockButton->setHref(
-                $this->getModuleUrl(
-                    [
-                        'id' => $this->id,
-                        'data' => [
-                            'lock' => '1',
-                        ],
-                    ]
+            $lockButton
+                ->setTitle('Lock sync module')
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'data' => [
+                                'lock' => '1',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle('Lock sync module');
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon('actions-unlock', Icon::SIZE_SMALL)
+                );
         }
 
         $buttonBar->addButton($lockButton, ButtonBar::BUTTON_POSITION_LEFT, 0);
-    }
-
-    /**
-     * @return ObjectManager
-     */
-    private function getObjectManager(): ObjectManager
-    {
-        /** @var ObjectManager $objectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-        return $objectManager;
-    }
-
-    /**
-     * @return SyncListManager
-     */
-    private function getSyncListManager(): SyncListManager
-    {
-        if ($this->syncListManager === null) {
-            $this->syncListManager = GeneralUtility::makeInstance(SyncListManager::class);
-        }
-
-        return $this->syncListManager;
-    }
-
-    /**
-     * @return IconFactory
-     */
-    private function getIconFactory(): IconFactory
-    {
-        if ($this->iconFactory === null) {
-            $this->iconFactory = GeneralUtility::makeInstance(IconFactory::class);
-        }
-
-        return $this->iconFactory;
     }
 
     /**
@@ -2268,7 +2182,7 @@ class SyncModuleController extends ActionController
      */
     public function addInfo(string $message): void
     {
-        $this->addMessage($message, FlashMessage::INFO);
+        $this->addMessage($message);
     }
 
     /**
@@ -2322,20 +2236,12 @@ class SyncModuleController extends ActionController
      */
     protected function setLastDumpTimeForElement(string $table, int $uid): void
     {
-//        if (strpos($uid, '-')) {
-//            // CRAP - we get something like: 47-18527-0-0-0--0-0-0-0-0-0-1503315964-1500542276-…
-//            // happens in writeMMReference() before createupdateinsertline()
-//            // take second number as ID:
-//            $uid = explode('-', $uid)[1];
-//        }
-
         $nTime          = time();
         $nUserId        = (int) $this->getBackendUser()->user['uid'];
         $strUpdateField = ($this->getForcedFullSync()) ? 'full' : 'incr';
 
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
+        $connection = $this->connectionPool
+            ->getConnectionForTable('tx_nrsync_syncstat');
 
         $connection->executeStatement(
             'INSERT INTO tx_nrsync_syncstat'
@@ -2504,7 +2410,7 @@ class SyncModuleController extends ActionController
      *
      * @return string
      */
-    protected function addInformationToSyncfileName($dumpFile): string
+    protected function addInformationToSyncfileName(string $dumpFile): string
     {
         $bIsFullSync = !empty($_POST['data']['force_full_sync']);
         $strPrefix = 'inc_';

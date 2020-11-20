@@ -241,8 +241,6 @@ class SyncList
      * @param string $tableName The table name
      *
      * @return QueryBuilder
-     *
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     private function getQueryBuilderForTable(string $tableName): QueryBuilder
     {
@@ -298,7 +296,7 @@ class SyncList
         $result = $queryBuilder->select('*')
             ->from('pages')
             ->where(
-                $queryBuilder->expr()->eq('pid', (int)$pid)
+                $queryBuilder->expr()->eq('pid', $pid)
             )
             ->execute();
 
@@ -358,15 +356,13 @@ class SyncList
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param int $nId      The page id to look for.
-     * @param array   $tables Tables this task manages.
+     * @param int        $nId    The page id to look for
+     * @param null|array $tables Tables this task manages
      *
-     * @return bool True if data exists otherwise false.
+     * @return bool TRUE if data exists otherwise FALSE.
      */
-    protected function pageContainsData($nId, array $tables = null): bool
+    protected function pageContainsData(int $nId, array $tables = null): bool
     {
-        global $TCA;
-
         if ($tables === null) {
             return false;
         }
@@ -376,7 +372,7 @@ class SyncList
         }
 
         foreach ($tables as $strTableName) {
-            if (isset($TCA[$strTableName])) {
+            if (isset($GLOBALS['TCA'][$strTableName])) {
                 $queryBuilder = $this->connectionPool->getQueryBuilderForTable($strTableName);
 
                 $nCount = $queryBuilder->count('pid')

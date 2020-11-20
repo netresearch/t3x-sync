@@ -24,9 +24,7 @@ use Netresearch\Sync\Helper\Area;
 class AssetModule extends BaseModule
 {
     protected $name = 'Assets';
-    protected $type = '';
     protected $target = 'sync server';
-    protected $dumpFileName = '';
     protected $accessLevel = 100;
 
     public function run(Area $area): bool

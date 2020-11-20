@@ -89,7 +89,7 @@ class Urls
      *
      * @return int
      */
-    private function generateUrlFile(array $urls, array $folders, $format): int
+    private function generateUrlFile(array $urls, array $folders, string $format): int
     {
         [$strContent, $strPath] = $this->prepareFile($urls, $format);
         return $this->saveFile($strContent, $strPath, $folders);
@@ -105,7 +105,7 @@ class Urls
      *
      * @return array First value is the file content, second the file name
      */
-    protected function prepareFile(array $arUrls, $strFileNameTemplate): array
+    protected function prepareFile(array $arUrls, string $strFileNameTemplate): array
     {
         if (\count($arUrls) == 0) {
             return [null, null];
@@ -117,8 +117,6 @@ class Urls
         ];
     }
 
-
-
     /**
      * Saves the given file into different folders
      *
@@ -128,9 +126,9 @@ class Urls
      *
      * @return int Number of created files
      */
-    protected function saveFile($strContent, $strFileName, array $arFolders): int
+    protected function saveFile(string $strContent, string $strFileName, array $arFolders): int
     {
-        if ($strContent === null || $strFileName == '' || !\count($arFolders)) {
+        if ($strContent === null || $strFileName === '' || !\count($arFolders)) {
             return 0;
         }
 

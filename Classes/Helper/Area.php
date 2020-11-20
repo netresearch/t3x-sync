@@ -131,9 +131,9 @@ class Area
     /**
      * Return all areas that shall get synced for the given table type
      *
-     * @param array  $arAreas      Area configurations
-     * @param string $strTableType Type of tables to sync, e.g. "sync_tables",
-     *                             "sync_fe_groups", "sync_be_groups", "backsync_tables"
+     * @param null|array $arAreas      Area configurations
+     * @param string     $strTableType Type of tables to sync, e.g. "sync_tables",
+     *                                 "sync_fe_groups", "sync_be_groups", "backsync_tables"
      *
      * @return Area[]
      */
@@ -397,12 +397,12 @@ class Area
         // create trigger file
         $sourceFile = tempnam(sys_get_temp_dir(), 'prefix');
 
-        if (ftp_put($connection, 'db.txt', $sourceFile, FTP_BINARY) === false) {
+        if (ftp_put($connection, 'db.txt', $sourceFile) === false) {
             ftp_close($connection);
             throw new \Exception('Signal: FTP put db.txt failed.');
         }
 
-        if (ftp_put($connection, 'files.txt', $sourceFile, FTP_BINARY) === false) {
+        if (ftp_put($connection, 'files.txt', $sourceFile) === false) {
             ftp_close($connection);
             throw new \Exception('Signal: FTP put files.txt failed.');
         }

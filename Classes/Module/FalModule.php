@@ -36,9 +36,7 @@ class FalModule extends BaseModule
 
     protected $name = 'FAL';
     protected $type = 'sync_tables';
-    protected $target = '';
     protected $dumpFileName = 'fal.sql';
-    protected $accessLevel = 0;
 
     public function run(Area $area): bool
     {

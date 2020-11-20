@@ -226,9 +226,6 @@ class Table
 
         $queryBuilder = $connection->createQueryBuilder();
 
-        /** @var t3lib_DB $TYPO3_DB */
-        global $TYPO3_DB;
-
         $strWhere = '';
         if ($this->bForceFullSync === false && $this->hasTstampField()) {
             $strWhere = $this->getDumpWhereCondition();
@@ -422,17 +419,12 @@ class Table
      */
     protected function getTstampField()
     {
-        /** @var array $TCA * */
-        global $TCA;
-
-        if (!empty($TCA[$this->strTableName]['ctrl']['tstamp'])) {
-            return $TCA[$this->strTableName]['ctrl']['tstamp'];
+        if (!empty($GLOBALS['TCA'][$this->strTableName]['ctrl']['tstamp'])) {
+            return $GLOBALS['TCA'][$this->strTableName]['ctrl']['tstamp'];
         }
 
         return false;
     }
-
-
 
     /**
      * Returns whether a table has tstamp field or not.
@@ -493,12 +485,12 @@ class Table
     /**
      * Sets time of last dump/sync for this table.
      *
-     * @param int $nTime Time of last table dump/sync.
-     * @param bool $bIncr Set time for last incremental or full dump/sync.
+     * @param null|int $nTime Time of last table dump/sync.
+     * @param bool     $bIncr Set time for last incremental or full dump/sync.
      *
      * @return void
      */
-    protected function setLastDumpTime($nTime = null, $bIncr = true): void
+    protected function setLastDumpTime(int $nTime = null, bool $bIncr = true): void
     {
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
@@ -508,10 +500,10 @@ class Table
         global $BE_USER;
 
         if ($nTime === null) {
-            $nTime = $GLOBALS['EXEC_TIME'];
+            $nTime = (int) $GLOBALS['EXEC_TIME'];
         }
 
-        if (empty($nTime)) {
+        if (!$nTime) {
             $nTime = time();
         }
 
@@ -602,13 +594,11 @@ class Table
      */
     public function getControlFieldsFromTcaByTableName(): array
     {
-        global $TCA;
-
-        if (!isset($TCA[$this->strTableName])) {
+        if (!isset($GLOBALS['TCA'][$this->strTableName])) {
             return [];
         }
 
-        $arControl = $TCA[$this->strTableName]['ctrl'];
+        $arControl = $GLOBALS['TCA'][$this->strTableName]['ctrl'];
         $arEnableFields = $arControl['enablecolumns'];
 
         $arReturn = [];
@@ -628,8 +618,6 @@ class Table
         return $arReturn;
     }
 
-
-
     /**
      * Setter for bNoCreateInfo
      *
@@ -637,7 +625,7 @@ class Table
      *
      * @return void
      */
-    public function setNoCreateInfo($bNoCreateInfo): void
+    public function setNoCreateInfo(bool $bNoCreateInfo): void
     {
         $this->bNoCreateInfo = $bNoCreateInfo;
     }

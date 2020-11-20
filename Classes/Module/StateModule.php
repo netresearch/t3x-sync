@@ -27,7 +27,6 @@ class StateModule extends BaseModule
     protected $name = 'Table state';
     protected $type = 'sync_tables';
     protected $target = 'local';
-    protected $dumpFileName = '';
     protected $accessLevel = 100;
 
     public function run(Area $area): bool

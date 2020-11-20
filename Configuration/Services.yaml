@@ -1,0 +1,14 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Netresearch\Sync\:
+    resource: '../Classes/*'
+
+  Netresearch\Sync\Command\ClearCache:
+    tags:
+      - name: 'console.command'
+        command: 'sync:cache:clear'
+        schedulable: true

@@ -12,9 +12,9 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Service;
 
 use TYPO3;
+use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\DataHandling\DataHandler;
 
 /**
  * Service clear cache for Netresearch Synchronisation

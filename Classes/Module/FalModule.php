@@ -12,8 +12,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Module;
 
 use Netresearch\Sync\Helper\Area;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Class FalModule
@@ -54,9 +52,8 @@ class FalModule extends BaseModule
 
         // http://jira.aida.de/jira/browse/SDM-2099
         if ($this->hasError()) {
-            $this->content = '<input type="Submit" name="data[dam_cleanup]" value="clean up FAL">';
+            $this->content = '<input class="btn btn-warning" type="Submit" name="data[dam_cleanup]" value="Clean up FAL">';
         }
-        $this->content = '<input type="Submit" name="data[dam_cleanup]" value="clean up FAL">';
 
         return true;
     }
@@ -68,8 +65,7 @@ class FalModule extends BaseModule
      */
     private function cleanUpDAM(): void
     {
-        echo 'This tasks can take some time, please be patient ... ';
-        flush();
+        $this->addMessage('This tasks can take some time, please be patient ...');
 
         $this->connectionPool
             ->getConnectionForTable('sys_file_reference')
@@ -80,7 +76,7 @@ class FalModule extends BaseModule
                 ]
             );
 
-        echo 'done.';
+        $this->addMessage('Done.');
     }
 
     /**

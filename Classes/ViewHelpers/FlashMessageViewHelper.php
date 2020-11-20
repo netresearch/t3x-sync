@@ -12,12 +12,9 @@ declare(strict_types=1);
 namespace Netresearch\Sync\ViewHelpers;
 
 use Netresearch\Sync\Helper\Area;
-use ScssPhp\ScssPhp\Formatter\Debug;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
-use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
 /**

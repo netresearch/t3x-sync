@@ -1,6 +1,9 @@
 <?php
 
+use Netresearch\Sync\Service\ClearCache;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Utility\EidUtility;
 
 /**
  * eID Robot
@@ -12,10 +15,6 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
  * @license    https://www.gnu.org/licenses/agpl AGPL v3
  * @link       http://www.netresearch.de
  */
-
-use Netresearch\Sync\Service\ClearCache;
-use TYPO3\CMS\Core\Utility\GeneralUtility,
-    TYPO3\CMS\Frontend\Utility\EidUtility;
 
 /**
  * eID interface for nr_sync

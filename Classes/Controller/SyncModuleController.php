@@ -23,34 +23,24 @@ use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
 use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use ScssPhp\ScssPhp\Formatter\Debug;
-use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Backend\View\BackendTemplateView;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
-use TYPO3\CMS\Core\Page\PageRenderer;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
-use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
  * Module 'Netresearch Sync' for the 'nr_sync' extension.
@@ -294,13 +284,6 @@ class SyncModuleController extends ActionController
     private $id;
 
     /**
-     * Generally used for accumulating the output content of backend modules
-     *
-     * @var string
-     */
-    private $content = '';
-
-    /**
      * A WHERE clause for selection records from the pages table based on read-permissions of the current backend user.
      *
      * @var string
@@ -500,7 +483,7 @@ class SyncModuleController extends ActionController
      *
      * @return BaseModule
      */
-    protected function getFunctionObject(int $functionKey): BaseModule
+    private function getFunctionObject(int $functionKey): BaseModule
     {
         /** @var BaseModule $function */
         if (\is_string($this->functions[$functionKey])) {
@@ -880,7 +863,8 @@ class SyncModuleController extends ActionController
         $this->function = $this->getFunctionObject((int) $this->MOD_SETTINGS['function']);
         $dumpFile       = $this->function->getDumpFileName();
 
-        $this->view->assign('function', (int) $this->MOD_SETTINGS['function']);
+        $this->view->assign('selectedMenuItem', (int) $this->MOD_SETTINGS['function']);
+        $this->view->assign('function', $this->function);
         $this->view->assign('id', $this->id);
         $this->view->assign('area', $this->getArea());
         $this->view->assign('dbFolder', $this->dbFolder);
@@ -901,10 +885,6 @@ class SyncModuleController extends ActionController
         if ($this->function->hasError()) {
             $this->addError($this->function->getError());
         }
-
-DebuggerUtility::var_dump($this->function->getContent());
-
-        $this->content .= $this->function->getContent();
 
         // sync process
         if (isset($_POST['data']['submit']) && ($dumpFile !== '')) {

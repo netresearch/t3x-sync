@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
-use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Controller\SyncModuleController;
+use Netresearch\Sync\Helper\Area;
 
 /**
  * Generate files with the list of URLs that have to be called

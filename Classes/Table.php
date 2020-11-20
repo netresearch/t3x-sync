@@ -1,58 +1,65 @@
 <?php
+
 /**
- * Part of Nr_Sync package.
- * Tale sync controller
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Sebastian Mendel <sebastian.mendel@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
+
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-
 
 /**
  * Controls table sync/dump generation.
  *
- * @package  Netresearch/TYPO3/Sync
- * @author   Sebastian Mendel <sebastian.mendel@netresearch.de>
- * @license  https://www.gnu.org/licenses/agpl AGPL v3
- * @link     http://www.netresearch.de
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
  */
 class Table
 {
-    /** @var string $strTableName Name of table * */
+    /**
+     * The name of table.
+     *
+     * @var string
+     */
     protected $strTableName;
 
-    /** @var string $strDumpFile Name of dump file * */
+    /**
+     * The name of dump file.
+     *
+     * @var string
+     */
     protected $strDumpFile;
 
-    /** @var bool $bForceFullSync force a complete sync * */
+    /**
+     * Force a complete sync.
+     *
+     * @var bool
+     */
     protected $bForceFullSync = false;
 
     /**
-     * add the --no-create-info option to the dump
+     * Add the --no-create-info option to the dump.
      *
      * @var bool
      */
     protected $bNoCreateInfo = true;
 
     /**
-     * delete rows which are not used on live system
-     * (delete,disabled,endtime), default is true
+     * Delete rows which are not used on live system (delete, disabled, endtime), default is true.
      *
      * @var bool
      */
     protected $bDeleteObsoleteRows = true;
-
-
 
     /**
      * Constructor.
@@ -60,23 +67,12 @@ class Table
      * @param string $strTableName Name of table.
      * @param string $strDumpFile  Name of target dump file.
      * @param array  $arOptions    Additional options.
-     *
-     * @throws Exception
      */
     public function __construct(
-        $strTableName, $strDumpFile, array $arOptions = null
-    )
-    {
-        if (empty($strTableName)) {
-            throw new Exception('Table name cannot be empty.');
-        }
-
-        if (empty($strDumpFile)) {
-            throw new Exception('Dump file name cannot be empty.');
-        }
-
-        $this->strTableName = (string) $strTableName;
-        $this->strDumpFile = (string) $strDumpFile;
+        string $strTableName, string $strDumpFile, array $arOptions = []
+    ) {
+        $this->strTableName = $strTableName;
+        $this->strDumpFile  = $strDumpFile;
 
         if (\is_array($arOptions)) {
             if (isset($arOptions['bForceFullSync'])) {
@@ -84,8 +80,7 @@ class Table
             }
 
             if (isset($arOptions['bDeleteObsoleteRows'])) {
-                $this->bDeleteObsoleteRows
-                    = (bool)$arOptions['bDeleteObsoleteRows'];
+                $this->bDeleteObsoleteRows = (bool)$arOptions['bDeleteObsoleteRows'];
             }
 
             if (isset($arOptions['bNoCreateInfo'])) {
@@ -94,12 +89,10 @@ class Table
         }
     }
 
-
-
     /**
      * Returns true if REPLACE INTO instead fo INSERT INTO should be used.
      *
-     * Currently for only one database REPLACE INTO is needed therefore the tablename
+     * Currently for only one database REPLACE INTO is needed therefore the table name
      * is hardcoded.
      *
      * @see http://jira.aida.de/browse/TYPO-5566
@@ -111,8 +104,6 @@ class Table
         return $this->strTableName === 'sys_file_metadata';
     }
 
-
-
     /**
      * Write tables data to dump file.
      *
@@ -121,20 +112,20 @@ class Table
      * bForceFullSync: ignore last sync time and always do a full sync and
      *     no incremental sync
      *
-     * @param string[] $arTables    Tables to dump.
-     * @param string   $strDumpFile Target file for dump data.
-     * @param array    $arOptions   Additional options.
+     * @param string[] $arTables    Tables to dump
+     * @param string   $strDumpFile Target file for dump data
+     * @param array    $arOptions   Additional options
      *
      * @return void
      */
     public static function writeDumps(
-        array $arTables, $strDumpFile, array $arOptions = null
-    ): void
-    {
+        array $arTables, string $strDumpFile, array $arOptions = []
+    ): void {
         /** @var Table[] $arInstances */
         $arInstances = [];
         foreach ($arTables as $strTable) {
             $table = new static($strTable, $strDumpFile, $arOptions);
+
             $arInstances[] = $table;
             $table->writeDump();
         }
@@ -145,10 +136,7 @@ class Table
                 $table->appendDeleteObsoleteRowsToFile();
             }
         }
-
     }
-
-
 
     /**
      * Write table data to dump file.
@@ -170,8 +158,6 @@ class Table
         }
     }
 
-
-
     /**
      * Adds flash message about skipped tables in sync.
      *
@@ -187,16 +173,10 @@ class Table
             FlashMessage::INFO
         );
 
-
-        /** @var \TYPO3\CMS\Core\Messaging\FlashMessageService $messageService */
-        $messageService = GeneralUtility::makeInstance(
-            \TYPO3\CMS\Core\Messaging\FlashMessageService::class
-        );
-
+        /** @var FlashMessageService $messageService */
+        $messageService = GeneralUtility::makeInstance(FlashMessageService::class);
         $messageService->getMessageQueueByIdentifier()->addMessage($message);
     }
-
-
 
     /**
      * Returns row count affected for sync/dump.

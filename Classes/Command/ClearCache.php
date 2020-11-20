@@ -17,7 +17,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * The clear-cache command class.
@@ -59,21 +58,28 @@ class ClearCache extends Command
     /**
      * @var SymfonyStyle
      */
-    private $io;
+    private SymfonyStyle $io;
 
     /**
      * The clear cache service.
      *
      * @var ClearCacheService
      */
-    private $service;
+    private ClearCacheService $clearCacheService;
 
     /**
      * ClearCache constructor.
+     *
+     * @param ClearCacheService $clearCacheService
+     * @param string $name
      */
-    public function __construct()
-    {
-        parent::__construct('sync:cache:clear');
+    public function __construct(
+        ClearCacheService $clearCacheService,
+        string $name = 'sync:cache:clear'
+    ) {
+        parent::__construct($name);
+
+        $this->clearCacheService = $clearCacheService;
     }
 
     protected function configure(): void
@@ -116,7 +122,7 @@ class ClearCache extends Command
         } elseif ($inputData = $input->getOption('data')) {
             $data = explode(',', $inputData);
         } else {
-            $this->io->error('You need to specify either option -f or -d.');
+            $this->io->error('You need to specify either option -f or -d. Type --help for more information.');
             return self::CLI_ERROR_COMMAND;
         }
 
@@ -157,9 +163,7 @@ class ClearCache extends Command
      */
     private function setupClearCacheService(): bool
     {
-        $this->service = GeneralUtility::makeInstanceService('nrClearCache');
-
-        if (\is_object($this->service)) {
+        if ($this->clearCacheService instanceof ClearCacheService) {
             return true;
         }
 
@@ -170,14 +174,14 @@ class ClearCache extends Command
     /**
      * CLI runner with echo output
      *
-     * @param array $arData Array with values in table:uid order.
+     * @param string[] $data Array with values in table:uid order.
      *
      * @return void
      */
     private function runClearCacheService(array $data): void
     {
         $this->io->success('TYPO3 cache clearing....');
-        $this->service->clearCaches($data);
+        $this->clearCacheService->clearCaches($data);
         $this->io->success('Caches cleared.');
     }
 }

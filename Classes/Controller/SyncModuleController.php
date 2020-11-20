@@ -1113,12 +1113,12 @@ class SyncModuleController extends ActionController
         }
 
         Table::writeDumps(
-            $tables, $dumpFile, $arOptions = [
-                'bForceFullSync'
-                => !empty($_POST['data']['force_full_sync']),
-                'bDeleteObsoleteRows'
-                => !empty($_POST['data']['delete_obsolete_rows'])
-        ]
+            $tables,
+            $dumpFile,
+            [
+                'bForceFullSync'      => !empty($_POST['data']['force_full_sync']),
+                'bDeleteObsoleteRows' => !empty($_POST['data']['delete_obsolete_rows']),
+            ]
         );
 
         if (!file_exists($dumpFile)) {
@@ -1445,42 +1445,44 @@ class SyncModuleController extends ActionController
     /**
      * Get params for the presync hook.
      *
-     * @return array
+     * @return string[]
      */
-    public function getPreSyncParams(): array
+    private function getPreSyncParams(): array
     {
         $postData = GeneralUtility::_GP('data');
+
         return [
             'area' => $this->getArea(),
             'function' => $this->MOD_SETTINGS['function'],
             'dbFolder' => $this->dbFolder,
-            'forceFullSync' => $postData['force_full_sync']
+            'forceFullSync' => $postData['force_full_sync'],
         ];
     }
-
 
     /**
      * Adds the Table and its DeleteObsoleteRows statement to an array
      * if the statement does not exists in the array
      *
-     * @param string $tableName the name of the Table the obsolete rows
-     *                             should be added to the $arObsoleteRows array
-     *                             for
+     * @param string $tableName The name of the table the obsolete rows
+     *                          should be added to the $arObsoleteRows array for
      *
      * @return void
      */
-    public function addAsDeleteRowTable($tableName): void
+    private function addAsDeleteRowTable(string $tableName): void
     {
         $table = new Table($tableName, 'dummy');
+
         if (!isset($this->arObsoleteRows[0])) {
             $this->arObsoleteRows[0] = '-- Delete obsolete Rows on live, see: TYPO-206';
         }
+
         $strSql = $table->getSqlDroppingObsoleteRows();
         unset($table);
 
         if (empty($strSql)) {
             return;
         }
+
         $strSqlKey = md5($strSql);
 
         if (isset($this->arObsoleteRows[$strSqlKey])) {
@@ -1490,17 +1492,13 @@ class SyncModuleController extends ActionController
         $this->arObsoleteRows[$strSqlKey] = $strSql;
     }
 
-
-
     /**
      * @return array
      */
-    public function getDeleteRowStatements(): array
+    private function getDeleteRowStatements(): array
     {
         return $this->arObsoleteRows;
     }
-
-
 
     /**
      * Writes the references of a table to the sync data.

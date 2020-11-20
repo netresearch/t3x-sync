@@ -11,13 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Service;
 
-use TYPO3;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Service clear cache for Netresearch Synchronisation
+ * Service clear cache for Netresearch Synchronisation.
  *
  * @author  Alexander Opitz <alexander.opitz@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -26,32 +25,53 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class ClearCache extends AbstractService
 {
-    public $prefixId = __CLASS__;// Same as class name
-    public $scriptRelPath = 'sv/clearCache.php';
-    public $extKey = 'nr_sync';    // The extension key.
+    /**
+     * @var DataHandler
+     */
+    private DataHandler $dataHandler;
 
     /**
-     * Calls the clear cache function of t3lib_TCEmain for every array entry
+     * Same as class name
      *
-     * @param array $arData Array for elements to clear cache from as "table:uid"
+     * @var string
+     */
+    public $prefixId = __CLASS__;
+
+    /**
+     * ClearCache constructor.
+     *
+     * @param DataHandler $dataHandler
+     * @param LogManager $logManager
+     */
+    public function __construct(
+        DataHandler $dataHandler,
+        LogManager $logManager
+    ) {
+        $this->dataHandler = $dataHandler;
+        $this->logger = $logManager->getLogger(__CLASS__);
+    }
+
+    /**
+     * Calls the clear cache function of DataHandler for every array entry.
+     *
+     * @param array $data Array for elements to clear cache from as "table:uid"
      *
      * @return void
      */
-    public function clearCaches(array $arData): void
+    public function clearCaches(array $data): void
     {
-        /** @var TYPO3\CMS\Core\DataHandling\DataHandler $tce */
-        $tce = GeneralUtility::makeInstance(DataHandler::class);
-        $tce->start([], []);
+        $this->dataHandler
+            ->start([], []);
 
-        foreach ($arData as $strData) {
-            [$strTable, $uid] = explode(':', $strData);
+        foreach ($data as $entry) {
+            [$table, $uid] = explode(':', $entry);
 
-            GeneralUtility::devLog(
-                'Clear cache table: ' . $strTable . '; uid: ' . $uid, 'nr_sync',
-                GeneralUtility::SYSLOG_SEVERITY_INFO
-            );
+            $this->logger
+                ->info('Clear cache table: ' . $table . '; uid: ' . $uid);
 
-            $tce->clear_cacheCmd((int)$uid);
+            // This clears only the cache with specified record uid in table "pages"
+            $this->dataHandler
+                ->clear_cacheCmd((int) $uid);
         }
     }
 }

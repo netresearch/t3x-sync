@@ -134,6 +134,8 @@ Clear page cache for pages 123 and 124::
   http://example.org/?eID=nr_sync;task=clearCache;data=pages:123,pages:124
 
 
+    https://example.org/?nr-sync-clear-cache&task=clearCache&data=pages:123,pages:456
+
 =====
 Setup
 =====
@@ -194,4 +196,5 @@ CLI Commands
 CLI command to clear caches:
 
     ./app/vendor/bin/typo3 sync:cache:clear --help
+
 

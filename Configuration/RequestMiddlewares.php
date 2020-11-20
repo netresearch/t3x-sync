@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 return [
     'frontend' => [
-        'nr/nr-sync/sync' => [
-            'target' => \Netresearch\Sync\Middleware\Sync::class,
+        'nr/nr-sync/clear-cache' => [
+            'target' => \Netresearch\Sync\Middleware\ClearCache::class,
             'before' => [
             ],
             'after' => [

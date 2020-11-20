@@ -22,25 +22,17 @@ $iconRegistry->registerIcon(
 
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
     'nr_sync',
-    'nrClearCache' /* sv type */,
-    'tx_nrsync_clearcache' /* sv key */,
+    'nrClearCache',
+    'tx_nrsync_clearcache',
     [
-
-        'title' => 'NrSync Cache clear',
+        'title'       => 'NrSync Cache Clear Service',
         'description' => 'Clears the cache of given tables',
-
-        'subtype' => '',
-
-        'available' => true,
-        'priority' => 50,
-        'quality' => 50,
-
-        'os' => '',
-        'exec' => '',
-
-        'className' => Netresearch\Sync\Service\ClearCache::class,
+        'subtype'     => '',
+        'available'   => true,
+        'priority'    => 50,
+        'quality'     => 50,
+        'os'          => '',
+        'exec'        => '',
+        'className'   => \Netresearch\Sync\Service\ClearCache::class,
     ]
 );
-
-
-$TYPO3_CONF_VARS['FE']['eID_include']['nr_sync'] = 'EXT:nr_sync/eid/nr_sync.php';

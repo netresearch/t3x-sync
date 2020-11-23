@@ -90,8 +90,8 @@ class ClearCache extends Command
             ->setHelp('Operations for Synchronisation to Live. The script clears the cache for '
                 . 'given UIDs and tables. It calls the typo3 clear cache functionality for the given table');
 
-        $this->addUsage('--filename tables.txt');
-        $this->addUsage('--data tt_content:123,pages:4556');
+        $this->addUsage('--filename=tables.txt');
+        $this->addUsage('--data=tt_content:123,pages:4556');
 
         $this->addOption(
             'filename',

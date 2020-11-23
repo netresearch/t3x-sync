@@ -23,6 +23,7 @@ use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
 use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
+use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -338,8 +339,6 @@ class SyncModuleController extends ActionController
         $this->syncListManager = $syncListManager;
         $this->urlGenerator = $urlGenerator;
 
-//        $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
-
         $this->MCONF = [
             'name' => $this->moduleName,
         ];
@@ -370,6 +369,10 @@ class SyncModuleController extends ActionController
      * or prepare the view in another way before the action is called.
      *
      * @param ViewInterface $view The view to be initialized
+     *
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
     protected function initializeView(ViewInterface $view): void
     {
@@ -504,56 +507,21 @@ class SyncModuleController extends ActionController
     /**
      * Injects the request object for the current request or subrequest
      * Simply calls main() and init() and outputs the content
+     *
+     * @throws Exception
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
     public function mainAction(): void
     {
         $GLOBALS['SOBE'] = $this;
 
-//        $this->init();
         $this->main();
-
-//        $this->view = $this->getFluidTemplateObject('nrsync', 'nrsync');
 
         $this->view->assign('moduleName', $this->getModuleUrl());
         $this->view->assign('id', $this->id);
-//        $this->view->assign('functionMenuModuleContent', $this->content);
-
-        // Setting up the buttons and markers for document header
-//        $this->getButtons();
-//        $this->generateMenu();
-
-//        $this->view->getModuleTemplate()->setContent(
-//            $this->content
-//            . '</form>'
-//        );
-
-//        $response->getBody()->write($this->view->getModuleTemplate()->renderContent());
-//
-//        return $response;
     }
-
-//    /**
-//     * returns a new standalone view, shorthand function
-//     *
-//     * @param string $extensionName
-//     * @param string $controllerExtensionName
-//     * @param string $templateName
-//     * @return StandaloneView
-//     */
-//    protected function getFluidTemplateObject($extensionName, $controllerExtensionName, $templateName = 'Main')
-//    {
-//        /** @var StandaloneView $view */
-//        $view = $this->getObjectManager()->get(StandaloneView::class);
-//        $view->setLayoutRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Layouts')]);
-//        $view->setPartialRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Partials')]);
-//        $view->setTemplateRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates')]);
-//
-//        $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates/' . $templateName . '.html'));
-//
-//        $view->getRequest()->setControllerExtensionName($controllerExtensionName);
-//
-//        return $view;
-//    }
 
     /**
      * Tests if given tables holds data on given page id.
@@ -740,6 +708,7 @@ class SyncModuleController extends ActionController
      * @throws Exception
      * @throws ExtensionConfigurationExtensionNotConfiguredException
      * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws \Exception
      */
     private function main(): void
     {
@@ -756,7 +725,7 @@ class SyncModuleController extends ActionController
         }
 
         /** @var SyncLock $syncLock */
-        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
+        $syncLock = $this->objectManager->get(SyncLock::class);
 
         if ($this->getBackendUser()->isAdmin()) {
             $syncLock->handleLockRequest();
@@ -891,7 +860,9 @@ class SyncModuleController extends ActionController
 
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
             /** @var SyncStats $syncStats */
-            $syncStats = GeneralUtility::makeInstance(SyncStats::class, $this->function->getTableNames());
+            $syncStats = $this->objectManager->get(
+                SyncStats::class, null, $this->function->getTableNames()
+            );
 
             $this->view->assign('tableSyncStats', $syncStats);
             $this->view->assign('showTableSyncStats', true);
@@ -1039,17 +1010,22 @@ class SyncModuleController extends ActionController
      * @param string[] $tables Table names
      * @param string $dumpFile Name of the dump file.
      *
-     * @return bool success
+     * @return bool
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws \Exception
      */
     protected function createDumpToAreas(
-        array $tables, string $dumpFile
-    ): bool
-    {
+        array $tables,
+        string $dumpFile
+    ): bool {
         $filename = date('YmdHis_') . $dumpFile;
-
         $dumpFile = $this->strTempFolder . sprintf($dumpFile, '');
 
-        if (file_exists($dumpFile) || file_exists($dumpFile . '.gz')
+        if (file_exists($dumpFile)
+            || file_exists($dumpFile . '.gz')
         ) {
             $this->addError('Die letzte Synchronisationsvorbereitung ist noch'
                 . ' nicht abgeschlossen. Bitte versuchen Sie es in 5'
@@ -1061,8 +1037,8 @@ class SyncModuleController extends ActionController
             $tables,
             $dumpFile,
             [
-                'bForceFullSync'      => !empty($_POST['data']['force_full_sync']),
-                'bDeleteObsoleteRows' => !empty($_POST['data']['delete_obsolete_rows']),
+                'forceFullSync'      => !empty($_POST['data']['force_full_sync']),
+                'deleteObsoleteRows' => !empty($_POST['data']['delete_obsolete_rows']),
             ]
         );
 
@@ -1104,11 +1080,14 @@ class SyncModuleController extends ActionController
                 }
                 chmod($this->dbFolder . $strPath . '/' . $filename . '.gz', 0666);
             }
+
             if ($area->notifyMaster() === false) {
                 return false;
             }
         }
+
         unlink($dumpFile . '.gz');
+
         return true;
     }
 
@@ -1120,6 +1099,8 @@ class SyncModuleController extends ActionController
      * @param int[] $arUids Array with the uids to clear cache.
      *
      * @return bool True if file was generateable otherwise false.
+     *
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     private function createClearCacheFile(string $table, array $arUids): bool
     {
@@ -1147,18 +1128,19 @@ class SyncModuleController extends ActionController
         return true;
     }
 
-
-
     /**
      * Baut Speciellen Dump zusammen, der nur die angewählten Pages enthällt.
      * Es werden nur Pages gedumpt, zu denen der Redakteur auch Zugriff hat.
      *
-     * @param array  $pageIDs   List if page IDs to dump
-     * @param array  $tables    List of tables to dump
+     * @param array $pageIDs List if page IDs to dump
+     * @param array $tables List of tables to dump
      * @param string $dumpFile Name of target dump file
-     * @param array  $arPath
+     * @param array $arPath
      *
      * @return bool success
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     protected function createShortDump(
         array $pageIDs, array $tables, string $dumpFile, array $arPath
@@ -1306,13 +1288,15 @@ class SyncModuleController extends ActionController
     /**
      * Erzeugt ein Dump durch Seiten IDs.
      *
-     * @param array    $pageIDs     Page ids to dump.
-     * @param string   $tableName   Name of table to dump from.
-     * @param resource $fpDumpFile  File pointer to the SQL dump file.
-     * @param bool     $bContentIDs True to interpret pageIDs as content IDs.
+     * @param array $pageIDs Page ids to dump.
+     * @param string $tableName Name of table to dump from.
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     * @param bool $bContentIDs True to interpret pageIDs as content IDs.
      *
      * @return void
+     *
      * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     private function dumpTableByPageIDs(
         array $pageIDs, string $tableName, $fpDumpFile, bool $bContentIDs = false
@@ -1416,7 +1400,7 @@ class SyncModuleController extends ActionController
      */
     private function addAsDeleteRowTable(string $tableName): void
     {
-        $table = new Table($tableName, 'dummy');
+        $table = GeneralUtility::makeInstance(Table::class, $tableName, 'dummy');
 
         if (!isset($this->arObsoleteRows[0])) {
             $this->arObsoleteRows[0] = '-- Delete obsolete Rows on live, see: TYPO-206';
@@ -1449,11 +1433,14 @@ class SyncModuleController extends ActionController
     /**
      * Writes the references of a table to the sync data.
      *
-     * @param string   $strRefTableName Table to reference.
-     * @param array    $arContent       The database row to find MM References.
-     * @param resource $fpDumpFile      File pointer to the SQL dump file.
+     * @param string $strRefTableName Table to reference.
+     * @param array $arContent The database row to find MM References.
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
      *
      * @return void
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     protected function writeMMReferences(
         string $strRefTableName, array $arContent, $fpDumpFile
@@ -1518,12 +1505,15 @@ class SyncModuleController extends ActionController
      * - sorting - optional
      * - sorting_foreign - optional
      *
-     * @param string   $strRefTableName Table which we get the references from.
-     * @param string   $tableName       Table to get MM data from.
-     * @param int      $uid             The uid of element which references.
-     * @param array    $arMMConfig      The configuration of this MM reference.
-     * @param array    $arColumnNames   Table columns
-     * @param resource $fpDumpFile      File pointer to the SQL dump file.
+     * @param string $strRefTableName Table which we get the references from.
+     * @param string $tableName Table to get MM data from.
+     * @param int $uid The uid of element which references.
+     * @param array $arMMConfig The configuration of this MM reference.
+     * @param array $arColumnNames Table columns
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     private function writeMMReference(
         string $strRefTableName,
@@ -1715,6 +1705,7 @@ class SyncModuleController extends ActionController
      *                                        rows statement
      *
      * @return void
+     * @throws \Doctrine\DBAL\Exception
      */
     private function writeToDumpFile(
         array $deleteLines,
@@ -1935,6 +1926,8 @@ class SyncModuleController extends ActionController
 
     /**
      * Generates the menu based on $this->MOD_MENU
+     *
+     * @throws RouteNotFoundException
      */
     private function createMenu(): void
     {
@@ -1988,6 +1981,7 @@ class SyncModuleController extends ActionController
      *
      * @throws ExtensionConfigurationExtensionNotConfiguredException
      * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
     private function createButtons(): void
     {
@@ -2024,6 +2018,7 @@ class SyncModuleController extends ActionController
 
     /**
      *
+     * @throws RouteNotFoundException
      */
     private function addButtonBarAreaLockButtons(): void
     {
@@ -2039,6 +2034,8 @@ class SyncModuleController extends ActionController
     /**
      * @param string $systemName
      * @param array $system
+     *
+     * @throws RouteNotFoundException
      */
     private function addButtonBarAreaLockButton(string $systemName, array $system): void
     {
@@ -2102,6 +2099,7 @@ class SyncModuleController extends ActionController
      *
      * @throws ExtensionConfigurationExtensionNotConfiguredException
      * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
     protected function addButtonBarLockButton(): void
     {
@@ -2109,7 +2107,7 @@ class SyncModuleController extends ActionController
         $lockButton = $buttonBar->makeLinkButton();
 
         /** @var SyncLock $syncLock */
-        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
+        $syncLock = $this->objectManager->get(SyncLock::class);
 
         if ($syncLock->isLocked()) {
             $lockButton
@@ -2232,7 +2230,9 @@ class SyncModuleController extends ActionController
      * Sets time of last dump/sync for this element.
      *
      * @param string $table The table, the elements belongs to
-     * @param int    $uid   The uid of the element
+     * @param int $uid The uid of the element
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
     protected function setLastDumpTimeForElement(string $table, int $uid): void
     {
@@ -2244,16 +2244,19 @@ class SyncModuleController extends ActionController
             ->getConnectionForTable('tx_nrsync_syncstat');
 
         $connection->executeStatement(
-            'INSERT INTO tx_nrsync_syncstat'
-            . ' (tab, ' . $strUpdateField . ', cruser_id, uid_foreign) VALUES '
-            . ' ('
-            . $connection->quote($table)
-            . ', ' . $connection->quote($nTime)
-            . ', ' . $connection->quote($nUserId)
-            . ', ' . $connection->quote($uid) . ')'
-            . ' ON DUPLICATE KEY UPDATE'
-            . ' cruser_id = ' . $connection->quote($nUserId) . ', '
-            . $strUpdateField . ' = ' . $connection->quote($nTime)
+            sprintf(
+                'INSERT INTO tx_nrsync_syncstat (tab, %s, cruser_id, uid_foreign)'
+                . ' VALUES (%s, %s, %s, %s)'
+                . ' ON DUPLICATE KEY UPDATE cruser_id = %s, %s = %s',
+                $strUpdateField,
+                $connection->quote($table),
+                $connection->quote($nTime),
+                $connection->quote($nUserId),
+                $connection->quote($uid),
+                $connection->quote($nUserId),
+                $strUpdateField,
+                $connection->quote($nTime)
+            )
         );
     }
 
@@ -2307,9 +2310,11 @@ class SyncModuleController extends ActionController
     /**
      * Clean up statements and prepare dump file.
      *
-     * @param array    $deleteLines Delete statements
-     * @param array    $insertLines Insert statements
-     * @param resource $fpDumpFile  Dump file
+     * @param array $deleteLines Delete statements
+     * @param array $insertLines Insert statements
+     * @param resource $fpDumpFile Dump file
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
     private function prepareDump(array $deleteLines, array $insertLines, $fpDumpFile): void
     {
@@ -2346,6 +2351,8 @@ class SyncModuleController extends ActionController
      * @param array $insertLines insert array ofstatements for elements to sync
      *
      * @return void
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
     private function writeStats(array $insertLines): void
     {
@@ -2358,7 +2365,6 @@ class SyncModuleController extends ActionController
                 $this->setLastDumpTimeForElement($table, $uid);
             }
         }
-
     }
 
     /**
@@ -2432,6 +2438,8 @@ class SyncModuleController extends ActionController
      * @param array $parameters An array of parameters
      *
      * @return mixed
+     *
+     * @throws RouteNotFoundException
      */
     private function getModuleUrl(array $parameters = [])
     {

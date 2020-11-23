@@ -40,17 +40,28 @@ class SyncList
      */
     private $flashMessageService;
 
+    /**
+     * @var array
+     */
     private $syncList = [];
 
+    /**
+     * @var string
+     */
     private $id = '';
 
     /**
      * SyncList constructor.
+     *
+     * @param ConnectionPool $connectionPool
+     * @param FlashMessageService $flashMessageService
      */
-    public function __construct()
-    {
-        $this->connectionPool      = GeneralUtility::makeInstance(ConnectionPool::class);
-        $this->flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+    public function __construct(
+        ConnectionPool $connectionPool,
+        FlashMessageService $flashMessageService
+    ) {
+        $this->connectionPool = $connectionPool;
+        $this->flashMessageService = $flashMessageService;
     }
 
     /**
@@ -59,7 +70,7 @@ class SyncList
     public function load(string $syncListId): void
     {
         $this->syncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
-        $this->id         = $syncListId;
+        $this->id       = $syncListId;
     }
 
     /**
@@ -194,12 +205,12 @@ class SyncList
     {
         $syncList = $this->syncList[$areaID];
 
-        $arPageIDs = [];
+        $pageIDs = [];
         foreach ($syncList as $arSyncPage) {
             // Prüfen ob User Seite Bearbeiten darf
             $arPage = BackendUtility::getRecord('pages', (int) $arSyncPage['pageID']);
             if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                $arPageIDs[] = (int) $arSyncPage['pageID'];
+                $pageIDs[] = (int) $arSyncPage['pageID'];
             }
 
             // Wenn der ganze Baum syncronisiert werden soll
@@ -219,12 +230,12 @@ class SyncList
                 );
 
                 $a = $this->getPageIDsFromTree($arCount);
-                $arPageIDs = array_merge($arPageIDs, $a);
+                $pageIDs = array_merge($pageIDs, $a);
 
             }
         }
-        $arPageIDs = array_unique($arPageIDs);
-        return $arPageIDs;
+        $pageIDs = array_unique($pageIDs);
+        return $pageIDs;
     }
 
     /**
@@ -293,7 +304,8 @@ class SyncList
 
         $queryBuilder = $this->getQueryBuilderForTable('pages');
 
-        $result = $queryBuilder->select('*')
+        $result = $queryBuilder
+            ->select('*')
             ->from('pages')
             ->where(
                 $queryBuilder->expr()->eq('pid', $pid)
@@ -377,7 +389,7 @@ class SyncList
 
                 $nCount = $queryBuilder->count('pid')
                     ->from($strTableName)
-                    ->where($queryBuilder->expr()->eq('pid', (int)$nId))
+                    ->where($queryBuilder->expr()->eq('pid', $nId))
                     ->execute()
                     ->fetchOne();
 
@@ -399,21 +411,21 @@ class SyncList
      */
     protected function getPageIDsFromTree(array $arTree): array
     {
-        $arPageIDs = [];
+        $pageIDs = [];
         foreach ($arTree as $value) {
             // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
             // editierrechten fehlen)
             if (isset($value['page'])) {
-                $arPageIDs[] = $value['page']['uid'];
+                $pageIDs[] = $value['page']['uid'];
             }
 
             // Schauen ob es unter liegende Seiten gibt
             if (\is_array($value['sub'])) {
-                $arPageIDs = array_merge(
-                    $arPageIDs, $this->getPageIDsFromTree($value['sub'])
+                $pageIDs = array_merge(
+                    $pageIDs, $this->getPageIDsFromTree($value['sub'])
                 );
             }
         }
-        return $arPageIDs;
+        return $pageIDs;
     }
 }

@@ -17,7 +17,6 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
 
 /**
  * Class SyncLock
@@ -37,11 +36,22 @@ class SyncLock
     private $extensionConfiguration;
 
     /**
-     * SyncLock constructor.
+     * @var FlashMessageService
      */
-    public function __construct()
-    {
-        $this->extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class);
+    private $flashMessageService;
+
+    /**
+     * SyncLock constructor.
+     *
+     * @param ExtensionConfiguration $extensionConfiguration
+     * @param FlashMessageService $flashMessageService
+     */
+    public function __construct(
+        ExtensionConfiguration $extensionConfiguration,
+        FlashMessageService $flashMessageService
+    ) {
+        $this->extensionConfiguration = $extensionConfiguration;
+        $this->flashMessageService = $flashMessageService;
     }
 
     /**
@@ -84,22 +94,18 @@ class SyncLock
     /**
      * Send OK message to user.
      *
-     * @param string $strMessage Message to user
-     *
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @param string $message Message to user
      */
-    private function messageOk(string $strMessage): void
+    private function messageOk(string $message): void
     {
-        /** @var ObjectManager $objectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message
+        );
 
-        /** @var FlashMessage $message */
-        $message = $objectManager->get(FlashMessage::class, $strMessage);
-
-        /** @var FlashMessageService $messageService */
-        $messageService = GeneralUtility::makeInstance(FlashMessageService::class);
-
-        $messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
 
     /**

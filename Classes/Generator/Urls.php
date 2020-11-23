@@ -39,10 +39,12 @@ class Urls
      * Called after the sync button has been pressed.
      * We generate the URL files here.
      *
-     * @param array  $arParams Information about what to sync.
-     * @param SyncModuleController $sync     Main sync module object
+     * @param array $arParams Information about what to sync.
+     * @param SyncModuleController $sync Main sync module object
      *
      * @return void
+     *
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     public function postProcessSync(array $arParams, SyncModuleController $sync): void
     {
@@ -50,8 +52,8 @@ class Urls
             return;
         }
 
-        if (\count($arParams['arUrlsOnce']) == 0
-            && \count($arParams['arUrlsPerMachine']) == 0
+        if (\count($arParams['arUrlsOnce']) === 0
+            && \count($arParams['arUrlsPerMachine']) === 0
         ) {
             return;
         }
@@ -79,7 +81,6 @@ class Urls
         );
     }
 
-
     /**
      * Generates the url files for a given format
      *
@@ -95,7 +96,6 @@ class Urls
         return $this->saveFile($strContent, $strPath, $folders);
     }
 
-
     /**
      * Prepares file content and file name for an url list file
      *
@@ -107,7 +107,7 @@ class Urls
      */
     protected function prepareFile(array $arUrls, string $strFileNameTemplate): array
     {
-        if (\count($arUrls) == 0) {
+        if (\count($arUrls) === 0) {
             return [null, null];
         }
 
@@ -138,8 +138,6 @@ class Urls
 
         return \count($arFolders);
     }
-
-
 
     /**
      * Returns full folder paths. Creates folders if necessary.

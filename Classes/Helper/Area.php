@@ -131,11 +131,13 @@ class Area
     /**
      * Return all areas that shall get synced for the given table type
      *
-     * @param null|array $arAreas      Area configurations
-     * @param string     $strTableType Type of tables to sync, e.g. "sync_tables",
+     * @param null|array $arAreas Area configurations
+     * @param string $strTableType Type of tables to sync, e.g. "sync_tables",
      *                                 "sync_fe_groups", "sync_be_groups", "backsync_tables"
      *
      * @return Area[]
+     *
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     public static function getMatchingAreas(array $arAreas = null, $strTableType = ''): array
     {

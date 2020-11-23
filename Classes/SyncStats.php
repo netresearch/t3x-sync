@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Class SyncStats
@@ -25,6 +24,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class SyncStats
 {
     /**
+     * @var ConnectionPool
+     */
+    private $connectionPool;
+
+    /**
      * @var string[]
      */
     private array $tables;
@@ -32,10 +36,14 @@ class SyncStats
     /**
      * SyncStats constructor.
      *
+     * @param ConnectionPool $connectionPool
      * @param string[] $tables Table names
      */
-    public function __construct(array $tables)
-    {
+    public function __construct(
+        ConnectionPool $connectionPool,
+        array $tables
+    ) {
+        $this->connectionPool = $connectionPool;
         $this->tables = $tables;
     }
 
@@ -46,11 +54,9 @@ class SyncStats
      */
     public function getSyncStats(): array
     {
-        /** @var ConnectionPool $connectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-
+        $connection   = $this->connectionPool->getConnectionForTable('tx_nrsync_syncstat');
         $queryBuilder = $connection->createQueryBuilder();
+
         $row = $queryBuilder
             ->select('*')
             ->from('tx_nrsync_syncstat')

@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use TYPO3\CMS\Core\SingletonInterface;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Object\ObjectManagerInterface;
 
 /**
  * Class SyncListManager
@@ -25,9 +25,25 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class SyncListManager implements SingletonInterface
 {
     /**
+     * @var ObjectManagerInterface
+     */
+    private $objectManager;
+
+    /**
      * @var SyncList[]
      */
     private array $syncLists = [];
+
+    /**
+     * SyncListManager constructor.
+     *
+     * @param ObjectManagerInterface $objectManager
+     */
+    public function __construct(
+        ObjectManagerInterface $objectManager
+    ) {
+        $this->objectManager = $objectManager;
+    }
 
     /**
      * @param string $syncListId
@@ -38,7 +54,7 @@ class SyncListManager implements SingletonInterface
     {
         if ($this->syncLists[$syncListId] === null) {
             /** @var SyncList $syncList */
-            $syncList = GeneralUtility::makeInstance(SyncList::class);
+            $syncList = $this->objectManager->get(SyncList::class);
             $syncList->load($syncListId);
 
             $this->syncLists[$syncListId] = $syncList;

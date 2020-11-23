@@ -27,6 +27,12 @@ class AssetModule extends BaseModule
     protected $target = 'sync server';
     protected $accessLevel = 100;
 
+    /**
+     * @param Area $area
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function run(Area $area): bool
     {
         parent::run($area);

@@ -31,60 +31,62 @@ class Table
      *
      * @var string
      */
-    protected $strTableName;
+    private $tableName;
 
     /**
      * The name of dump file.
      *
      * @var string
      */
-    protected $strDumpFile;
+    private $dumpFile;
 
     /**
      * Force a complete sync.
      *
      * @var bool
      */
-    protected $bForceFullSync = false;
+    private $forceFullSync = false;
 
     /**
      * Add the --no-create-info option to the dump.
      *
      * @var bool
      */
-    protected $bNoCreateInfo = true;
+    private $noCreateInfo = true;
 
     /**
      * Delete rows which are not used on live system (delete, disabled, endtime), default is true.
      *
      * @var bool
      */
-    protected $bDeleteObsoleteRows = true;
+    private $deleteObsoleteRows = true;
 
     /**
      * Constructor.
      *
-     * @param string $strTableName Name of table.
-     * @param string $strDumpFile  Name of target dump file.
-     * @param array  $arOptions    Additional options.
+     * @param string $tableName Name of table.
+     * @param string $dumpFile  Name of target dump file.
+     * @param array  $options Additional options.
      */
     public function __construct(
-        string $strTableName, string $strDumpFile, array $arOptions = []
+        string $tableName,
+        string $dumpFile,
+        array $options = []
     ) {
-        $this->strTableName = $strTableName;
-        $this->strDumpFile  = $strDumpFile;
+        $this->tableName = $tableName;
+        $this->dumpFile  = $dumpFile;
 
-        if (\is_array($arOptions)) {
-            if (isset($arOptions['bForceFullSync'])) {
-                $this->bForceFullSync = (bool)$arOptions['bForceFullSync'];
+        if (\is_array($options)) {
+            if (isset($options['forceFullSync'])) {
+                $this->forceFullSync = (bool)$options['forceFullSync'];
             }
 
-            if (isset($arOptions['bDeleteObsoleteRows'])) {
-                $this->bDeleteObsoleteRows = (bool)$arOptions['bDeleteObsoleteRows'];
+            if (isset($options['deleteObsoleteRows'])) {
+                $this->deleteObsoleteRows = (bool)$options['deleteObsoleteRows'];
             }
 
-            if (isset($arOptions['bNoCreateInfo'])) {
-                $this->setNoCreateInfo($arOptions['bNoCreateInfo']);
+            if (isset($options['noCreateInfo'])) {
+                $this->setNoCreateInfo($options['noCreateInfo']);
             }
         }
     }
@@ -101,7 +103,7 @@ class Table
      */
     protected function useReplace(): bool
     {
-        return $this->strTableName === 'sys_file_metadata';
+        return $this->tableName === 'sys_file_metadata';
     }
 
     /**
@@ -109,30 +111,36 @@ class Table
      *
      * Options:
      *
-     * bForceFullSync: ignore last sync time and always do a full sync and
+     * forceFullSync: ignore last sync time and always do a full sync and
      *     no incremental sync
      *
-     * @param string[] $arTables    Tables to dump
-     * @param string   $strDumpFile Target file for dump data
-     * @param array    $arOptions   Additional options
+     * @param string[] $tables Tables to dump
+     * @param string $dumpFile Target file for dump data
+     * @param array $options Additional options
      *
      * @return void
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     public static function writeDumps(
-        array $arTables, string $strDumpFile, array $arOptions = []
+        array $tables,
+        string $dumpFile,
+        array $options = []
     ): void {
-        /** @var Table[] $arInstances */
-        $arInstances = [];
-        foreach ($arTables as $strTable) {
-            $table = new static($strTable, $strDumpFile, $arOptions);
+        /** @var Table[] $instances */
+        $instances = [];
 
-            $arInstances[] = $table;
+        foreach ($tables as $table) {
+            $table = new static($table, $dumpFile, $options);
+
+            $instances[] = $table;
             $table->writeDump();
         }
 
         // TYPO-206 append delete statements at the end of the table
-        foreach ($arInstances as $table) {
-            if ($table->bDeleteObsoleteRows) {
+        foreach ($instances as $table) {
+            if ($table->deleteObsoleteRows) {
                 $table->appendDeleteObsoleteRowsToFile();
             }
         }
@@ -142,10 +150,13 @@ class Table
      * Write table data to dump file.
      *
      * @return void
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     public function writeDump(): void
     {
-        if ($this->bForceFullSync === false && $this->hasTstampField()) {
+        if ($this->forceFullSync === false && $this->hasTstampField()) {
             if ($this->hasUpdatedRows()) {
                 $this->appendUpdateToFile();
                 $this->setLastDumpTime();
@@ -168,7 +179,7 @@ class Table
         /** @var FlashMessage $message */
         $message = GeneralUtility::makeInstance(
             FlashMessage::class,
-            'Table "' . $this->strTableName . '" skipped - no changes since last sync.',
+            'Table "' . $this->tableName . '" skipped - no changes since last sync.',
             'Skipped table',
             FlashMessage::INFO
         );
@@ -189,14 +200,14 @@ class Table
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        $connection = $connectionPool->getConnectionForTable($this->strTableName);
+        $connection = $connectionPool->getConnectionForTable($this->tableName);
 
         $strWhere = $this->getDumpWhereCondition();
 
         if (empty($strWhere)) {
             throw new Exception(
                 'Could not get WHERE condition for tstamp field for table "'
-                . $this->strTableName . '".'
+                . $this->tableName . '".'
             );
         }
 
@@ -204,12 +215,11 @@ class Table
 
         return $queryBuilder
             ->count('tstamp')
-            ->from($this->strTableName)
+            ->from($this->tableName)
             ->where($strWhere)
             ->execute()
             ->fetchOne();
     }
-
 
     /**
      * Fetches a list of every updateable entry that could be found.
@@ -221,26 +231,25 @@ class Table
     {
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $connection = $connectionPool->getConnectionForTable($this->strTableName);
-
-        $queryBuilder = $connection->createQueryBuilder();
+        $connection     = $connectionPool->getConnectionForTable($this->tableName);
+        $queryBuilder   = $connection->createQueryBuilder();
 
         $strWhere = '';
-        if ($this->bForceFullSync === false && $this->hasTstampField()) {
+
+        if ($this->forceFullSync === false && $this->hasTstampField()) {
             $strWhere = $this->getDumpWhereCondition();
         }
+
         $statement = $queryBuilder
             ->selectLiteral('GROUP_CONCAT(uid SEPARATOR \',\') AS uid_list')
-            ->from($this->strTableName);
+            ->from($this->tableName);
 
         if (!empty($strWhere)) {
             $statement->where($strWhere);
         }
+
         $data = $statement->execute()->fetchAllAssociative();
-
         $list = array_filter(explode(',', $data['0']['uid_list']));
-
 
         $arData = [];
         foreach ($list as $row) {
@@ -248,9 +257,9 @@ class Table
                 'uid' => $row,
             ];
         }
+
         return $arData;
     }
-
 
     /**
      * Appends table dump data to file.
@@ -265,15 +274,15 @@ class Table
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        $connection = $connectionPool->getConnectionForTable($this->strTableName);
+        $connection = $connectionPool->getConnectionForTable($this->tableName);
 
         $r = file_put_contents(
-            $this->strDumpFile,
-            "\n\n" . 'TRUNCATE TABLE ' . $this->strTableName . ";\n\n",
+            $this->dumpFile,
+            "\n\n" . 'TRUNCATE TABLE ' . $this->tableName . ";\n\n",
             FILE_APPEND
         );
 
-        if ($r == false) {
+        if ($r === false) {
             throw new Exception('Could not write into dump file.');
         }
 
@@ -282,7 +291,7 @@ class Table
             // do not drop tables here, we truncated them already
             . ' --skip-add-drop-table';
 
-        if ($this->bNoCreateInfo) {
+        if ($this->noCreateInfo) {
             // do not add CREATE TABLE
             $strExec .= ' --no-create-info';
         }
@@ -303,12 +312,10 @@ class Table
             . ' --disable-keys'
             // export blobs as hex
             . ' --hex-blob'
-            . ' ' . $connection->getDatabase() . ' ' . $this->strTableName . ' >> ' . $this->strDumpFile;
+            . ' ' . $connection->getDatabase() . ' ' . $this->tableName . ' >> ' . $this->dumpFile;
 
         shell_exec($strExec);
     }
-
-
 
     /**
      * Appends table dump data updated since last dump/sync to file.
@@ -324,14 +331,14 @@ class Table
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
 
-        $connection = $connectionPool->getConnectionForTable($this->strTableName);
+        $connection = $connectionPool->getConnectionForTable($this->tableName);
 
         $strWhere = $this->getDumpWhereCondition();
 
         if (empty($strWhere)) {
             throw new Exception(
                 'Could not get WHERE condition for tstamp field for table "'
-                . $this->strTableName . '".'
+                . $this->tableName . '".'
             );
         }
 
@@ -340,7 +347,7 @@ class Table
             // do not drop tables here, we truncated them already
             . ' --skip-add-drop-table';
 
-        if ($this->bNoCreateInfo) {
+        if ($this->noCreateInfo) {
             // do not add CREATE TABLE
             $strExec .= ' --no-create-info';
         }
@@ -357,12 +364,10 @@ class Table
             // export blobs as hex
             . ' --hex-blob'
             . ' --where="' . $strWhere . '"'
-            . ' ' . $connection->getDatabase() . ' ' . $this->strTableName . ' >> ' . $this->strDumpFile;
+            . ' ' . $connection->getDatabase() . ' ' . $this->tableName . ' >> ' . $this->dumpFile;
 
         shell_exec($strExec);
     }
-
-
 
     /**
      * Appends the Delete statement for obsolete rows to the
@@ -378,14 +383,12 @@ class Table
             return;
         }
         file_put_contents(
-            $this->strDumpFile,
+            $this->dumpFile,
             "\n\n-- Delete obsolete Rows on live, see: TYPO-206 \n"
             . $strSqlObsoleteRows,
             FILE_APPEND
         );
     }
-
-
 
     /**
      * Returns WHERE condition for table tstamp field or false.
@@ -395,22 +398,20 @@ class Table
     protected function getDumpWhereCondition()
     {
         // load TCA and check for tstamp field
-        $strTableTstampField = $this->getTstampField();
+        $tableTstampField = $this->getTstampField();
 
-        if ($strTableTstampField === false) {
+        if ($tableTstampField === false) {
             return false;
         }
 
         $nTime = $this->getLastDumpTime();
 
         if ($nTime) {
-            return $strTableTstampField . ' > ' . $nTime;
+            return $tableTstampField . ' > ' . $nTime;
         }
 
         return false;
     }
-
-
 
     /**
      * Returns table tstamp field - if defined, otherwise false.
@@ -419,8 +420,8 @@ class Table
      */
     protected function getTstampField()
     {
-        if (!empty($GLOBALS['TCA'][$this->strTableName]['ctrl']['tstamp'])) {
-            return $GLOBALS['TCA'][$this->strTableName]['ctrl']['tstamp'];
+        if (!empty($GLOBALS['TCA'][$this->tableName]['ctrl']['tstamp'])) {
+            return $GLOBALS['TCA'][$this->tableName]['ctrl']['tstamp'];
         }
 
         return false;
@@ -436,8 +437,6 @@ class Table
         return $this->getTstampField() !== false;
     }
 
-
-
     /**
      * Returns time stamp for last sync/dump of this table
      *
@@ -447,10 +446,8 @@ class Table
     {
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-
-        $queryBuilder = $connection->createQueryBuilder();
+        $connection     = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
+        $queryBuilder   = $connection->createQueryBuilder();
 
         $arRow = $queryBuilder
             ->selectLiteral(
@@ -459,7 +456,7 @@ class Table
             )
             ->from('tx_nrsync_syncstat')
             ->where(
-                $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->strTableName)])
+                $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->tableName)])
             )
             ->execute()
             ->fetchAssociative();
@@ -480,15 +477,15 @@ class Table
         return $nTime;
     }
 
-
-
     /**
      * Sets time of last dump/sync for this table.
      *
      * @param null|int $nTime Time of last table dump/sync.
-     * @param bool     $bIncr Set time for last incremental or full dump/sync.
+     * @param bool $bIncr Set time for last incremental or full dump/sync.
      *
      * @return void
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
     protected function setLastDumpTime(int $nTime = null, bool $bIncr = true): void
     {
@@ -517,17 +514,20 @@ class Table
         $nTime = (int)$nTime;
 
         $connection->executeStatement(
-            'INSERT INTO tx_nrsync_syncstat'
-            . "(tab, $strUpdateField, cruser_id) VALUES "
-            . '('
-            . $connection->quote($this->strTableName)
-            . ', ' . $connection->quote($nTime) . ', ' . $connection->quote($nUserId) . ') '
-            . 'ON DUPLICATE KEY UPDATE'
-            . ' cruser_id = ' . $connection->quote($nUserId) . ', '
-            . $strUpdateField . ' = ' . $connection->quote($nTime)
+            sprintf(
+                'INSERT INTO tx_nrsync_syncstat (tab, %s, cruser_id)'
+                . ' VALUES (%s, %s, %s)'
+                . ' ON DUPLICATE KEY UPDATE cruser_id = %s, %s = %s',
+                $strUpdateField,
+                $connection->quote($this->tableName),
+                $connection->quote($nTime),
+                $connection->quote($nUserId),
+                $connection->quote($nUserId),
+                $strUpdateField,
+                $connection->quote($nTime)
+            )
         );
     }
-
 
     /**
      * Return a sql statement to drop rows from the table which are useless
@@ -539,9 +539,7 @@ class Table
     {
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
-
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-
+        $connection     = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
         $arControlFields = $this->getControlFieldsFromTcaByTableName();
 
         if (\count($arControlFields) === 0) {
@@ -554,7 +552,7 @@ class Table
         );
 
         $strStatement = 'DELETE FROM '
-            . $connection->quoteIdentifier($this->strTableName);
+            . $connection->quoteIdentifier($this->tableName);
         $arWhereClauseParts = [];
         if (isset($arControlFields['delete'])) {
             $arWhereClauseParts[] = $arControlFields['delete'] . ' = 1';
@@ -582,11 +580,9 @@ class Table
         return $strStatement;
     }
 
-
-
     /**
      * Returns an array of key-values where the key is the key-name of the
-     * controlfield and the value is the name of the controlfield in the
+     * control field and the value is the name of the controlfield in the
      * current table object.
      *
      * @return array An array with controlfield key and the name of the keyfield
@@ -594,11 +590,11 @@ class Table
      */
     public function getControlFieldsFromTcaByTableName(): array
     {
-        if (!isset($GLOBALS['TCA'][$this->strTableName])) {
+        if (!isset($GLOBALS['TCA'][$this->tableName])) {
             return [];
         }
 
-        $arControl = $GLOBALS['TCA'][$this->strTableName]['ctrl'];
+        $arControl = $GLOBALS['TCA'][$this->tableName]['ctrl'];
         $arEnableFields = $arControl['enablecolumns'];
 
         $arReturn = [];
@@ -619,14 +615,14 @@ class Table
     }
 
     /**
-     * Setter for bNoCreateInfo
+     * Setter for noCreateInfo
      *
-     * @param bool $bNoCreateInfo True if do not add CREATE TABLE
+     * @param bool $noCreateInfo True if do not add CREATE TABLE
      *
      * @return void
      */
-    public function setNoCreateInfo(bool $bNoCreateInfo): void
+    public function setNoCreateInfo(bool $noCreateInfo): void
     {
-        $this->bNoCreateInfo = $bNoCreateInfo;
+        $this->noCreateInfo = $noCreateInfo;
     }
 }

@@ -203,13 +203,6 @@ class SyncModuleController extends ActionController
      */
     protected $functions = [
         0 => BaseModule::class,
-        31 => [
-            'name'         => 'Domain Records',
-            'tables'       => [
-                'sys_domain',
-            ],
-            'dumpFileName' => 'sys_domain.sql',
-        ],
         46 => [
             'name'         => 'Single pages with content',
             'tables'       => [
@@ -247,18 +240,6 @@ class SyncModuleController extends ActionController
                 'tx_scheduler_task',
             ],
             'dumpFileName' => 'scheduler.sql',
-            'accessLevel'  => 100,
-        ],
-        20 => [
-            'name'         => 'TextDB',
-            'tables'       => [
-                'tx_aidatextdb_component',
-                'tx_aidatextdb_placeholder',
-                'tx_aidatextdb_textmodule',
-                'tx_aidatextdb_type',
-                'tx_aidatextdb_environment',
-            ],
-            'dumpFileName' => 'text-db.sql',
             'accessLevel'  => 100,
         ],
     ];

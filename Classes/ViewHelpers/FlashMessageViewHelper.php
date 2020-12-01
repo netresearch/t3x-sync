@@ -16,6 +16,7 @@ use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
+use function constant;
 
 /**
  * A ViewHelper to print return an area by a given areaId.
@@ -69,7 +70,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
             FlashMessage::class,
             $this->renderChildren(),
             '',
-            \constant(FlashMessage::class . '::' . $this->arguments['type'])
+            constant(FlashMessage::class . '::' . $this->arguments['type'])
         );
 
         return $this->bootstrapRenderer->render([ $message ]);

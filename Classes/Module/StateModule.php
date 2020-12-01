@@ -53,12 +53,12 @@ class StateModule extends BaseModule
      */
     private function testAllTablesForDifferences(): void
     {
-        $arTableNames = $this->connectionPool
+        $tableNames = $this->connectionPool
             ->getConnectionForTable('pages')
             ->getSchemaManager()
             ->listTableNames();
 
-        $this->testTablesForDifferences($arTableNames);
+        $this->testTablesForDifferences($tableNames);
     }
 
     /**
@@ -68,50 +68,50 @@ class StateModule extends BaseModule
      */
     private function createNewDefinitions(): bool
     {
-        $arTableNames = $this->connectionPool
+        $tableNames = $this->connectionPool
             ->getConnectionForTable('pages')
             ->getSchemaManager()
             ->listTableNames();
 
-        $arTables = [];
-        foreach ($arTableNames as $strTableName) {
-            $arColumns = $this->connectionPool
-                ->getConnectionForTable($strTableName)
+        $tables = [];
+        foreach ($tableNames as $tableName) {
+            $columns = $this->connectionPool
+                ->getConnectionForTable($tableName)
                 ->getSchemaManager()
-                ->listTableColumns($strTableName);
+                ->listTableColumns($tableName);
 
-            $arColumnNames = [];
-            foreach ($arColumns as $column) {
-                $arColumnNames[] = $column->getName();
+            $columnNames = [];
+            foreach ($columns as $column) {
+                $columnNames[] = $column->getName();
             }
-            $arTables[$strTableName] = $arColumnNames;
+
+            $tables[$tableName] = $columnNames;
         }
 
-        $strTables = serialize($arTables);
+        $file = $this->getStateFile();
 
-        $strFile = $this->getStateFile();
-
-        if (file_exists($strFile) && !is_writable($strFile)) {
+        if (file_exists($file) && !is_writable($file)) {
             $this->addMessage(
-                'Tabellendefinitionsdatei ist nicht schreibar!' . ' ' . $strFile,
+                'Tabellendefinitionsdatei ist nicht schreibar!' . ' ' . $file,
                 FlashMessage::ERROR
             );
             return false;
         }
 
-        $fpDumpFile = fopen($strFile, 'wb');
+        $fpDumpFile = fopen($file, 'wb');
 
         if ($fpDumpFile === false) {
             $this->addMessage(
-                'Konnte Tabellendefinitionsdatei nicht öffnen!' . ' ' . $strFile,
+                'Konnte Tabellendefinitionsdatei nicht öffnen!' . ' ' . $file,
                 FlashMessage::ERROR);
             return false;
         }
 
-        $ret = fwrite($fpDumpFile, $strTables);
+        $ret = fwrite($fpDumpFile, serialize($tables));
+
         if ($ret === false) {
             $this->addMessage(
-                'Konnte Tabellendefinitionsdatei nicht schreiben!' . ' ' . $strFile,
+                'Konnte Tabellendefinitionsdatei nicht schreiben!' . ' ' . $file,
                 FlashMessage::ERROR);
             return false;
         }

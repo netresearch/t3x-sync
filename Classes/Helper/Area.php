@@ -17,7 +17,9 @@ use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Object\Exception;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
+use function in_array;
 
 /**
  * Methods to work with synchronization areas
@@ -137,7 +139,7 @@ class Area
      *
      * @return Area[]
      *
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws Exception
      */
     public static function getMatchingAreas(array $arAreas = null, $strTableType = ''): array
     {
@@ -161,8 +163,8 @@ class Area
         }
 
         if (isset($this->area['doctype'], $this->area['not_doctype'])
-            && !\in_array($record['doktype'], $this->area['doctype'], true)
-            && \in_array($record['doktype'], $this->area['not_doctype'], true)
+            && !in_array($record['doktype'], $this->area['doctype'], true)
+            && in_array($record['doktype'], $this->area['not_doctype'], true)
         ) {
             return false;
         }

@@ -19,6 +19,9 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use function count;
+use function in_array;
+use function is_array;
 
 /**
  * Class SyncList
@@ -140,7 +143,7 @@ class SyncList
                 && $value['pageID'] == $arDeletePageID[0]
             ) {
                 unset($this->syncList[$arDeleteArea[0]][$key]);
-                if (\count($this->syncList[$arDeleteArea[0]]) === 0) {
+                if (count($this->syncList[$arDeleteArea[0]]) === 0) {
                     unset($this->syncList[$arDeleteArea[0]]);
                 }
                 break;
@@ -158,7 +161,7 @@ class SyncList
      */
     private function isInTree(int $pid, array $syncList = null): bool
     {
-        if (\is_array($syncList)) {
+        if (is_array($syncList)) {
             foreach ($syncList as $value) {
                 if ($value['pageID'] === $pid) {
                     return true;
@@ -182,7 +185,7 @@ class SyncList
      */
     public function isEmpty(): bool
     {
-        return \count($this->syncList) < 1;
+        return count($this->syncList) < 1;
     }
 
     /**
@@ -275,7 +278,7 @@ class SyncList
      *
      * @return array
      */
-    protected function getSubpagesAndCount(
+    public function getSubpagesAndCount(
         int $pid,
         array &$arCount = null,
         int $nLevel = 0,
@@ -292,7 +295,7 @@ class SyncList
             'other_area' => 0,
         ];
 
-        if (!\is_array($arCount) || empty($arCount)) {
+        if (!is_array($arCount) || empty($arCount)) {
             $arCount = $arCountDefault;
         }
 
@@ -313,7 +316,8 @@ class SyncList
             ->execute();
 
         while ($arPage = $result->fetchAssociative()) {
-            if (\is_array($arDocTypesExclude) && \in_array($arPage['doktype'], $arDocTypesExclude, true)) {
+            if (is_array($arDocTypesExclude)
+                && in_array($arPage['doktype'], $arDocTypesExclude, true)) {
                 continue;
             }
 
@@ -322,8 +326,8 @@ class SyncList
                 continue;
             }
 
-            if (\count($arDocTypesOnly)
-                && !\in_array($arPage['doktype'], $arDocTypesOnly, true)
+            if (count($arDocTypesOnly)
+                && !in_array($arPage['doktype'], $arDocTypesOnly, true)
             ) {
                 $arCount['falses']++;
                 continue;
@@ -373,13 +377,13 @@ class SyncList
      *
      * @return bool TRUE if data exists otherwise FALSE.
      */
-    protected function pageContainsData(int $nId, array $tables = null): bool
+    private function pageContainsData(int $nId, array $tables = null): bool
     {
         if ($tables === null) {
             return false;
         }
 
-        if (\in_array('pages', $tables, true)) {
+        if (in_array('pages', $tables, true)) {
             return true;
         }
 
@@ -403,29 +407,31 @@ class SyncList
     }
 
     /**
-     * Gibt alle ID's aus einem Pagetree zurück.
+     * Returns all IDs from a page tree.
      *
-     * @param array $arTree The pagetree to get IDs from.
+     * @param array $tree The page tree to get IDs from
      *
      * @return array
      */
-    protected function getPageIDsFromTree(array $arTree): array
+    private function getPageIDsFromTree(array $tree): array
     {
         $pageIDs = [];
-        foreach ($arTree as $value) {
-            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
-            // editierrechten fehlen)
+
+        foreach ($tree as $value) {
+            // See if there is a page on the branch (may be missing due to editing rights)
             if (isset($value['page'])) {
                 $pageIDs[] = $value['page']['uid'];
             }
 
-            // Schauen ob es unter liegende Seiten gibt
-            if (\is_array($value['sub'])) {
+            // See if there are any underlying pages
+            if (is_array($value['sub'])) {
                 $pageIDs = array_merge(
-                    $pageIDs, $this->getPageIDsFromTree($value['sub'])
+                    $pageIDs,
+                    $this->getPageIDsFromTree($value['sub'])
                 );
             }
         }
+
         return $pageIDs;
     }
 }

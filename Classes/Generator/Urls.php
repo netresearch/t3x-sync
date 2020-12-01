@@ -13,6 +13,9 @@ namespace Netresearch\Sync\Generator;
 
 use Netresearch\Sync\Controller\SyncModuleController;
 use Netresearch\Sync\Helper\Area;
+use RuntimeException;
+use TYPO3\CMS\Extbase\Object\Exception;
+use function count;
 
 /**
  * Generate files with the list of URLs that have to be called
@@ -44,16 +47,16 @@ class Urls
      *
      * @return void
      *
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws Exception
      */
     public function postProcessSync(array $arParams, SyncModuleController $sync): void
     {
-        if ($arParams['bProcess'] == false || $arParams['bSyncResult'] == false) {
+        if ($arParams['bProcess'] === false || $arParams['bSyncResult'] === false) {
             return;
         }
 
-        if (\count($arParams['arUrlsOnce']) === 0
-            && \count($arParams['arUrlsPerMachine']) === 0
+        if (count($arParams['arUrlsOnce']) === 0
+            && count($arParams['arUrlsPerMachine']) === 0
         ) {
             return;
         }
@@ -107,7 +110,7 @@ class Urls
      */
     protected function prepareFile(array $arUrls, string $strFileNameTemplate): array
     {
-        if (\count($arUrls) === 0) {
+        if (count($arUrls) === 0) {
             return [null, null];
         }
 
@@ -128,7 +131,7 @@ class Urls
      */
     protected function saveFile(string $strContent, string $strFileName, array $arFolders): int
     {
-        if ($strContent === null || $strFileName === '' || !\count($arFolders)) {
+        if ($strContent === null || $strFileName === '' || !count($arFolders)) {
             return 0;
         }
 
@@ -136,7 +139,7 @@ class Urls
             file_put_contents($strFolder . '/' . $strFileName, $strContent);
         }
 
-        return \count($arFolders);
+        return count($arFolders);
     }
 
     /**
@@ -165,7 +168,7 @@ class Urls
                 && !mkdir($strPath, $sync->nFolderRights)
                 && !is_dir($strPath)
             ) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $strPath));
+                throw new RuntimeException(sprintf('Directory "%s" was not created', $strPath));
             }
         }
 

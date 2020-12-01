@@ -23,6 +23,7 @@ use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
 use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
+use RuntimeException;
 use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
@@ -41,6 +42,10 @@ use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
+use function count;
+use function in_array;
+use function is_array;
+use function is_string;
 
 /**
  * Module 'Netresearch Sync' for the 'nr_sync' extension.
@@ -374,7 +379,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     private function initFolders(): void
     {
@@ -395,7 +400,7 @@ class SyncModuleController extends ActionController
             && !mkdir($this->strTempFolder, $this->nFolderRights, true)
             && !is_dir($this->strTempFolder)
         ) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $this->strTempFolder));
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $this->strTempFolder));
         }
 
         // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
@@ -405,7 +410,7 @@ class SyncModuleController extends ActionController
             && !mkdir($this->strUrlFolder, $this->nFolderRights, true)
             && !is_dir($this->strUrlFolder)
         ) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $this->strUrlFolder));
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $this->strUrlFolder));
         }
     }
 
@@ -423,7 +428,7 @@ class SyncModuleController extends ActionController
         $accessLevel = $this->getBackendUser()->isAdmin() ? 100 : 50;
 
         // Menu hook
-        if (\is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'])) {
+        if (is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'])) {
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'] as $id => $hookObject) {
                 if ($hookObject !== null) {
                     $this->functions[$id] = $hookObject;
@@ -473,7 +478,7 @@ class SyncModuleController extends ActionController
      */
     private function getFunctionObject(int $functionKey): BaseModule
     {
-        if (\is_string($this->functions[$functionKey])) {
+        if (is_string($this->functions[$functionKey])) {
             $function = GeneralUtility::makeInstance($this->functions[$functionKey]);
         } else {
             $function = GeneralUtility::makeInstance(
@@ -486,8 +491,7 @@ class SyncModuleController extends ActionController
     }
 
     /**
-     * Injects the request object for the current request or subrequest
-     * Simply calls main() and init() and outputs the content
+     * The controllers main action.
      *
      * @throws Exception
      * @throws ExtensionConfigurationExtensionNotConfiguredException
@@ -514,13 +518,13 @@ class SyncModuleController extends ActionController
      *
      * @return bool True if data exists otherwise false.
      */
-    protected function pageContainsData(int $nId, array $tables = null): bool
+    private function pageContainsData(int $nId, array $tables = null): bool
     {
         if ($tables === null) {
             return false;
         }
 
-        if (\in_array('pages', $tables, true)) {
+        if (in_array('pages', $tables, true)) {
             return true;
         }
 
@@ -552,7 +556,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function showPageSelection(string $strName, array $tables): void
+    private function showPageSelection(string $strName, array $tables): void
     {
         if ($this->id === 0) {
             $this->addError('Please select a page from the page tree.');
@@ -586,15 +590,16 @@ class SyncModuleController extends ActionController
 
         $arCount = [];
 
-        $this->getSubpagesAndCount(
-            $this->id,
-            $arCount,
-            0,
-            $recursion,
-            $this->getArea()->getNotDocType(),
-            $this->getArea()->getDocType(),
-            $tables
-        );
+        $this->getSyncList()
+            ->getSubpagesAndCount(
+                $this->id,
+                $arCount,
+                0,
+                $recursion,
+                $this->getArea()->getNotDocType(),
+                $this->getArea()->getDocType(),
+                $tables
+            );
 
         $strTitle = $this->getArea()->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
 
@@ -678,7 +683,7 @@ class SyncModuleController extends ActionController
     }
 
     /**
-     * Main function of the module. Write the content to $this->content
+     * Main function of the module. Assigns relevant data to the output view.
      *
      * If you chose 'web' as main module, you will need to consider the $this->id
      * parameter which will contain the uid-number of the page clicked in the page
@@ -731,7 +736,7 @@ class SyncModuleController extends ActionController
                         && !mkdir($systemDirectory, 0777, true)
                         && !is_dir($systemDirectory)
                     ) {
-                        throw new \RuntimeException(sprintf('Directory "%s" was not created', $systemDirectory));
+                        throw new RuntimeException(sprintf('Directory "%s" was not created', $systemDirectory));
                     }
 
                     $handle = fopen($lockFilePath, 'wb');
@@ -853,137 +858,12 @@ class SyncModuleController extends ActionController
         $this->view->assign('syncList', $this->getSyncList());
 
         if (($bUseSyncList && !$this->getSyncList()->isEmpty())
-            || ($bUseSyncList === false && \count($this->function->getTableNames()))
+            || ($bUseSyncList === false && count($this->function->getTableNames()))
         ) {
             $this->view->assign('showCheckBoxes', true);
         }
 
         $this->view->assign('moduleRoute', $this->moduleName);
-    }
-
-    /**
-     * Gibt alle ID's aus einem Pagetree zurück.
-     *
-     * @param array $arTree The pagetree to get IDs from.
-     *
-     * @return array
-     */
-    protected function getPageIDsFromTree(array $arTree): array
-    {
-        $pageIDs = [];
-        foreach ($arTree as $value) {
-            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
-            // editierrechten fehlen)
-            if (isset($value['page'])) {
-                $pageIDs[] = $value['page']['uid'];
-            }
-
-            // Schauen ob es unter liegende Seiten gibt
-            if (\is_array($value['sub'])) {
-                $pageIDs = array_merge(
-                    $pageIDs, $this->getPageIDsFromTree($value['sub'])
-                );
-            }
-        }
-        return $pageIDs;
-    }
-
-    /**
-     * Returns the page, its sub-pages and their number for a given page ID,
-     * if this page can be edited by the user.
-     *
-     * @param int        $pid               The page id to count on
-     * @param array      &$arCount          Information about the count data
-     * @param int        $nLevel            Depth on which we are
-     * @param int        $nLevelMax         Maximum depth to search for
-     * @param null|array $arDocTypesExclude TYPO3 doc types to exclude
-     * @param null|array $arDocTypesOnly    TYPO3 doc types to count only
-     * @param null|array $tables            Tables this task manages
-     *
-     * @return array
-     */
-    protected function getSubpagesAndCount(
-        int $pid,
-        array &$arCount,
-        int $nLevel = 0,
-        int $nLevelMax = 1,
-        array $arDocTypesExclude = null,
-        array $arDocTypesOnly = null,
-        array $tables = null
-    ): array {
-        $arCountDefault = [
-            'count'      => 0,
-            'deleted'    => 0,
-            'noaccess'   => 0,
-            'falses'     => 0,
-            'other_area' => 0,
-        ];
-
-        if (!\is_array($arCount) || empty($arCount)) {
-            $arCount = $arCountDefault;
-        }
-
-        $return = [];
-
-        if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
-            return $return;
-        }
-
-        $queryBuilder = $this->getQueryBuilderForTable('pages');
-
-        $result = $queryBuilder
-            ->select('*')
-            ->from('pages')
-            ->where(
-                $queryBuilder->expr()->eq('pid', $pid)
-            )
-            ->execute();
-
-        while ($arPage = $result->fetchAssociative()) {
-            if (\is_array($arDocTypesExclude)
-                && \in_array($arPage['doktype'], $arDocTypesExclude, true)) {
-                continue;
-            }
-
-            if (isset($this->areas[$arPage['uid']])) {
-                $arCount['other_area']++;
-                continue;
-            }
-
-            if (\count($arDocTypesOnly)
-                && !\in_array($arPage['doktype'], $arDocTypesOnly, true)
-            ) {
-                $arCount['falses']++;
-                continue;
-            }
-
-            $arSub = $this->getSubpagesAndCount(
-                $arPage['uid'], $arCount, $nLevel + 1, $nLevelMax,
-                $arDocTypesExclude, $arDocTypesOnly, $tables
-            );
-
-            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                $return[] = [
-                    'page' => $arPage,
-                    'sub'  => $arSub,
-                ];
-            } else {
-                $return[] = [
-                    'sub' => $arSub,
-                ];
-                $arCount['noaccess']++;
-            }
-
-            // Die Zaehlung fuer die eigene Seite
-            if ($this->pageContainsData($arPage['uid'], $tables)) {
-                $arCount['count']++;
-                if ($arPage['deleted']) {
-                    $arCount['deleted']++;
-                }
-            }
-        }
-
-        return $return;
     }
 
     /**
@@ -998,7 +878,7 @@ class SyncModuleController extends ActionController
      * @throws \TYPO3\CMS\Extbase\Object\Exception
      * @throws \Exception
      */
-    protected function createDumpToAreas(
+    private function createDumpToAreas(
         array $tables,
         string $dumpFile
     ): bool {
@@ -1045,7 +925,7 @@ class SyncModuleController extends ActionController
                     && !mkdir($this->dbFolder . $strPath, $this->nFolderRights, true)
                     && !is_dir($this->dbFolder . $strPath)
                 ) {
-                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $this->dbFolder . $strPath));
+                    throw new RuntimeException(sprintf('Directory "%s" was not created', $this->dbFolder . $strPath));
                 }
 
                 if (!copy(
@@ -1083,8 +963,10 @@ class SyncModuleController extends ActionController
      *
      * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
-    private function createClearCacheFile(string $table, array $arUids): bool
-    {
+    private function createClearCacheFile(
+        string $table,
+        array $arUids
+    ): bool {
         $arClearCacheData = [];
 
         // Create data
@@ -1123,10 +1005,13 @@ class SyncModuleController extends ActionController
      * @throws Exception
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function createShortDump(
-        array $pageIDs, array $tables, string $dumpFile, array $arPath
+    private function createShortDump(
+        array $pageIDs,
+        array $tables,
+        string $dumpFile,
+        array $arPath
     ): bool {
-        if (!\is_array($pageIDs) || \count($pageIDs) <= 0) {
+        if (!is_array($pageIDs) || count($pageIDs) <= 0) {
             $this->addError('Keine Seiten für die Synchronisation vorgemerkt.');
             return false;
         }
@@ -1238,7 +1123,7 @@ class SyncModuleController extends ActionController
                     && !mkdir($strTargetDir, $this->nFolderRights, true)
                     && !is_dir($strTargetDir)
                 ) {
-                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $strTargetDir));
+                    throw new RuntimeException(sprintf('Directory "%s" was not created', $strTargetDir));
                 }
 
                 // TYPO-3713: change folder permissions to nFolderRights due to
@@ -1280,7 +1165,10 @@ class SyncModuleController extends ActionController
      * @throws \Doctrine\DBAL\Exception
      */
     private function dumpTableByPageIDs(
-        array $pageIDs, string $tableName, $fpDumpFile, bool $bContentIDs = false
+        array $pageIDs,
+        string $tableName,
+        $fpDumpFile,
+        bool $bContentIDs = false
     ): void {
         if (substr($tableName, -3) === '_mm') {
             throw new Exception(
@@ -1335,7 +1223,7 @@ class SyncModuleController extends ActionController
                     $tableName, $arContent, $fpDumpFile
                 );
 
-                if (\count($deleteLines) > 50) {
+                if (count($deleteLines) > 50) {
                     $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
                     $deleteLines = [];
                     $insertLines = [];
@@ -1423,8 +1311,10 @@ class SyncModuleController extends ActionController
      * @throws Exception
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function writeMMReferences(
-        string $strRefTableName, array $arContent, $fpDumpFile
+    private function writeMMReferences(
+        string $strRefTableName,
+        array $arContent,
+        $fpDumpFile
     ): void {
         $deleteLines = [];
         $insertLines = [];
@@ -1575,7 +1465,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addMMReferenceTables(string $tableName): void
+    private function addMMReferenceTables(string $tableName): void
     {
         if (!isset($GLOBALS['TCA'][$tableName]['columns'])) {
             return;
@@ -1600,7 +1490,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addForeignTableToReferences(array $arColumn): void
+    private function addForeignTableToReferences(array $arColumn): void
     {
         if (isset($arColumn['config']['foreign_table'])) {
             $strForeignTable = $arColumn['config']['foreign_table'];
@@ -1615,7 +1505,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addMMTableToReferences(array $arColumn): void
+    private function addMMTableToReferences(array $arColumn): void
     {
         if (isset($arColumn['config']['MM'])) {
             $strMMTableName = $arColumn['config']['MM'];
@@ -1631,10 +1521,10 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function addLinesToLineStorage(string $strStatementType, array $arSqlLines): void
+    private function addLinesToLineStorage(string $strStatementType, array $arSqlLines): void
     {
         foreach ($arSqlLines as $tableName => $lines) {
-            if (!\is_array($lines)) {
+            if (!is_array($lines)) {
                 return;
             }
 
@@ -1652,7 +1542,7 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    public function clearDuplicateLines(string $strStatementType, array &$arSqlLines): void
+    private function clearDuplicateLines(string $strStatementType, array &$arSqlLines): void
     {
         foreach ($arSqlLines as $tableName => $lines) {
             foreach ($lines as $strIdentifier => $strStatement) {
@@ -1662,7 +1552,7 @@ class SyncModuleController extends ActionController
             }
 
             // unset tablename key if no statement exists anymore
-            if (\count($arSqlLines[$tableName]) === 0) {
+            if (count($arSqlLines[$tableName]) === 0) {
                 unset($arSqlLines[$tableName]);
             }
         }
@@ -1708,7 +1598,7 @@ class SyncModuleController extends ActionController
 
         // Foreach Table in DeleteArray
         foreach ($deleteLines as $arDelLines) {
-            if (\count($arDelLines)) {
+            if (count($arDelLines)) {
                 $strDeleteLines = implode("\n", $arDelLines);
                 fwrite($fpDumpFile, $strDeleteLines . "\n\n");
             }
@@ -1717,7 +1607,7 @@ class SyncModuleController extends ActionController
         // do not write the inserts here, we want to add them
         // at the end of the file see $this->writeInsertLines
 
-        if (\count($arDeleteObsoleteRows)) {
+        if (count($arDeleteObsoleteRows)) {
             $strDeleteObsoleteRows = implode("\n", $arDeleteObsoleteRows);
             fwrite($fpDumpFile, $strDeleteObsoleteRows . "\n\n");
         }
@@ -1741,9 +1631,9 @@ class SyncModuleController extends ActionController
      *
      * @return void
      */
-    protected function writeInsertLines($fpDumpFile): void
+    private function writeInsertLines($fpDumpFile): void
     {
-        if (!\is_array($this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT])) {
+        if (!is_array($this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT])) {
             return;
         }
 
@@ -1751,7 +1641,7 @@ class SyncModuleController extends ActionController
 
         // Foreach Table in InsertArray
         foreach ($insertLines as $table => $arTableInsLines) {
-            if (\count($arTableInsLines)) {
+            if (count($arTableInsLines)) {
                 $strInsertLines = '-- Insert lines for Table: '
                     . $table . "\n"
                     . implode("\n", $arTableInsLines);
@@ -1784,7 +1674,7 @@ class SyncModuleController extends ActionController
     ): void {
         foreach ($insertLines as $tableName => $arElements) {
             // no modification for arrays with old flat structure
-            if (!\is_array($arElements)) {
+            if (!is_array($arElements)) {
                 return;
             }
 
@@ -1795,7 +1685,7 @@ class SyncModuleController extends ActionController
                 }
             }
 
-            if (\count($deleteLines[$tableName]) === 0) {
+            if (count($deleteLines[$tableName]) === 0) {
                 unset($deleteLines[$tableName]);
             }
         }
@@ -1809,7 +1699,7 @@ class SyncModuleController extends ActionController
      *
      * @return string
      */
-    protected function buildDeleteLine(string $tableName, int $uid): string
+    private function buildDeleteLine(string $tableName, int $uid): string
     {
         $connection = $this->connectionPool->getConnectionForTable($tableName);
 
@@ -1862,7 +1752,7 @@ class SyncModuleController extends ActionController
      *
      * @return string
      */
-    protected function buildInsertLine(string $tableName, array $arTableStructure, array $arContent): string
+    private function buildInsertLine(string $tableName, array $arTableStructure, array $arContent): string
     {
         $connection = $this->connectionPool->getConnectionForTable($tableName);
 
@@ -1889,7 +1779,7 @@ class SyncModuleController extends ActionController
      *
      * @return bool success
      */
-    protected function createGZipFile(string $dumpFile): bool
+    private function createGZipFile(string $dumpFile): bool
     {
         $strExec = 'gzip ' . escapeshellarg($dumpFile);
 
@@ -1985,7 +1875,7 @@ class SyncModuleController extends ActionController
             $this->addButtonBarAreaLockButtons();
         }
 
-        if ($this->id && \is_array($this->pageinfo)) {
+        if ($this->id && is_array($this->pageinfo)) {
             // Shortcut
             $shortcutButton = $buttonBar
                 ->makeShortcutButton()
@@ -2082,7 +1972,7 @@ class SyncModuleController extends ActionController
      * @throws ExtensionConfigurationPathDoesNotExistException
      * @throws RouteNotFoundException
      */
-    protected function addButtonBarLockButton(): void
+    private function addButtonBarLockButton(): void
     {
         $buttonBar  = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
         $lockButton = $buttonBar->makeLinkButton();
@@ -2189,7 +2079,7 @@ class SyncModuleController extends ActionController
      *
      * @return array
      */
-    protected function removeNotSyncableEntries(array $lines): array
+    private function removeNotSyncableEntries(array $lines): array
     {
         $result = $lines;
 
@@ -2215,7 +2105,7 @@ class SyncModuleController extends ActionController
      *
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function setLastDumpTimeForElement(string $table, int $uid): void
+    private function setLastDumpTimeForElement(string $table, int $uid): void
     {
         $nTime          = time();
         $nUserId        = (int) $this->getBackendUser()->user['uid'];
@@ -2397,7 +2287,7 @@ class SyncModuleController extends ActionController
      *
      * @return string
      */
-    protected function addInformationToSyncfileName(string $dumpFile): string
+    private function addInformationToSyncfileName(string $dumpFile): string
     {
         $bIsFullSync = !empty($_POST['data']['force_full_sync']);
         $strPrefix = 'inc_';

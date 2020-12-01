@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
+use Exception;
 use Netresearch\Sync\Helper\Area;
 
 /**
@@ -31,7 +32,7 @@ class AssetModule extends BaseModule
      * @param Area $area
      *
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     public function run(Area $area): bool
     {

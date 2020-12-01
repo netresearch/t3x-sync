@@ -50,6 +50,7 @@ class FalModule extends BaseModule
 
         // http://jira.aida.de/jira/browse/SDM-2099
         if ($this->hasError()) {
+            // TODO Move to a template
             $this->content = '<input class="btn btn-warning" type="Submit" name="data[dam_cleanup]" value="Clean up FAL">';
         }
 

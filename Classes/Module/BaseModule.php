@@ -17,6 +17,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use function count;
 
 /**
  * Class BaseModule
@@ -39,16 +40,22 @@ class BaseModule
     protected $connectionPool;
 
     /**
+     * A list of table names to synchronise.
+     *
      * @var string[]
      */
     protected $tables = [];
 
     /**
+     * The name of the module.
+     *
      * @var string
      */
     protected $name = 'Please select';
 
     /**
+     * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
+     *
      * @var string
      */
     protected $type = '';
@@ -59,11 +66,15 @@ class BaseModule
     protected $target = '';
 
     /**
+     * The name of the synchronisation file containg the SQL statements to update the database records.
+     *
      * @var string
      */
     protected $dumpFileName = '';
 
     /**
+     * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
+     *
      * @var int
      */
     protected $accessLevel = 0;
@@ -74,11 +85,17 @@ class BaseModule
     protected $error;
 
     /**
+     * Additional content to output by the module.
+     *
      * @var string
+     *
+     * @deprecated Provide additional content by views/templates instead
      */
     protected $content = '';
 
     /**
+     * The current table definition.
+     *
      * @var array
      */
     private $tableDefinition;
@@ -113,7 +130,7 @@ class BaseModule
             $this->target = $options['target'] ?: '';
             $this->type = $options['type'] ?: 'sync_tables';
             $this->dumpFileName = $options['dumpFileName'] ?: 'dump.sql';
-            $this->accessLevel = (int)$options['accessLevel'] ?: 0;
+            $this->accessLevel = (int) $options['accessLevel'] ?: 0;
         }
     }
 
@@ -124,13 +141,13 @@ class BaseModule
      */
     public function run(Area $area): bool
     {
-        $strRootPath = $_SERVER['DOCUMENT_ROOT'];
+        $rootPath = $_SERVER['DOCUMENT_ROOT'];
 
-        if (empty($strRootPath)) {
-            $strRootPath = substr(Environment::getPublicPath(), 0, -1);
+        if (empty($rootPath)) {
+            $rootPath = substr(Environment::getPublicPath(), 0, -1);
         }
 
-        $this->dbFolder = $strRootPath . '/db/';
+        $this->dbFolder = $rootPath . '/db/';
 
         $this->testTablesForDifferences();
 
@@ -233,18 +250,18 @@ class BaseModule
      */
     protected function loadTableDefinition(): void
     {
-        $strFile = $this->getStateFile();
+        $file = $this->getStateFile();
 
-        if (!file_exists($strFile)) {
+        if (!file_exists($file)) {
             $this->tableDefinition = [];
             return;
         }
 
-        $fpDumpFile = fopen($strFile, 'rb');
-        $strAllTables = fread($fpDumpFile, filesize($strFile));
+        $fpDumpFile = fopen($file, 'rb');
+        $allTables = fread($fpDumpFile, filesize($file));
         fclose($fpDumpFile);
 
-        $this->tableDefinition = unserialize($strAllTables);
+        $this->tableDefinition = unserialize($allTables);
     }
 
     /**
@@ -265,18 +282,18 @@ class BaseModule
             return true;
         }
 
-        $arColumns = $this->connectionPool
+        $columns = $this->connectionPool
             ->getConnectionForTable($tableName)
             ->getSchemaManager()
             ->listTableColumns($tableName);
 
         $columnNames = [];
-        foreach ($arColumns as $column) {
+        foreach ($columns as $column) {
             $columnNames[] = $column->getName();
         }
 
         // Table still not exists
-        if (\count($columnNames) === 0) {
+        if (count($columnNames) === 0) {
             return true;
         }
 
@@ -316,7 +333,7 @@ class BaseModule
      */
     protected function testTablesForDifferences(array $tableNames = null): void
     {
-        $arErrorTables = [];
+        $errorTables = [];
 
         if ($tableNames === null) {
             $tableNames = $this->getTableNames();
@@ -324,14 +341,14 @@ class BaseModule
 
         foreach ($tableNames as $tableName) {
             if ($this->isTableDifferent($tableName)) {
-                $arErrorTables[] = htmlspecialchars($tableName);
+                $errorTables[] = htmlspecialchars($tableName);
             }
         }
 
-        if (\count($arErrorTables)) {
+        if (count($errorTables)) {
             $this->addMessage(
                 'Following tables have changed, please contact your TYPO3 admin: '
-                . implode(', ', $arErrorTables),
+                . implode(', ', $errorTables),
                 FlashMessage::WARNING
             );
         }

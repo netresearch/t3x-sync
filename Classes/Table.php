@@ -15,6 +15,8 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use function count;
+use function is_array;
 
 /**
  * Controls table sync/dump generation.
@@ -76,7 +78,7 @@ class Table
         $this->tableName = $tableName;
         $this->dumpFile  = $dumpFile;
 
-        if (\is_array($options)) {
+        if (is_array($options)) {
             if (isset($options['forceFullSync'])) {
                 $this->forceFullSync = (bool)$options['forceFullSync'];
             }
@@ -118,8 +120,6 @@ class Table
      * @param string $dumpFile Target file for dump data
      * @param array $options Additional options
      *
-     * @return void
-     *
      * @throws Exception
      * @throws \Doctrine\DBAL\Exception
      */
@@ -149,8 +149,6 @@ class Table
     /**
      * Write table data to dump file.
      *
-     * @return void
-     *
      * @throws Exception
      * @throws \Doctrine\DBAL\Exception
      */
@@ -171,8 +169,6 @@ class Table
 
     /**
      * Adds flash message about skipped tables in sync.
-     *
-     * @return void
      */
     protected function notifySkippedEmptyTable(): void
     {
@@ -266,7 +262,6 @@ class Table
      *
      * Uses TRUNCATE TABLE instead of DROP
      *
-     * @return void
      * @throws Exception
      */
     protected function appendDumpToFile(): void
@@ -323,7 +318,6 @@ class Table
      * Does not add DROP TABLE.
      * Uses REPLACE instead of INSERT.
      *
-     * @return void
      * @throws Exception
      */
     protected function appendUpdateToFile(): void
@@ -372,8 +366,6 @@ class Table
     /**
      * Appends the Delete statement for obsolete rows to the
      * current temporary file of the table
-     *
-     * @return void
      */
     public function appendDeleteObsoleteRowsToFile(): void
     {
@@ -382,6 +374,7 @@ class Table
         if (empty($strSqlObsoleteRows) === true) {
             return;
         }
+
         file_put_contents(
             $this->dumpFile,
             "\n\n-- Delete obsolete Rows on live, see: TYPO-206 \n"
@@ -483,8 +476,6 @@ class Table
      * @param null|int $nTime Time of last table dump/sync.
      * @param bool $bIncr Set time for last incremental or full dump/sync.
      *
-     * @return void
-     *
      * @throws \Doctrine\DBAL\Exception
      */
     protected function setLastDumpTime(int $nTime = null, bool $bIncr = true): void
@@ -510,8 +501,8 @@ class Table
             $strUpdateField = 'full';
         }
 
-        $nUserId = (int)$BE_USER->user['uid'];
-        $nTime = (int)$nTime;
+        $nUserId = (int) $BE_USER->user['uid'];
+        $nTime   = (int) $nTime;
 
         $connection->executeStatement(
             sprintf(
@@ -533,7 +524,7 @@ class Table
      * Return a sql statement to drop rows from the table which are useless
      * in context of there control fields (hidden,deleted,endtime)
      *
-     * @return string
+     * @return null|string
      */
     public function getSqlDroppingObsoleteRows(): ?string
     {
@@ -542,7 +533,7 @@ class Table
         $connection     = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
         $arControlFields = $this->getControlFieldsFromTcaByTableName();
 
-        if (\count($arControlFields) === 0) {
+        if (count($arControlFields) === 0) {
             return null;
         }
 
@@ -570,7 +561,7 @@ class Table
                 . ')';
         }
 
-        if (\count($arWhereClauseParts) === 0) {
+        if (count($arWhereClauseParts) === 0) {
             return null;
         }
 
@@ -618,8 +609,6 @@ class Table
      * Setter for noCreateInfo
      *
      * @param bool $noCreateInfo True if do not add CREATE TABLE
-     *
-     * @return void
      */
     public function setNoCreateInfo(bool $noCreateInfo): void
     {

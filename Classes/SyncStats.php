@@ -80,7 +80,9 @@ class SyncStats
             $result[$table] = $default;
 
             $queryBuilder = $connection->createQueryBuilder();
-            $row = $queryBuilder->select('*')
+
+            $row = $queryBuilder
+                ->select('*')
                 ->from('tx_nrsync_syncstat')
                 ->where(
                     $queryBuilder->expr()->eq('tab', $queryBuilder->quote($table))

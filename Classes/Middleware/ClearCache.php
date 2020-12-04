@@ -18,6 +18,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\Response;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * The clear cache middleware.
@@ -72,6 +73,8 @@ class ClearCache implements MiddlewareInterface
      */
     private function getBackendUser(): BackendUserAuthentication
     {
+        $GLOBALS['BE_USER'] = GeneralUtility::makeInstance(BackendUserAuthentication::class);
+
         return $GLOBALS['BE_USER'];
     }
 

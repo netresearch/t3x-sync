@@ -474,9 +474,9 @@ class SyncModuleController extends ActionController
     /**
      * @param int $functionKey
      *
-     * @return BaseModule
+     * @return mixed
      */
-    private function getFunctionObject(int $functionKey): BaseModule
+    private function getFunctionObject(int $functionKey)
     {
         if (is_string($this->functions[$functionKey])) {
             $function = GeneralUtility::makeInstance($this->functions[$functionKey]);

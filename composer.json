@@ -20,15 +20,20 @@
     "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
   },
   "require": {
-    "typo3/cms-core" : "^10.4"
+    "typo3/cms-core": "^10.4"
   },
-  "replace" : {
-    "nr_sync" : "self.version",
-    "typo3-ter/nr-sync" : "self.version"
+  "replace": {
+    "nr_sync": "self.version",
+    "typo3-ter/nr-sync": "self.version"
   },
   "autoload": {
     "psr-4": {
       "Netresearch\\Sync\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "nr_sync"
     }
   }
 }

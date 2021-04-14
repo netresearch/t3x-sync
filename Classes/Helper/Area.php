@@ -47,7 +47,7 @@ class Area
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-prod-typo3_8',
+                        'user'     => 'aida-aws-prod-typo3_10',
                         'password' => 'Thu2phoh',
                         'contexts' => [
                             'Production/Stage',
@@ -61,7 +61,7 @@ class Area
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-itg-typo3_8',
+                        'user'     => 'aida-aws-itg-typo3_10',
                         'password' => 'zo6Aelow',
                         'contexts' => [
                             'Production/Stage',

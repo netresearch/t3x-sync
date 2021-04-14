@@ -130,7 +130,7 @@ class SyncModuleController extends ActionController
     /**
      * @var string clearCache url format
      */
-    public $strClearCacheUrl = '?eID=nr_sync&task=clearCache&data=%s&v8=true';
+    public $strClearCacheUrl = '?nr-sync-clear-cache&task=clearCache&data=%s&new=true';
 
     /**
      * @var int Access rights for new folders

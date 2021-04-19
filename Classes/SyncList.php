@@ -11,14 +11,17 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
+use Doctrine\DBAL\FetchMode;
 use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use function count;
 use function in_array;
 use function is_array;
@@ -237,8 +240,10 @@ class SyncList
 
             }
         }
-        $pageIDs = array_unique($pageIDs);
-        return $pageIDs;
+
+        $pageIDs = array_merge($pageIDs, $this->getPageTranslations($pageIDs));
+
+        return array_unique($pageIDs);
     }
 
     /**
@@ -433,5 +438,32 @@ class SyncList
         }
 
         return $pageIDs;
+    }
+
+    /**
+     * Returns the page id of translation records
+     *
+     * @param array $pages Array with page ids
+     *
+     * @return array
+     */
+    private function getPageTranslations(array $pages = []): array
+    {
+        if (empty($pages)) {
+            return [];
+        }
+
+        /** @var Connection $connection */
+        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
+                                    ->getConnectionForTable('pages');
+
+        $queryBuilder = $connection->createQueryBuilder();
+
+        return $queryBuilder->select('uid')
+            ->from('pages')
+            ->where($queryBuilder->expr()->in('l10n_parent', $pages))
+            ->groupBy('uid')
+            ->execute()
+            ->fetchAll(FetchMode::COLUMN);
     }
 }

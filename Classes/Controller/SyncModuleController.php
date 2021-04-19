@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Controller;
 
+use Netresearch\NrSync\Module\NewsModule;
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
@@ -39,6 +40,7 @@ use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
@@ -247,6 +249,14 @@ class SyncModuleController extends ActionController
             'dumpFileName' => 'scheduler.sql',
             'accessLevel'  => 100,
         ],
+        47 => [
+            'name'         => 'TYPO3 Redirects',
+            'tables'       => [
+                'sys_redirect',
+            ],
+            'dumpFileName' => 'sys_redirect.sql',
+            'accessLevel'  => 50,
+        ]
     ];
 
     /**
@@ -324,6 +334,24 @@ class SyncModuleController extends ActionController
         $this->flashMessageService = $flashMessageService;
         $this->syncListManager = $syncListManager;
         $this->urlGenerator = $urlGenerator;
+
+        if (ExtensionManagementUtility::isLoaded('news')) {
+            $this->functions[48] = \Netresearch\Sync\Module\NewsModule::class;
+        }
+
+        if(ExtensionManagementUtility::isLoaded('nr_textdb')) {
+            $this->functions[20] = [
+                'name'         => 'TextDB',
+                'tables'       => [
+                    'tx_nrtextdb_domain_model_environment',
+                    'tx_nrtextdb_domain_model_component',
+                    'tx_nrtextdb_domain_model_type',
+                    'tx_nrtextdb_domain_model_translation',
+                ],
+                'dumpFileName' => 'text-db.sql',
+                'accessLevel'  => 100,
+            ];
+        }
 
         $this->MCONF = [
             'name' => $this->moduleName,

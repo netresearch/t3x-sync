@@ -464,6 +464,6 @@ class SyncList
             ->where($queryBuilder->expr()->in('l10n_parent', $pages))
             ->groupBy('uid')
             ->execute()
-            ->fetchAll(FetchMode::COLUMN);
+            ->fetchFirstColumn();
     }
 }

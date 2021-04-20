@@ -209,8 +209,14 @@ class Table
 
         $queryBuilder = $connection->createQueryBuilder();
 
+        $tstampField = 'tstamp';
+
+        if ($this->tableName === 'sys_redirect') {
+            $tstampField = 'updatedon';
+        }
+
         return $queryBuilder
-            ->count('tstamp')
+            ->count($tstampField)
             ->from($this->tableName)
             ->where($strWhere)
             ->execute()

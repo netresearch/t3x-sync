@@ -459,6 +459,8 @@ class SyncList
 
         $queryBuilder = $connection->createQueryBuilder();
 
+        $queryBuilder->getRestrictions()->removeAll();
+
         return $queryBuilder->select('uid')
             ->from('pages')
             ->where($queryBuilder->expr()->in('l10n_parent', $pages))

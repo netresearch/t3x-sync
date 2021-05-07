@@ -349,7 +349,7 @@ class SyncModuleController extends ActionController
                     'tx_nrtextdb_domain_model_translation',
                 ],
                 'dumpFileName' => 'text-db.sql',
-                'accessLevel'  => 100,
+                'accessLevel'  => 50,
             ];
         }
 

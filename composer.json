@@ -1,18 +1,39 @@
 {
-    "name" : "netresearch/nr-sync",
-    "type" : "typo3-cms-extension",
-    "description" : "Netresearch Sync",
-    "license": ["AGPL-3.0+"],
-    "require" : {
-        "typo3/cms-core" : "6.2|~8.7"
+  "name": "netresearch/nr-sync",
+  "type": "typo3-cms-extension",
+  "description": "Netresearch Sync",
+  "authors": [
+    {
+      "name": "Sebastian Mendel",
+      "email": "sebastian.mendel@netresearch.de",
+      "role": "Developer",
+      "homepage": "http://www.netresearch.de/"
     },
-    "replace" : {
-        "nr_sync" : "self.version",
-        "typo3-ter/nr-sync" : "self.version"
-    },
-    "autoload": {
-        "psr-4": {
-            "Netresearch\\Sync\\": "Classes/"
-        }
+    {
+      "name": "Rico Sonntag",
+      "email": "rico.sonntag@netresearch.de",
+      "role": "Developer",
+      "homepage": "http://www.netresearch.de/"
     }
+  ],
+  "support": {
+    "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
+  },
+  "require": {
+    "typo3/cms-core": "^10.4"
+  },
+  "replace": {
+    "nr_sync": "self.version",
+    "typo3-ter/nr-sync": "self.version"
+  },
+  "autoload": {
+    "psr-4": {
+      "Netresearch\\Sync\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "nr_sync"
+    }
+  }
 }

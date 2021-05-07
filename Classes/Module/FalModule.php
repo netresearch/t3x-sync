@@ -1,18 +1,26 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-04
- * Time: 17:41
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
-
 use Netresearch\Sync\Helper\Area;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+/**
+ * Class FalModule
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class FalModule extends BaseModule
 {
     protected $tables = [
@@ -28,14 +36,11 @@ class FalModule extends BaseModule
 
     protected $name = 'FAL';
     protected $type = 'sync_tables';
-    protected $target = '';
     protected $dumpFileName = 'fal.sql';
-    protected $accessLevel = 0;
 
-
-    public function run(Area $area = null)
+    public function run(Area $area): bool
     {
-        // http://jira.aida.de/jira/browse/SDM-2099
+        // See http://jira.aida.de/jira/browse/SDM-2099
         if (isset($_POST['data']['dam_cleanup'])) {
             $this->cleanUpDAM();
         }
@@ -45,55 +50,51 @@ class FalModule extends BaseModule
 
         // http://jira.aida.de/jira/browse/SDM-2099
         if ($this->hasError()) {
-            $this->content =
-                '<input type="Submit" name="data[dam_cleanup]" value="clean up FAL">';
+            // TODO Move to a template
+            $this->content = '<input class="btn btn-warning" type="Submit" name="data[dam_cleanup]" value="Clean up FAL">';
         }
+
+        return true;
     }
-
-
 
     /**
      * http://jira.aida.de/jira/browse/SDM-2099
      *
      * @return void
      */
-    protected function cleanUpDAM()
+    private function cleanUpDAM(): void
     {
-        echo 'This tasks can take some time, please be patient ... ';
-        flush();
+        $this->addMessage('This tasks can take some time, please be patient ...');
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $this->connectionPool
+            ->getConnectionForTable('sys_file_reference')
+            ->delete(
+                'sys_file_reference',
+                [
+                    'uid_foreign' => 0
+                ]
+            );
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable('sys_file_reference');
-
-        $connection->delete('sys_file_reference', array('uid_foreign' => 0));
-
-        echo 'done.';
+        $this->addMessage('Done.');
     }
-
-
 
     /**
      * http://jira.aida.de/jira/browse/SDM-2099
      *
      * @return void
      */
-    protected function testDAMForErrors()
+    private function testDAMForErrors(): void
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('sys_file_reference');
 
-        $queryBuilder = $connectionPool->getQueryBuilderForTable('sys_file_reference');
-
-        $count = $queryBuilder->count('*')
+        $count = $queryBuilder
+            ->count('*')
             ->from('sys_file_reference')
             ->where(
                 $queryBuilder->expr()->eq('uid_foreign', 0)
             )
             ->execute()
-            ->fetchColumn(0);
+            ->fetchOne();
 
         if ($count > 0) {
             $this->error .= 'FAL has corrupted entries. (Entries with uid_foreign = 0)';

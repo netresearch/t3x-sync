@@ -1,0 +1,63 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+>
+    <f:section name="Main">
+        <input type="hidden" name="data[pageID]" value="{id}">
+        <input type="hidden" name="data[count]" value="{arCount.count}">
+        <input type="hidden" name="data[deleted]" value="{arCount.deleted}">
+        <input type="hidden" name="data[noaccess]" value="{arCount.noaccess}">
+        <input type="hidden" name="data[areaID]" value="{area.id}">
+
+        <h3>{title}</h3>
+
+        <div class="form-group">
+            <f:if condition="{pageContainsData}">
+                <div class="radio">
+                    <label for="data_type_alone">
+                        <input type="radio" name="data[type]" value="alone" id="data_type_alone">
+                        Only selected page
+                    </label>
+                </div>
+            </f:if>
+
+            <f:if condition="{arCount.count} > 0">
+                <div class="radio">
+                    <label for="data_type_tree">
+                        <input type="radio" name="data[type]" value="tree" id="data_type_tree">
+                        Selected page and all {arCount.count} sub pages
+                    </label>
+                    <small>(thereof are {arCount.deleted} deleted, {arCount.noaccess} are inaccessible and {arCount.falses} have wrong document type)</small>
+                </div>
+
+                <f:if condition="{arCount.other_area} > 0">
+                    <br>
+                    <b>There are restricted sub areas which are excluded from sync.</b>
+                </f:if>
+            </f:if>
+        </div>
+
+        <f:if condition="{bShowButton}">
+            <div class="form-group">
+                <label for="recursion">Recursion</label>
+                <div class="form-inline">
+                    <div class="form-group">
+                        <input class="form-control" id="recursion" type="number" name="data[levelmax]" value="{recursion}" min="1" max="100">
+                    </div>
+                    <button class="btn btn-default" type="submit" name="data[rekursion]" value="Set recursion depth">
+                        <core:icon identifier="actions-open" size="small" />
+                        Set recursion depth
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">
+                    <core:icon identifier="actions-add" size="small" />
+                    Add to sync list
+                </button>
+            </div>
+        </f:if>
+    </f:section>
+</html>

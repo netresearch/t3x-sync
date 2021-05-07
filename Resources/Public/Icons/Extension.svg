@@ -1,47 +1,20 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   version="1.1"
-   width="72.00016"
-   height="72"
-   viewBox="0 0 72.00016 72"
-   xml:space="preserve">
-    <title>Netresearch N Logo</title>
-    <metadata>
-        <rdf:RDF>
-            <cc:Work rdf:about="">
-                <dc:format>image/svg+xml</dc:format>
-                <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-                <dc:title>Netresearch N Logo</dc:title>
-                <cc:license rdf:resource="" />
-                <dc:date>2016-10-21</dc:date>
-                <dc:creator>
-                    <cc:Agent>
-                        <dc:title>Christian Opitz / Netresearch GmbH &amp; Co. KG</dc:title>
-                    </cc:Agent>
-                </dc:creator>
-                <dc:rights>
-                    <cc:Agent>
-                        <dc:title>Netresearch GmbH &amp; Co. KG</dc:title>
-                    </cc:Agent>
-                </dc:rights>
-                <dc:publisher>
-                    <cc:Agent>
-                        <dc:title>Netresearch GmbH &amp; Co. KG</dc:title>
-                    </cc:Agent>
-                </dc:publisher>
-                <dc:language>en-EN</dc:language>
-                <dc:description>Netresearch logo altered to reach a better kerning by its edges being aligned  to common divisors of width and height</dc:description>
-            </cc:Work>
-        </rdf:RDF>
-    </metadata>
-    <path fill="#1d1d1b" d="m 49.999949,59.999885 -12.000021,0 0,-38.526257 c -1.16e-4,-1.460608 -0.427526,-2.190897 -1.777858,-2.190938 -1.350362,4.1e-5 -2.238244,0.702865 -2.222071,2.108196 l 0,38.608932 -12,0 0,-47.999422 12,0 0,1.6191 c 1.570798,-1.295185 4.275915,-1.942799 7.555349,-1.942848 2.121954,4.9e-5 3.579673,0.578768 5.370973,1.736162 1.791252,1.157487 3.0737,2.852308 3.073728,5.084473 z" />
-    <g fill="#2b99a4">
-        <path d="m 19.999944,72 c 0,0 -7.168654,-4.62e-4 -9.9999466,-4.62e-4 -6.0300703,0 -9.92472145,-4.111893 -9.9999986939453,-13 l 0,-45.999538 C 0.03263704,3.9541819 3.9750109,0.07483173 9.9999974,0 l 10.0001646,0 -1.64e-4,8 c -4.326979,6.3e-5 -6,2.73157 -6,5 l 0,46.000461 c 0,2.301378 1.672857,4.999547 5.999836,4.999539 z" />
-        <path d="m 52.000219,72 c 0,0 7.16865,-4.62e-4 9.99994,-4.62e-4 6.03008,0 9.92473,-4.111893 10,-13 l 0,-45.999538 c -0.0326,-9.0458181 -3.97501,-12.92516827 -10,-13 l -10.00016,0 1.6e-4,8 c 4.32698,6.3e-5 6,2.73157 6,5 l 0,46.000461 c 0,2.301378 -1.67285,4.999547 -5.99983,4.999539 z" />
+<svg id="ff9f1127-f95e-4bc9-93ad-3960cfa941f0" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 300">
+    <defs>
+        <style>
+            .f4097b67-2213-40bd-9c3a-94cf64be6239{fill:none;}.ac0374ef-26de-4333-a951-e8ab8d27f8bd{clip-path:url(#b89874de-42cc-4a08-a445-73aac157aa7c);}.bbf856c7-1511-45c6-8eda-8aee74e5919c{fill:#2999a4;}.f2146b65-50d1-4dbc-ac26-007b4f3da77c{fill:#595a62;}
+        </style>
+        <clipPath id="b89874de-42cc-4a08-a445-73aac157aa7c" transform="translate(-0.39 -0.04)">
+            <rect class="f4097b67-2213-40bd-9c3a-94cf64be6239" x="0.39" y="0.04" width="300" height="300"/>
+        </clipPath>
+    </defs>
+    <title>Netresearch Logo</title>
+    <g class="ac0374ef-26de-4333-a951-e8ab8d27f8bd">
+        <path class="bbf856c7-1511-45c6-8eda-8aee74e5919c"
+              d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z"
+              transform="translate(-0.39 -0.04)"/>
+        <path class="f2146b65-50d1-4dbc-ac26-007b4f3da77c"
+              d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58"
+              transform="translate(-0.39 -0.04)"/>
     </g>
 </svg>

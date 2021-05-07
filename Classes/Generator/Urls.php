@@ -1,59 +1,62 @@
 <?php
+
 /**
- * Part of nr_sync
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Christian Weiske <christian.weiske@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
-use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Controller\SyncModuleController;
+use Netresearch\Sync\Helper\Area;
+use RuntimeException;
+use TYPO3\CMS\Extbase\Object\Exception;
+use function count;
 
 /**
  * Generate files with the list of URLs that have to be called
  * after importing the data.
  *
- * @package    Netresearch/TYPO3/Sync
- * @author     Christian Weiske <christian.weiske@netresearch.de>
- * @copyright  2013 Netresearch GmbH & Co.KG
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * @author  Christian Weiske <christian.weiske@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
  */
 class Urls
 {
     /**
      * @var string Filename-format for once files
      */
-    const FILE_FORMAT_ONCE = '%s-once.txt';
+    public const FILE_FORMAT_ONCE = '%s-once.txt';
 
     /**
      * @var string Filename-format for per-machine files
      */
-    const FILE_FORMAT_PERMACHINE = '%s-per-machine.txt';
+    public const FILE_FORMAT_PERMACHINE = '%s-per-machine.txt';
 
     /**
      * Called after the sync button has been pressed.
      * We generate the URL files here.
      *
-     * @param array  $arParams Information about what to sync.
-     * @param SyncModuleController $sync     Main sync module object
+     * @param array $arParams Information about what to sync.
+     * @param SyncModuleController $sync Main sync module object
      *
      * @return void
+     *
+     * @throws Exception
      */
-    public function postProcessSync(array $arParams, SyncModuleController $sync)
+    public function postProcessSync(array $arParams, SyncModuleController $sync): void
     {
-        if ($arParams['bProcess'] == false || $arParams['bSyncResult'] == false) {
+        if ($arParams['bProcess'] === false || $arParams['bSyncResult'] === false) {
             return;
         }
 
-        if (count($arParams['arUrlsOnce']) == 0
-            && count($arParams['arUrlsPerMachine']) == 0
+        if (count($arParams['arUrlsOnce']) === 0
+            && count($arParams['arUrlsPerMachine']) === 0
         ) {
             return;
         }
@@ -81,7 +84,6 @@ class Urls
         );
     }
 
-
     /**
      * Generates the url files for a given format
      *
@@ -91,12 +93,11 @@ class Urls
      *
      * @return int
      */
-    private function generateUrlFile(array $urls, array $folders, $format)
+    private function generateUrlFile(array $urls, array $folders, string $format): int
     {
-        list($strContent, $strPath) = $this->prepareFile($urls, $format);
+        [$strContent, $strPath] = $this->prepareFile($urls, $format);
         return $this->saveFile($strContent, $strPath, $folders);
     }
-
 
     /**
      * Prepares file content and file name for an url list file
@@ -107,19 +108,17 @@ class Urls
      *
      * @return array First value is the file content, second the file name
      */
-    protected function prepareFile(array $arUrls, $strFileNameTemplate)
+    protected function prepareFile(array $arUrls, string $strFileNameTemplate): array
     {
-        if (count($arUrls) == 0) {
-            return array(null, null);
+        if (count($arUrls) === 0) {
+            return [null, null];
         }
 
-        return array(
+        return [
             implode("\n", $arUrls) . "\n",
             sprintf($strFileNameTemplate, date('YmdHis'))
-        );
+        ];
     }
-
-
 
     /**
      * Saves the given file into different folders
@@ -128,11 +127,11 @@ class Urls
      * @param string $strFileName File name to use
      * @param array  $arFolders   Folders to save file into
      *
-     * @return integer Number of created files
+     * @return int Number of created files
      */
-    protected function saveFile($strContent, $strFileName, array $arFolders)
+    protected function saveFile(string $strContent, string $strFileName, array $arFolders): int
     {
-        if ($strContent === null || $strFileName == '' || !count($arFolders)) {
+        if ($strContent === null || $strFileName === '' || !count($arFolders)) {
             return 0;
         }
 
@@ -143,8 +142,6 @@ class Urls
         return count($arFolders);
     }
 
-
-
     /**
      * Returns full folder paths. Creates folders if necessary.
      * The URL files have to be put in each of the folders.
@@ -154,20 +151,24 @@ class Urls
      *
      * @return array Array of full paths with trailing slashes
      */
-    protected function getFolders(array $arAreas, SyncModuleController $sync)
+    protected function getFolders(array $arAreas, SyncModuleController $sync): array
     {
         $arPaths = [];
 
         foreach ($arAreas as $area) {
             foreach ($area->getUrlDirectories() as $strDirectory) {
-                $arPaths[] = $sync->strDBFolder . $strDirectory . '/';
+                $arPaths[] = $sync->dbFolder . $strDirectory . '/';
             }
         }
         $arPaths = array_unique($arPaths);
 
         foreach ($arPaths as $strPath) {
-            if (!is_dir($strPath)) {
-                mkdir($strPath, $sync->nFolderRights);
+            // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+            if (!is_dir($strPath)
+                && !mkdir($strPath, $sync->nFolderRights)
+                && !is_dir($strPath)
+            ) {
+                throw new RuntimeException(sprintf('Directory "%s" was not created', $strPath));
             }
         }
 

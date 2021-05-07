@@ -1,36 +1,40 @@
 <?php
+
 /**
- * Part of nr_sync
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Christian Weiske <christian.weiske@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync\Helper;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\ApplicationContext;
-use TYPO3\CMS\Core\Core\Bootstrap;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Object\Exception;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
+use function in_array;
 
 /**
  * Methods to work with synchronization areas
  *
- * @package    Netresearch/TYPO3/Sync
- * @author     Christian Weiske <christian.weiske@netresearch.de>
- * @copyright  2013 Netresearch GmbH & Co.KG
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * @author  Christian Weiske <christian.weiske@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
  */
 class Area
 {
-    var $areas = [
+    /**
+     * @var array[]
+     */
+    private $areas = [
         0 => [
             'name'                 => 'All',
             'description'          => 'Sync to live server',
@@ -43,7 +47,7 @@ class Area
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-prod-typo3_8',
+                        'user'     => 'aida-aws-prod-typo3_10',
                         'password' => 'Thu2phoh',
                         'contexts' => [
                             'Production/Stage',
@@ -57,7 +61,7 @@ class Area
                     'notify'    => [
                         'type'     => 'ftp',
                         'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-itg-typo3_8',
+                        'user'     => 'aida-aws-itg-typo3_10',
                         'password' => 'zo6Aelow',
                         'contexts' => [
                             'Production/Stage',
@@ -81,9 +85,11 @@ class Area
     ];
 
     /**
-     * @var array active area configuration
+     * Active area configuration.
+     *
+     * @var array
      */
-    protected $area = [
+    private $area = [
         'id'             => 0,
         'name'           => '',
         'description'    => '',
@@ -95,31 +101,25 @@ class Area
     ];
 
     /**
-     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
-     * @inject
+     * @var FlashMessageService
      */
-    protected $objectManager;
-
-
-    /**
-     * @var \TYPO3\CMS\Core\Messaging\FlashMessageService
-     * @inject
-     */
-    protected $messageService;
-
+    private $flashMessageService;
 
     /**
      * Area constructor.
      *
-     * @param integer $pId Page ID
+     * @param int $pid The page ID
      */
-    public function __construct(int $pId)
+    public function __construct(int $pid)
     {
-        if (isset($this->areas[$pId])) {
-            $this->area = $this->areas[$pId];
-            $this->area['id'] = $pId;
+        $this->flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+
+        if (isset($this->areas[$pid])) {
+            $this->area = $this->areas[$pid];
+            $this->area['id'] = $pid;
         } else {
-            $rootLine = BackendUtility::BEgetRootLine($pId);
+            $rootLine = BackendUtility::BEgetRootLine($pid);
+
             foreach ($rootLine as $element) {
                 if (isset($this->areas[$element['uid']])) {
                     $this->area = $this->areas[$element['uid']];
@@ -130,37 +130,41 @@ class Area
         }
     }
 
-
-
     /**
      * Return all areas that shall get synced for the given table type
      *
-     * @param array  $arAreas      Area configurations
+     * @param null|array $arAreas Area configurations
      * @param string $strTableType Type of tables to sync, e.g. "sync_tables",
-     *                             "sync_fe_groups", "sync_be_groups", "backsync_tables"
+     *                                 "sync_fe_groups", "sync_be_groups", "backsync_tables"
      *
-     * @return self[]
+     * @return Area[]
+     *
+     * @throws Exception
      */
-    public static function getMatchingAreas(array $arAreas = null, $strTableType = '')
+    public static function getMatchingAreas(array $arAreas = null, $strTableType = ''): array
     {
-        /* @var $objectManager ObjectManager */
+        /** @var ObjectManager $objectManager */
         $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
 
-        return array(
+        return [
             $objectManager->get(self::class, 0),
-        );
+        ];
     }
 
-
-
-    public function isDocTypeAllowed(array $record)
+    /**
+     * @param array $record
+     *
+     * @return bool
+     */
+    public function isDocTypeAllowed(array $record): bool
     {
-        if (false === $record) {
+        if ($record === false) {
             return false;
         }
 
-        if ((isset($this->area['doctype']) && !in_array($record['doktype'], $this->area['doctype']))
-            && (isset($this->area['not_doctype']) && in_array($record['doktype'], $this->area['not_doctype']))
+        if (isset($this->area['doctype'], $this->area['not_doctype'])
+            && !in_array($record['doktype'], $this->area['doctype'], true)
+            && in_array($record['doktype'], $this->area['not_doctype'], true)
         ) {
             return false;
         }
@@ -213,12 +217,12 @@ class Area
      *
      * @return array
      */
-    public function getDirectories()
+    public function getDirectories(): array
     {
-        $arPaths = array();
+        $arPaths = [];
 
         foreach ($this->area['system'] as $arSystem) {
-            array_push($arPaths, $arSystem['directory']);
+            $arPaths[] = $arSystem['directory'];
         }
 
         return $arPaths;
@@ -229,7 +233,7 @@ class Area
      *
      * @return array
      */
-    public function getUrlDirectories()
+    public function getUrlDirectories(): array
     {
         $arPaths = [];
 
@@ -237,7 +241,8 @@ class Area
             if (empty($arSystem['url-path'])) {
                 continue;
             }
-            array_push($arPaths, $arSystem['url-path']);
+
+            $arPaths[] = $arSystem['url-path'];
         }
 
         return $arPaths;
@@ -248,7 +253,7 @@ class Area
      *
      * @return array
      */
-    public function getNotDocType()
+    public function getNotDocType(): array
     {
         return (array) $this->area['not_doctype'];
     }
@@ -258,7 +263,7 @@ class Area
      *
      * @return array
      */
-    public function getDocType()
+    public function getDocType(): array
     {
         return (array) $this->area['doctype'];
     }
@@ -268,40 +273,36 @@ class Area
      *
      * @return array
      */
-    public function getSystems()
+    public function getSystems(): array
     {
         return (array) $this->area['system'];
     }
 
-
-
     /**
      * Informiert Master(LIVE) Server per zb. FTP
      *
-     * @return boolean True if all went well, false otherwise
+     * @return bool True if all went well, false otherwise
+     *
+     * @throws \Exception
      */
-    public function notifyMaster()
+    public function notifyMaster(): bool
     {
         foreach ($this->getSystems() as $arSystem) {
             if ($this->systemIsNotifyEnabled($arSystem)) {
-                switch ($arSystem['notify']['type']) {
-                    case 'ftp':
-                        $this->notifyMasterViaFtp($arSystem['notify']);
-                        $this->addMessage('Signaled "' . $arSystem['name'] . '" target for new sync.');
-                        break;
-                    default:
-                        $this->addMessage(
-                            'Skipped signaling "' . $arSystem['name'] . '" target.'
-                            . ' Unknown notify type: "' . $arSystem['notify']['type'] . '".'
-                        );
+                if ($arSystem['notify']['type'] === 'ftp') {
+                    $this->notifyMasterViaFtp($arSystem['notify']);
+                    $this->addMessage('Signaled "' . $arSystem['name'] . '" target for new sync.');
+                } else {
+                    $this->addMessage(
+                        'Skipped signaling "' . $arSystem['name'] . '" target.'
+                        . ' Unknown notify type: "' . $arSystem['notify']['type'] . '".'
+                    );
                 }
             }
         }
 
         return true;
     }
-
-
 
     /**
      * Returns true if current TYPO3_CONTEXT fits with context whitelist for system/target.
@@ -321,26 +322,28 @@ class Area
      * returns true
      *
      * @param array $system
+     *
      * @return bool
      */
-    protected function systemIsNotifyEnabled(array $system)
+    private function systemIsNotifyEnabled(array $system): bool
     {
         if (empty($system['notify']['contexts'])) {
             $this->addMessage(
                 'Skipped signaling "' . $system['name'] . '" target due to signaling disabled.'
             );
+
             return false;
         }
 
         foreach ($system['notify']['contexts'] as $context) {
-            $configuredContext = $this->objectManager->get(ApplicationContext::class, $context);
+            $configuredContext = GeneralUtility::makeInstance(ApplicationContext::class, $context);
 
             $contextCheck = strpos(
-                (string) Bootstrap::getInstance()->getApplicationContext(),
+                (string) Environment::getContext(),
                 (string) $configuredContext
             );
 
-            if (0 === $contextCheck) {
+            if ($contextCheck === 0) {
                 return true;
             }
         }
@@ -353,66 +356,61 @@ class Area
         return false;
     }
 
-
-
     /**
-     * Adds error message to message queue.
+     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
      *
-     * message types are defined as class constants self::STYLE_*
-     *
-     * @param string $strMessage message
-     * @param integer $type message type
-     *
-     * @return void
+     * @param string $message The message
+     * @param int    $type    The message type
      */
-    public function addMessage($strMessage, $type = FlashMessage::INFO)
+    public function addMessage(string $message, int $type = FlashMessage::INFO): void
     {
-        /* @var $message FlashMessage */
-        $message = $this->objectManager->get(
-            FlashMessage::class, $strMessage, '', $type, true
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message, '', $type, true
         );
 
-        $this->messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
-
-
 
     /**
      * Inform the Master(LIVE) Server per FTP
      *
-     * @param string[] $arFtpConfig Config of the ftp connection
+     * @param string[] $ftpConfig Config of the ftp connection
+     *
      * @throws \Exception
      */
-    protected function notifyMasterViaFtp(array $arFtpConfig)
+    private function notifyMasterViaFtp(array $ftpConfig): void
     {
-        $conn_id = ftp_connect($arFtpConfig['host']);
+        $connection = ftp_connect($ftpConfig['host']);
 
-        if (!$conn_id) {
+        if (!$connection) {
             throw new \Exception('Signal: FTP connection failed.');
         }
 
-        $login_result = ftp_login($conn_id, $arFtpConfig['user'], $arFtpConfig['password']);
+        $loginResult = ftp_login($connection, $ftpConfig['user'], $ftpConfig['password']);
 
-        if (!$login_result) {
+        if (!$loginResult) {
             throw new \Exception('Signal: FTP auth failed.');
         }
 
         // TYPO-3844: enforce passive mode
-        ftp_pasv($conn_id, true);
+        ftp_pasv($connection, true);
 
         // create trigger file
-        $source_file = tempnam(sys_get_temp_dir(), 'prefix');
+        $sourceFile = tempnam(sys_get_temp_dir(), 'prefix');
 
-        if (false === ftp_put($conn_id, 'db.txt', $source_file, FTP_BINARY)) {
-            ftp_quit($conn_id);
+        if (ftp_put($connection, 'db.txt', $sourceFile) === false) {
+            ftp_close($connection);
             throw new \Exception('Signal: FTP put db.txt failed.');
         }
 
-        if (false === ftp_put($conn_id, 'files.txt', $source_file, FTP_BINARY)) {
-            ftp_quit($conn_id);
+        if (ftp_put($connection, 'files.txt', $sourceFile) === false) {
+            ftp_close($connection);
             throw new \Exception('Signal: FTP put files.txt failed.');
         }
 
-        ftp_quit($conn_id);
+        ftp_close($connection);
     }
 }

@@ -1,155 +1,172 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-08
- * Time: 12:58
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-
+use Doctrine\DBAL\FetchMode;
 use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Imaging\Icon;
-use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
+use function count;
+use function in_array;
+use function is_array;
 
+/**
+ * Class SyncList
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class SyncList
 {
+    /**
+     * @var ConnectionPool
+     */
+    private $connectionPool;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
-     * @inject
+     * @var FlashMessageService
      */
-    protected $objectManager;
+    private $flashMessageService;
 
     /**
-     * @var \TYPO3\CMS\Core\Messaging\FlashMessageService
-     * @inject
+     * @var array
      */
-    protected $messageService;
+    private $syncList = [];
 
-    protected $arSyncList = [];
+    /**
+     * @var string
+     */
+    private $id = '';
 
-    protected $id = '';
-    private $content = '';
-
+    /**
+     * SyncList constructor.
+     *
+     * @param ConnectionPool $connectionPool
+     * @param FlashMessageService $flashMessageService
+     */
+    public function __construct(
+        ConnectionPool $connectionPool,
+        FlashMessageService $flashMessageService
+    ) {
+        $this->connectionPool = $connectionPool;
+        $this->flashMessageService = $flashMessageService;
+    }
 
     /**
      * @param string $syncListId
      */
-    public function load($syncListId)
+    public function load(string $syncListId): void
     {
-        $this->arSyncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
-        $this->id = (string) $syncListId;
+        $this->syncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
+        $this->id       = $syncListId;
     }
-
-
 
     /**
      * Saves the sync list to user session.
      */
-    public function saveSyncList()
+    public function saveSyncList(): void
     {
-        $this->getBackendUser()->setAndSaveSessionData(
-            'nr_sync_synclist' . $this->id, $this->arSyncList
-        );
+        $this->getBackendUser()
+            ->setAndSaveSessionData('nr_sync_synclist' . $this->id, $this->syncList);
     }
 
-
-
     /**
-     * Adds given data to sync list, if pageId doesn't already exists.
+     * Adds given data to sync list, if page ID doesn't already exists.
      *
-     * @param array $arData Data to add to sync list.
+     * @param array $data Data to add to sync list.
      *
      * @return void
      */
-    public function addToSyncList(array $arData)
+    public function addToSyncList(array $data): void
     {
-        $arData['removeable'] = true;
+        $data['removeable'] = true;
 
         // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
-        if (!$this->isInTree($this->arSyncList[$arData['areaID']], $arData['pageID'])) {
-            $this->arSyncList[$arData['areaID']][] = $arData;
-        } else {
+        if ($this->isInTree((int) $data['pageID'], $this->syncList[$data['areaID']])) {
             $this->addMessage(
                 'Diese Seite wurde bereits zur Synchronisation vorgemerkt.',
                 FlashMessage::ERROR
             );
+        } else {
+            $this->syncList[$data['areaID']][] = $data;
         }
     }
 
-
-
     /**
-     * Adds error message to message queue.
+     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
      *
-     * message types are defined as class constants self::STYLE_*
-     *
-     * @param string $strMessage message
-     * @param integer $type message type
-     *
-     * @return void
+     * @param string $message The message
+     * @param int    $type    The message type
      */
-    public function addMessage($strMessage, $type = FlashMessage::INFO)
+    public function addMessage(string $message, int $type = FlashMessage::INFO): void
     {
-        /* @var $message FlashMessage */
-        $message = $this->objectManager->get(
-            FlashMessage::class, $strMessage, '', $type, true
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message, '', $type, true
         );
 
-        $this->messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
-
-
 
     /**
      * Adds given data to sync list, if pageId does not already exists.
      *
-     * @param array $arData Data to add to sync list.
+     * @param array $data Data to add to sync list.
      *
      * @return void
      */
-    public function deleteFromSyncList(array $arData)
+    public function deleteFromSyncList(array $data): void
     {
-        $arDeleteArea = array_keys($arData['delete']);
+        $arDeleteArea = array_keys($data['delete']);
         $arDeletePageID = array_keys(
-            $arData['delete'][$arDeleteArea[0]]
+            $data['delete'][$arDeleteArea[0]]
         );
-        foreach ($this->arSyncList[$arDeleteArea[0]] as $key => $value) {
+        foreach ($this->syncList[$arDeleteArea[0]] as $key => $value) {
             if ($value['removeable']
                 && $value['pageID'] == $arDeletePageID[0]
             ) {
-                unset($this->arSyncList[$arDeleteArea[0]][$key]);
-                if (0 === count($this->arSyncList[$arDeleteArea[0]])) {
-                    unset($this->arSyncList[$arDeleteArea[0]]);
+                unset($this->syncList[$arDeleteArea[0]][$key]);
+                if (count($this->syncList[$arDeleteArea[0]]) === 0) {
+                    unset($this->syncList[$arDeleteArea[0]]);
                 }
                 break;
             }
         }
     }
 
-
-
     /**
-     * Schaut nach ob eine $pid bereits in der Synliste liegt
+     * Checks whether the given page ID is already in the sync list.
      *
-     * @param array   $arSynclist List of page IDs
-     * @param integer $pid        Page ID
+     * @param int        $pid      The page ID
+     * @param null|array $syncList A list of page IDs
      *
-     * @return boolean
+     * @return bool
      */
-    protected function isInTree(array $arSynclist = null, $pid)
+    private function isInTree(int $pid, array $syncList = null): bool
     {
-        if (is_array($arSynclist)) {
-            foreach ($arSynclist as $value) {
-                if ($value['pageID'] == $pid) {
+        if (is_array($syncList)) {
+            foreach ($syncList as $value) {
+                if ($value['pageID'] === $pid) {
                     return true;
                 }
             }
@@ -158,263 +175,154 @@ class SyncList
         return false;
     }
 
-
-
     /**
      * @return BackendUserAuthentication
      */
-    protected function getBackendUser()
+    private function getBackendUser(): BackendUserAuthentication
     {
-        /* @var $BE_USER BackendUserAuthentication */
-        global $BE_USER;
-
-        return $BE_USER;
+        return $GLOBALS['BE_USER'];
     }
-
 
     /**
      * @return bool
      */
-    public function isEmpty()
+    public function isEmpty(): bool
     {
-        return (bool) (count($this->arSyncList) < 1);
+        return count($this->syncList) < 1;
     }
 
-
-
-    public function getAsArray()
+    /**
+     * @return array
+     */
+    public function getAsArray(): array
     {
-        return $this->arSyncList;
+        return $this->syncList;
     }
-
-
 
     /**
      * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
      * Und Editiert werden dürfen
      *
-     * @param integer $areaID Area
+     * @param int $areaID Area
      *
      * @return array
      */
-    public function getAllPageIDs($areaID)
+    public function getAllPageIDs(int $areaID): array
     {
-        $arSyncList = $this->arSyncList[$areaID];
+        $syncList = $this->syncList[$areaID];
 
-        $arPageIDs = array();
-        foreach ($arSyncList as $arSyncPage) {
+        $pageIDs = [];
+        foreach ($syncList as $arSyncPage) {
             // Prüfen ob User Seite Bearbeiten darf
-            $arPage = BackendUtility::getRecord('pages', $arSyncPage['pageID']);
+            $arPage = BackendUtility::getRecord('pages', (int) $arSyncPage['pageID']);
             if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                array_push($arPageIDs, $arSyncPage['pageID']);
+                $pageIDs[] = (int) $arSyncPage['pageID'];
             }
 
             // Wenn der ganze Baum syncronisiert werden soll
             // getSubpagesAndCount liefert nur Pages zurück die Editiert werden
             // dürfen
             // @TODO
-            if ($arSyncPage['type'] == 'tree') {
-                /* @var $area Area */
+            if ($arSyncPage['type'] === 'tree') {
+                /** @var Area $area */
                 $area = GeneralUtility::makeInstance(Area::class, $arSyncPage['areaID']);
                 $arCount = $this->getSubpagesAndCount(
-                    $arSyncPage['pageID'], $dummy, 0, $arSyncPage['levelmax'],
+                    (int) $arSyncPage['pageID'],
+                    $dummy,
+                    0,
+                    (int) $arSyncPage['levelmax'],
                     $area->getNotDocType(),
                     $area->getDocType()
                 );
+
                 $a = $this->getPageIDsFromTree($arCount);
-                $arPageIDs = array_merge($arPageIDs, $a);
+                $pageIDs = array_merge($pageIDs, $a);
 
             }
         }
-        $arPageIDs = array_unique($arPageIDs);
-        return $arPageIDs;
+
+        $pageIDs = array_merge($pageIDs, $this->getPageTranslations($pageIDs));
+
+        return array_unique($pageIDs);
     }
-
-
-
-    public function emptyArea($areaID)
-    {
-        unset($this->arSyncList[$areaID]);
-    }
-
-
-
-
 
     /**
-     * Adds the elements from the sync list as section into the content of the
-     * template of backend module.
-     *
-     * @return string
+     * @param $areaID
      */
-    public function showSyncList()
+    public function emptyArea($areaID): void
     {
-        $this->content .= '<h2>Sync list</h2>';
-
-        foreach ($this->arSyncList as $nAreaId => $arList) {
-            /* @var $area Area */
-            $area = GeneralUtility::makeInstance(Area::class, $nAreaId);
-            $this->content .= '<h3>' . $area->getName() . ' ' . $area->getDescription() . '</h3>';
-            $this->showSyncListArea($nAreaId, $arList);
-        }
-
-        return $this->content;
+        unset($this->syncList[$areaID]);
     }
 
-
-
     /**
-     * Adds the elements of an Netresearch\Sync\Helper\Area from the synclist as section into the content
-     * of the template of backend module.
+     * Returns a TYPO3 QueryBuilder instance for a given table, without any restriction.
      *
-     * @param integer $nAreaId Id of the area this list is from.
-     * @param array   $arList  Sync list of an Netresearch\Sync\Helper\Area.
+     * @param string $tableName The table name
      *
-     * @return void
+     * @return QueryBuilder
      */
-    protected function showSyncListArea($nAreaId, array $arList)
+    private function getQueryBuilderForTable(string $tableName): QueryBuilder
     {
-        $this->content .= '<div class="table-fit">';
-        $this->content .= '<table class="table table-striped table-hover" id="ts-overview">';
-        $this->content .= '<thead>';
-        $this->content .= '<tr><th>Item</th><th>Action</th></tr>';
-        $this->content .= '</thead>';
-        $this->content .= '<tbody>';
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($tableName);
+        $queryBuilder->getRestrictions()->removeAll();
 
-        foreach ($arList as $syncItem) {
-            if ($syncItem['removeable']) {
-                $strLinkLoeschen = $this->getRemoveLink(
-                    $nAreaId, $syncItem['pageID']
-                );
-            } else {
-                $strLinkLoeschen = '';
-            }
-
-            $this->content .= '<tr class="bgColor4">';
-            $this->content .= '<td>';
-            $this->content .= '"' . htmlspecialchars(
-                    BackendUtility::getRecordTitle(
-                        'pages',
-                        BackendUtility::getRecord('pages', $syncItem['pageID'])
-                    ))
-                . '" pages:' . intval($syncItem['pageID']);
-            if ($syncItem['type'] == 'tree' && $syncItem['count'] > 0) {
-                $this->content .= ' (' . intval($syncItem['count'])
-                    . ' sub pages with ' . $syncItem['deleted']
-                    . ' deleted and ' . $syncItem['noaccess']
-                    . ' inaccessible.)';
-            }
-            $this->content .= '</td>';
-
-            $this->content .= '<td>';
-            $this->content .= $strLinkLoeschen;
-            $this->content .= '</td>';
-
-            $this->content .= '</tr>';
-        }
-
-        $this->content .= '</tbody>';
-        $this->content .= '</table>';
-        $this->content .= '</div>';
+        return $queryBuilder;
     }
 
-
-
     /**
-     * Generates HTML of removal button.
+     * Returns the page, its sub-pages and their number for a given page ID,
+     * if this page can be edited by the user.
      *
-     * @param integer $nAreaId    Id of the area to remove from list.
-     * @param integer $nElementId Id of the element to remove from list.
-     *
-     * @return string HTML button.
-     */
-    protected function getRemoveLink($nAreaId, $nElementId)
-    {
-        return '<button class="btn btn-default" type="submit" name="data[delete][' . $nAreaId . ']'
-            . '[' . $nElementId . ']"'
-            . ' value="Remove from sync list">'
-            . $this->getIconFactory()->getIcon('actions-selection-delete', Icon::SIZE_SMALL)->render()
-            . '</button>';
-    }
-
-
-
-    /**
-     * @return ObjectManager
-     */
-    protected function getObjectManager()
-    {
-        /* @var $objectManager ObjectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-        return $objectManager;
-    }
-
-
-
-    /**
-     * @return IconFactory
-     */
-    protected function getIconFactory()
-    {
-        /* @var $iconFactory IconFactory */
-        $iconFactory =  $this->getObjectManager()->get(IconFactory::class);
-
-        return $iconFactory;
-    }
-
-
-
-    /**
-     * Gibt die Seite, deren Unterseiten und ihre Zählung zu einer PageID zurück,
-     * wenn sie vom User editierbar ist.
-     *
-     * @param integer $pid               The page id to count on.
-     * @param array   &$arCount          Information about the count data.
-     * @param integer $nLevel            Depth on which we are.
-     * @param integer $nLevelMax         Maximum depth to search for.
-     * @param array   $arDocTypesExclude TYPO3 doc types to exclude.
-     * @param array   $arDocTypesOnly    TYPO3 doc types to count only.
-     * @param array   $arTables          Tables this task manages.
+     * @param int        $pid               The page id to count on
+     * @param null|array &$arCount          Information about the count data
+     * @param int        $nLevel            Depth on which we are
+     * @param int        $nLevelMax         Maximum depth to search for
+     * @param null|array $arDocTypesExclude TYPO3 doc types to exclude
+     * @param null|array $arDocTypesOnly    TYPO3 doc types to count only
+     * @param null|array $tables            Tables this task manages
      *
      * @return array
      */
-    protected function getSubpagesAndCount(
-        $pid, &$arCount, $nLevel = 0, $nLevelMax = 1, array $arDocTypesExclude = null,
-        array $arDocTypesOnly = null, array $arTables = null
-    ) {
-        $arCountDefault = array(
+    public function getSubpagesAndCount(
+        int $pid,
+        array &$arCount = null,
+        int $nLevel = 0,
+        int $nLevelMax = 1,
+        array $arDocTypesExclude = null,
+        array $arDocTypesOnly = null,
+        array $tables = null
+    ): array {
+        $arCountDefault = [
             'count'      => 0,
             'deleted'    => 0,
             'noaccess'   => 0,
             'falses'     => 0,
             'other_area' => 0,
-        );
+        ];
 
-        if (!is_array($arCount)) {
+        if (!is_array($arCount) || empty($arCount)) {
             $arCount = $arCountDefault;
         }
 
-        $return = array();
+        $return = [];
 
         if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
             return $return;
         }
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+        $queryBuilder = $this->getQueryBuilderForTable('pages');
 
-        $queryBuilder = $connectionPool->getQueryBuilderForTable('pages');
-
-        $result = $queryBuilder->select('*')
+        $result = $queryBuilder
+            ->select('*')
             ->from('pages')
             ->where(
-                $queryBuilder->expr()->eq('pid', intval($pid))
+                $queryBuilder->expr()->eq('pid', $pid)
             )
             ->execute();
 
-        while ($arPage = $result->fetch()) {
-            if (is_array($arDocTypesExclude) && in_array($arPage['doktype'], $arDocTypesExclude)) {
+        while ($arPage = $result->fetchAssociative()) {
+            if (is_array($arDocTypesExclude)
+                && in_array($arPage['doktype'], $arDocTypesExclude, true)) {
                 continue;
             }
 
@@ -424,31 +332,36 @@ class SyncList
             }
 
             if (count($arDocTypesOnly)
-                && !in_array($arPage['doktype'], $arDocTypesOnly)
+                && !in_array($arPage['doktype'], $arDocTypesOnly, true)
             ) {
                 $arCount['falses']++;
                 continue;
             }
 
             $arSub = $this->getSubpagesAndCount(
-                $arPage['uid'], $arCount, $nLevel + 1, $nLevelMax,
-                $arDocTypesExclude, $arDocTypesOnly, $arTables
+                (int) $arPage['uid'],
+                $arCount,
+                $nLevel + 1,
+                $nLevelMax,
+                $arDocTypesExclude,
+                $arDocTypesOnly,
+                $tables
             );
 
             if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                $return[] = array(
+                $return[] = [
                     'page' => $arPage,
                     'sub'  => $arSub,
-                );
+                ];
             } else {
-                $return[] = array(
+                $return[] = [
                     'sub' => $arSub,
-                );
+                ];
                 $arCount['noaccess']++;
             }
 
             // Die Zaehlung fuer die eigene Seite
-            if ($this->pageContainsData($arPage['uid'], $arTables)) {
+            if ($this->pageContainsData($arPage['uid'], $tables)) {
                 $arCount['count']++;
                 if ($arPage['deleted']) {
                     $arCount['deleted']++;
@@ -459,44 +372,38 @@ class SyncList
         return $return;
     }
 
-
-
     /**
      * Tests if given tables holds data on given page id.
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param integer $nId      The page id to look for.
-     * @param array   $arTables Tables this task manages.
+     * @param int        $nId    The page id to look for
+     * @param null|array $tables Tables this task manages
      *
-     * @return boolean True if data exists otherwise false.
+     * @return bool TRUE if data exists otherwise FALSE.
      */
-    protected function pageContainsData($nId, array $arTables = null)
+    private function pageContainsData(int $nId, array $tables = null): bool
     {
-        global $TCA;
-
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-
-        if (null === $arTables) {
+        if ($tables === null) {
             return false;
-        } elseif (false !== array_search('pages', $arTables)) {
+        }
+
+        if (in_array('pages', $tables, true)) {
             return true;
-        } else {
-            foreach ($arTables as $strTableName) {
-                if (isset($TCA[$strTableName])) {
-                    $queryBuilder = $connectionPool->getQueryBuilderForTable($strTableName);
+        }
 
-                    $nCount = $queryBuilder->count('pid')
-                        ->from($strTableName)
-                        ->where($queryBuilder->expr()->eq('pid', intval($nId)))
-                        ->execute()
-                        ->fetchColumn(0);
+        foreach ($tables as $strTableName) {
+            if (isset($GLOBALS['TCA'][$strTableName])) {
+                $queryBuilder = $this->connectionPool->getQueryBuilderForTable($strTableName);
 
-                    if ($nCount > 0) {
-                        return true;
-                    }
+                $nCount = $queryBuilder->count('pid')
+                    ->from($strTableName)
+                    ->where($queryBuilder->expr()->eq('pid', $nId))
+                    ->execute()
+                    ->fetchOne();
+
+                if ($nCount > 0) {
+                    return true;
                 }
             }
         }
@@ -504,32 +411,61 @@ class SyncList
         return false;
     }
 
-
-
     /**
-     * Gibt alle ID's aus einem Pagetree zurück.
+     * Returns all IDs from a page tree.
      *
-     * @param array $arTree The pagetree to get IDs from.
+     * @param array $tree The page tree to get IDs from
      *
      * @return array
      */
-    protected function getPageIDsFromTree(array $arTree)
+    private function getPageIDsFromTree(array $tree): array
     {
-        $arPageIDs = array();
-        foreach ($arTree as $value) {
-            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
-            // editierrechten fehlen)
+        $pageIDs = [];
+
+        foreach ($tree as $value) {
+            // See if there is a page on the branch (may be missing due to editing rights)
             if (isset($value['page'])) {
-                array_push($arPageIDs, $value['page']['uid']);
+                $pageIDs[] = $value['page']['uid'];
             }
 
-            // Schauen ob es unter liegende Seiten gibt
+            // See if there are any underlying pages
             if (is_array($value['sub'])) {
-                $arPageIDs = array_merge(
-                    $arPageIDs, $this->getPageIDsFromTree($value['sub'])
+                $pageIDs = array_merge(
+                    $pageIDs,
+                    $this->getPageIDsFromTree($value['sub'])
                 );
             }
         }
-        return $arPageIDs;
+
+        return $pageIDs;
+    }
+
+    /**
+     * Returns the page id of translation records
+     *
+     * @param array $pages Array with page ids
+     *
+     * @return array
+     */
+    private function getPageTranslations(array $pages = []): array
+    {
+        if (empty($pages)) {
+            return [];
+        }
+
+        /** @var Connection $connection */
+        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
+                                    ->getConnectionForTable('pages');
+
+        $queryBuilder = $connection->createQueryBuilder();
+
+        $queryBuilder->getRestrictions()->removeAll();
+
+        return $queryBuilder->select('uid')
+            ->from('pages')
+            ->where($queryBuilder->expr()->in('l10n_parent', $pages))
+            ->groupBy('uid')
+            ->execute()
+            ->fetchFirstColumn();
     }
 }

@@ -1,258 +1,354 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-04
- * Time: 14:52
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
-
 use Netresearch\Sync\Helper\Area;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use function count;
 
+/**
+ * Class BaseModule
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class BaseModule
 {
-    protected $tables = [];
-    protected $name = 'Please select';
-    protected $type = '';
-    protected $target = '';
-    protected $dumpFileName = '';
-    protected $accessLevel = 0;
-    protected $error = null;
-    protected $content = '';
-
     /**
-     * @var array
+     * @var FlashMessageService
      */
-    protected $tableDefinition;
+    private $flashMessageService;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
-     * @inject
-     */
-    protected $objectManager;
-
-    /**
-     * @var \TYPO3\CMS\Core\Messaging\FlashMessageService
-     * @inject
-     */
-    protected $messageService;
-
-    /**
-     * @var \TYPO3\CMS\Core\Database\ConnectionPool
-     * @inject
+     * @var ConnectionPool
      */
     protected $connectionPool;
 
     /**
-     * @var string file where to store table information
+     * A list of table names to synchronise.
+     *
+     * @var string[]
      */
-    protected $strTableSerializedFile = 'tables_serialized.txt';
+    protected $tables = [];
 
     /**
-     * @var string Where to put DB Dumps (trailing Slash)
+     * The name of the module.
+     *
+     * @var string
      */
-    var $strDBFolder = '';
+    protected $name = 'Please select';
 
+    /**
+     * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
+     *
+     * @var string
+     */
+    protected $type = '';
 
+    /**
+     * @var string
+     */
+    protected $target = '';
 
-    function __construct(array $arOptions = null)
+    /**
+     * The name of the synchronisation file containg the SQL statements to update the database records.
+     *
+     * @var string
+     */
+    protected $dumpFileName = '';
+
+    /**
+     * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
+     *
+     * @var int
+     */
+    protected $accessLevel = 0;
+
+    /**
+     * @var null|string
+     */
+    protected $error;
+
+    /**
+     * Additional content to output by the module.
+     *
+     * @var string
+     *
+     * @deprecated Provide additional content by views/templates instead
+     */
+    protected $content = '';
+
+    /**
+     * The current table definition.
+     *
+     * @var array
+     */
+    private $tableDefinition;
+
+    /**
+     * File where to store table information.
+     *
+     * @var string
+     */
+    private $tableSerializedFile = 'tables_serialized.txt';
+
+    /**
+     * Where to put DB Dumps (trailing Slash).
+     *
+     * @var string
+     */
+    private $dbFolder = '';
+
+    /**
+     * BaseModule constructor.
+     *
+     * @param null|array $options
+     */
+    public function __construct(array $options = null)
     {
-        if (null !== $arOptions) {
-            $this->tables = (array) $arOptions['tables'] ?: [];
-            $this->name = $arOptions['name'] ?: 'Default sync';
-            $this->target = $arOptions['target'] ?: '';
-            $this->type = $arOptions['type'] ?: 'sync_tables';
-            $this->dumpFileName = $arOptions['dumpFileName'] ?: 'dump.sql';
-            $this->accessLevel = intval($arOptions['accessLevel']) ?: 0;
+        $this->flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+        $this->connectionPool      = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        if ($options !== null) {
+            $this->tables = (array) $options['tables'] ?: [];
+            $this->name = $options['name'] ?: 'Default sync';
+            $this->target = $options['target'] ?: '';
+            $this->type = $options['type'] ?: 'sync_tables';
+            $this->dumpFileName = $options['dumpFileName'] ?: 'dump.sql';
+            $this->accessLevel = (int) $options['accessLevel'] ?: 0;
         }
     }
 
-    public function run(Area $area = null)
+    /**
+     * @param Area $area
+     *
+     * @return bool
+     */
+    public function run(Area $area): bool
     {
-        $strRootPath = $_SERVER['DOCUMENT_ROOT'];
-        if (empty($strRootPath)) {
-            $strRootPath = substr(PATH_site, 0, -1);
+        $rootPath = $_SERVER['DOCUMENT_ROOT'];
+
+        if (empty($rootPath)) {
+            $rootPath = substr(Environment::getPublicPath(), 0, -1);
         }
-        $this->strDBFolder = $strRootPath . '/db/';
+
+        $this->dbFolder = $rootPath . '/db/';
 
         $this->testTablesForDifferences();
 
         return true;
     }
 
-    public function getContent()
+    /**
+     * @return string
+     */
+    public function getContent(): string
     {
         return $this->content;
     }
 
-    public function getName()
+    /**
+     * @return string
+     */
+    public function getName(): string
     {
         return $this->name;
     }
-    public function getType()
+
+    /**
+     * @return string
+     */
+    public function getType(): string
     {
         return $this->type;
     }
-    public function getDumpFileName()
+
+    /**
+     * @return string
+     */
+    public function getDumpFileName(): string
     {
         return $this->dumpFileName;
     }
-    public function getTableNames()
+
+    /**
+     * @return string[]
+     */
+    public function getTableNames(): array
     {
         return $this->tables;
     }
-    public function getAccessLevel()
+
+    /**
+     * @return int
+     */
+    public function getAccessLevel(): int
     {
         return $this->accessLevel;
     }
-    public function getTarget()
+
+    /**
+     * @return string
+     */
+    public function getTarget(): string
     {
         return $this->target;
     }
 
-    public function getDescription()
+    /**
+     * @return string
+     */
+    public function getDescription(): string
     {
         return 'Target: ' . $this->getTarget() . '<br>'
             . 'Content: ' . $this->getName();
     }
 
-    public function getError()
+    /**
+     * @return string
+     */
+    public function getError(): string
     {
         return $this->error;
     }
 
-    public function hasError()
+    /**
+     * @return bool
+     */
+    public function hasError(): bool
     {
-        return null !== $this->error;
+        return $this->error !== null;
     }
-
-
 
     /**
      * @return string
      */
-    protected function getStateFile()
+    protected function getStateFile(): string
     {
-        return $this->strDBFolder . $this->strTableSerializedFile;
+        return $this->dbFolder . $this->tableSerializedFile;
     }
-
-
 
     /**
      * Loads the last saved definition of the tables.
      *
      * @return void
      */
-    protected function loadTableDefinition()
+    protected function loadTableDefinition(): void
     {
-        $strFile = $this->getStateFile();
-        if (!file_exists($strFile)) {
-            $this->tableDefinition = array();
+        $file = $this->getStateFile();
+
+        if (!file_exists($file)) {
+            $this->tableDefinition = [];
             return;
         }
 
-        $fpDumpFile = fopen($strFile, 'r');
-        $strAllTables = fread(
-            $fpDumpFile,
-            filesize($strFile)
-        );
+        $fpDumpFile = fopen($file, 'rb');
+        $allTables = fread($fpDumpFile, filesize($file));
         fclose($fpDumpFile);
-        $this->tableDefinition = unserialize($strAllTables);
+
+        $this->tableDefinition = unserialize($allTables);
     }
-
-
 
     /**
      * Tests if a table in the DB differs from last saved state.
      *
-     * @param string $strTableName Name of table.
+     * @param string $tableName Name of table.
      *
-     * @return boolean True if file differs otherwise false.
+     * @return bool True if file differs otherwise false.
      */
-    protected function isTableDifferent($strTableName)
+    protected function isTableDifferent(string $tableName): bool
     {
         if (!isset($this->tableDefinition)) {
             $this->loadTableDefinition();
         }
 
-        // Tabelle existierte vorher nicht
-        if (!isset($this->tableDefinition[$strTableName])) {
+        // Table did not exists before
+        if (!isset($this->tableDefinition[$tableName])) {
             return true;
         }
 
-        $arColumns = $this->connectionPool->getConnectionForTable($strTableName)
+        $columns = $this->connectionPool
+            ->getConnectionForTable($tableName)
             ->getSchemaManager()
-            ->listTableColumns($strTableName);
+            ->listTableColumns($tableName);
 
-        $arColumnNames = [];
-        foreach ($arColumns as $column) {
-            $arColumnNames[] = $column->getName();
+        $columnNames = [];
+        foreach ($columns as $column) {
+            $columnNames[] = $column->getName();
         }
 
-        // Tabelle existiert jetzt nicht
-        if (count($arColumnNames) == 0) {
+        // Table still not exists
+        if (count($columnNames) === 0) {
             return true;
         }
 
-        // Sind Tabellendefinitionen ungleich?
-        if (serialize($this->tableDefinition[$strTableName]) !== serialize($arColumnNames)) {
+        // Differ the table definition?
+        if (serialize($this->tableDefinition[$tableName]) !== serialize($columnNames)) {
             return true;
         }
 
-        // Alles in Ordnung
+        // All fine
         return false;
     }
 
-
-
     /**
-     * Adds error message to message queue.
+     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
      *
-     * message types are defined as class constants self::STYLE_*
-     *
-     * @param string $strMessage message
-     * @param integer $type message type
-     *
-     * @return void
+     * @param string $message The message
+     * @param int    $type    The message type
      */
-    public function addMessage($strMessage, $type = FlashMessage::INFO)
+    public function addMessage(string $message, int $type = FlashMessage::INFO): void
     {
-        /* @var $message FlashMessage */
-        $message = $this->objectManager->get(
-            FlashMessage::class, $strMessage, '', $type, true
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message, '', $type, true
         );
 
-        $this->messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
-
 
     /**
      * Test if the given tables in the DB differs from last saved state.
      *
      * @param string[] $tableNames
+     *
      * @return void
      */
-    protected function testTablesForDifferences(array $tableNames = null)
+    protected function testTablesForDifferences(array $tableNames = null): void
     {
-        $arErrorTables = [];
+        $errorTables = [];
 
-        if (null === $tableNames) {
+        if ($tableNames === null) {
             $tableNames = $this->getTableNames();
         }
 
-        foreach ($tableNames as $strTableName) {
-            if ($this->isTableDifferent($strTableName)) {
-                $arErrorTables[] = htmlspecialchars($strTableName);
+        foreach ($tableNames as $tableName) {
+            if ($this->isTableDifferent($tableName)) {
+                $errorTables[] = htmlspecialchars($tableName);
             }
         }
 
-        if (count($arErrorTables)) {
+        if (count($errorTables)) {
             $this->addMessage(
                 'Following tables have changed, please contact your TYPO3 admin: '
-                . implode(', ', $arErrorTables),
+                . implode(', ', $errorTables),
                 FlashMessage::WARNING
             );
         }

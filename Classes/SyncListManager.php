@@ -1,44 +1,65 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-08
- * Time: 14:47
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-
 use TYPO3\CMS\Core\SingletonInterface;
+use TYPO3\CMS\Extbase\Object\ObjectManagerInterface;
 
+/**
+ * Class SyncListManager
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class SyncListManager implements SingletonInterface
 {
-
     /**
-     * @var \TYPO3\CMS\Extbase\Object\ObjectManagerInterface
-     * @inject
+     * @var ObjectManagerInterface
      */
-    protected $objectManager;
+    private $objectManager;
 
     /**
      * @var SyncList[]
      */
-    protected $syncLists = [];
-
+    private array $syncLists = [];
 
     /**
-     * @param $syncListId
+     * SyncListManager constructor.
+     *
+     * @param ObjectManagerInterface $objectManager
+     */
+    public function __construct(
+        ObjectManagerInterface $objectManager
+    ) {
+        $this->objectManager = $objectManager;
+    }
+
+    /**
+     * @param string $syncListId
+     *
      * @return SyncList
      */
-    public function getSyncList($syncListId)
+    public function getSyncList(string $syncListId): SyncList
     {
-        if (null === $this->syncLists[$syncListId]) {
-            $this->syncLists[$syncListId] = $this->objectManager->get(SyncList::class);
+        if ($this->syncLists[$syncListId] === null) {
+            /** @var SyncList $syncList */
+            $syncList = $this->objectManager->get(SyncList::class);
+            $syncList->load($syncListId);
 
-            $this->syncLists[$syncListId]->load($syncListId);
+            $this->syncLists[$syncListId] = $syncList;
         }
 
         return $this->syncLists[$syncListId];
     }
-
 }

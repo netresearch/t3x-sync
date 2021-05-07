@@ -1,6 +1,6 @@
-*********
+*******
 nr_sync
-*********
+*******
 
 .. contents:: Inhaltsverzeichnis
 
@@ -134,6 +134,8 @@ Clear page cache for pages 123 and 124::
   http://example.org/?eID=nr_sync;task=clearCache;data=pages:123,pages:124
 
 
+    https://example.org/?nr-sync-clear-cache&task=clearCache&data=pages:123,pages:456
+
 =====
 Setup
 =====
@@ -186,4 +188,13 @@ The simple script ``scripts/clean-lock.sh`` checks for files in ``db/tmp`` older
 than 5 minutes and removes them. You can add this script e.g. to your crontab::
 
    */5 * * * * /usr/bin/sh /path/to/typo3/typo3conf/ext/nr_sync/scripts/clean-lock.sh
+
+
+CLI Commands
+============
+
+CLI command to clear caches:
+
+    ./app/vendor/bin/typo3 sync:cache:clear --help
+
 

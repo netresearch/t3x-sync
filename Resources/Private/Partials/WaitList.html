@@ -1,0 +1,101 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:v="http://typo3.org/ns/FluidTYPO3/Vhs/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+
+>
+    <f:section name="Main">
+        <f:for each="{area.systems}" key="systemKey" as="system">
+            <f:if condition="!{system.hide}">
+                <v:variable.set name="dbDirectory" value="{dbFolder}{system.directory}/" />
+
+                <h3>
+                    <f:if condition="{nrs:file.lockExists(directory: dbDirectory)}">
+                        <f:then>
+                            <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 0, pid: id)}"
+                               class="btn btn-warning"
+                               title="Sync disabled, click to enable">
+                                <core:icon identifier="actions-lock" size="small" /></a>
+                        </f:then>
+                        <f:else>
+                            <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 1, pid: id)}"
+                               class="btn btn-success"
+                               title="Sync enabled, click to disable">
+                                <core:icon identifier="actions-unlock" size="small" /></a>
+                        </f:else>
+                    </f:if>
+
+                    Sync target: "{system.name}"
+                </h3>
+
+                <v:variable.set name="arFiles"    value="{v:media.files(path: dbDirectory, prependPath: 'TRUE', extensionList: '.sql.gz')}" />
+                <v:variable.set name="nDumpFiles" value="{arFiles -> f:count()}" />
+
+                <f:if condition="{nDumpFiles} >= 1">
+                    <v:variable.set name="nSyncSize" value="0" />
+                    <v:variable.set name="firstFile" value="" />
+
+                    <v:variable.set name="waitingSyncs">
+                        <div class="table-fit">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Size</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <f:for each="{arFiles}" as="strFile" key="fileKey" iteration="filesIterator">
+                                    <f:if condition="{filesIterator.isFirst}">
+                                        <v:variable.set name="firstFile" value="{strFile}" />
+                                    </f:if>
+
+                                    <v:variable.set name="nSize"     value="{v:media.size(path: strFile)}" />
+                                    <v:variable.set name="nSyncSize" value="{nSyncSize + nSize}" />
+
+                                    <tr class="bgColor4">
+                                        <td>
+                                            <nrs:file.basename file="{strFile}" />
+                                        </td>
+                                        <td>
+                                            <f:format.number>{nSize / 1024 / 1024}</f:format.number> MiB
+                                        </td>
+                                    </tr>
+                                </f:for>
+                                </tbody>
+                            </table>
+                        </div>
+                    </v:variable.set>
+
+                    <v:variable.set name="nTime"     value="{nrs:file.modifiedTime(file: firstFile)}" />
+                    <v:variable.set name="timestamp" value="{v:system.timestamp()}" />
+                    <v:variable.set name="timeDiff"  value="{timestamp - nTime}" />
+
+                    <f:if condition="{nTime} < {timestamp - 60 * 15}">
+                        <f:then>
+                            <f:comment>
+                                <!-- If oldest file time is older than 15 minutes display this in red -->
+                            </f:comment>
+                            <v:variable.set name="messageType" value="ERROR" />
+                        </f:then>
+                        <f:else>
+                            <v:variable.set name="messageType" value="INFO" />
+                        </f:else>
+                    </f:if>
+
+                    <f:format.raw>
+                        <nrs:flashMessage type="{messageType}">
+                            {nDumpFiles} file{f:if(condition: '{nDumpFiles} == 1', then: '', else: 's')} waiting for synchronisation
+                            (<f:format.number>{nSyncSize / 1024 / 1024}</f:format.number> MiB). Oldest file
+                            from <f:format.date date="{nTime}" format="Y-m-d H:i" /> and therefore {v:math.ceil(a: '{timeDiff / 60}')} minutes old.
+                        </nrs:flashMessage>
+                    </f:format.raw>
+
+                    {waitingSyncs -> f:format.raw()}
+                </f:if>
+            </f:if>
+        </f:for>
+    </f:section>
+</html>

@@ -1,53 +1,87 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: sebastian.mendel
- * Date: 2017-09-04
- * Time: 18:35
+ * This file is part of the package netresearch/nr-sync.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
-use TYPO3\CMS\Extensionmanager\Utility\ConfigurationUtility;
 
+/**
+ * Class SyncLock
+ *
+ * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
+ * @author  Rico Sonntag <rico.sonntag@netresearch.de>
+ * @license Netresearch https://www.netresearch.de
+ * @link    https://www.netresearch.de
+ */
 class SyncLock
 {
+    /**
+     * The extension configuration.
+     *
+     * @var ExtensionConfiguration
+     */
+    private $extensionConfiguration;
+
+    /**
+     * @var FlashMessageService
+     */
+    private $flashMessageService;
+
+    /**
+     * SyncLock constructor.
+     *
+     * @param ExtensionConfiguration $extensionConfiguration
+     * @param FlashMessageService $flashMessageService
+     */
+    public function __construct(
+        ExtensionConfiguration $extensionConfiguration,
+        FlashMessageService $flashMessageService
+    ) {
+        $this->extensionConfiguration = $extensionConfiguration;
+        $this->flashMessageService = $flashMessageService;
+    }
+
     /**
      * Returns message for current lock.
      *
      * @return string
+     *
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
      */
-    public function getLockMessage()
+    public function getLockMessage(): string
     {
-        $config = $this->getExtensionConfiguration();
-
-        return (string) $config['syncModuleLockedMessage']['value'];
+        $syncConf = $this->extensionConfiguration->get('nr_sync');
+        return $syncConf['syncModuleLockedMessage'];
     }
-
-
 
     /**
      * React to requests concerning lock or unlock of the module.
      *
-     * @return void
      * @throws Exception
      */
-    public function handleLockRequest()
+    public function handleLockRequest(): void
     {
-        if (false === $this->receivedLockChangeRequest()) {
+        if (!$this->receivedLockChangeRequest()) {
             return;
         }
 
         try {
             $this->storeLockConfiguration();
-            $this->messageOk(
-                'Sync module was ' . ($this->isLockRequested() ? 'locked.' : 'unlocked.')
-            );
+            $this->messageOk('Sync module was ' . ($this->isLockRequested() ? 'locked.' : 'unlocked.'));
         } catch (\Exception $exception) {
             throw new Exception(
                 'Error in nr_sync configuration: '
@@ -57,118 +91,72 @@ class SyncLock
         }
     }
 
-
-
     /**
      * Send OK message to user.
      *
-     * @param string $strMessage Message to user
+     * @param string $message Message to user
      */
-    protected function messageOk($strMessage)
+    private function messageOk(string $message): void
     {
-        /* @var $objectManager ObjectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-        /* @var $message FlashMessage */
-        $message = $objectManager->get(FlashMessage::class, $strMessage);
-
-        /* @var $messageService FlashMessageService */
-        $messageService = GeneralUtility::makeInstance(
-            FlashMessageService::class
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message
         );
 
-        $messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
-
-
 
     /**
      * Returns true if lock state change request was sent.
      *
      * @return bool
      */
-    protected function receivedLockChangeRequest()
+    private function receivedLockChangeRequest(): bool
     {
         return isset($_REQUEST['data']['lock']);
     }
-
-
 
     /**
      * Returns requested lock state.
      *
      * @return bool
      */
-    protected function isLockRequested()
+    private function isLockRequested(): bool
     {
         return (bool) $_REQUEST['data']['lock'];
     }
-
-
 
     /**
      * Returns current lock state.
      *
      * @return bool
-     */
-    public function isLocked()
-    {
-        $syncConf = $this->getExtensionConfiguration();
-
-        return (boolean) $syncConf['syncModuleLocked']['value'];
-    }
-
-
-
-    /**
-     * Returns the current extension configuration.
      *
-     * @return array
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
      */
-    protected function getExtensionConfiguration()
+    public function isLocked(): bool
     {
-        return $this->getConfigurationUtility()->getCurrentConfiguration('nr_sync');
+        $syncConf = $this->extensionConfiguration->get('nr_sync');
+        return (bool) $syncConf['syncModuleLocked'];
     }
-
-
 
     /**
      * Persist lock state in extension configuration.
      *
-     * @return void
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
      */
-    protected function storeLockConfiguration()
+    private function storeLockConfiguration(): void
     {
-        $configurationUtility = $this->getConfigurationUtility();
-        $extensionConfiguration = $configurationUtility->getCurrentConfiguration('nr_sync');
+        $configuration = $this->extensionConfiguration->get('nr_sync');
+        $configuration['syncModuleLocked'] = $this->isLockRequested();
 
-        $extensionConfiguration['syncModuleLocked']['value'] = (bool) $this->isLockRequested();
+        // Updated the configuration during run time, so any following check will have new updated values
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_sync'] = $configuration;
 
-        /** @var array $nestedConfiguration */
-        $nestedConfiguration = $configurationUtility->convertValuedToNestedConfiguration($extensionConfiguration);
-
-        // i want to have updated the configuration during run time
-        // so any following check will have new updated values
-        $GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['nr_sync'] = serialize(
-            $nestedConfiguration
-        );
-
-        $configurationUtility->writeConfiguration($nestedConfiguration, 'nr_sync');
-    }
-
-
-
-    /**
-     * @return ConfigurationUtility
-     */
-    protected function getConfigurationUtility()
-    {
-        /* @var $objectManager ObjectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-        /** @var $configurationUtility ConfigurationUtility */
-        $configurationUtility = $objectManager->get('TYPO3\CMS\Extensionmanager\Utility\ConfigurationUtility');
-
-        return $configurationUtility;
+        // Write new/updated configuration
+        $this->extensionConfiguration->set('nr_sync', '', $configuration);
     }
 }

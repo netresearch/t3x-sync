@@ -1,20 +1,17 @@
 <?php
+
 /**
- * Part of Nr_Sync package.
- * Holds Configuration
+ * This file is part of the package netresearch/nr-sync.
  *
- * PHP version 5
- *
- * @package    Netresearch/TYPO3/Sync
- * @author     Michael Ablass <ma@netresearch.de>
- * @author     Alexander Opitz <alexander.opitz@netresearch.de>
- * @author     Tobias Hein <tobias.hein@netresearch.de>
- * @license    https://www.gnu.org/licenses/agpl AGPL v3
- * @link       http://www.netresearch.de
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Netresearch\Sync\Controller;
 
+use Netresearch\NrSync\Module\NewsModule;
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
@@ -27,21 +24,30 @@ use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
 use Netresearch\Sync\SyncStats;
 use Netresearch\Sync\Table;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use RuntimeException;
+use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
-use TYPO3\CMS\Core\Page\PageRenderer;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
-use TYPO3\CMS\Fluid\View\StandaloneView;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
+use function count;
+use function in_array;
+use function is_array;
+use function is_string;
 
 /**
  * Module 'Netresearch Sync' for the 'nr_sync' extension.
@@ -54,8 +60,6 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
  * sie in die DB ein. Der Cache wird ebenfalls gelöscht. Aktuell werden
  * immer auch die Files (fileadmin/ & statisch/) mitsynchronisiert.
  *
- * PHP version 5
- *
  * @todo      doc
  * @todo      Logfile in DB wo Syncs hineingeschrieben werden
  * @package   Netresearch/TYPO3/Sync
@@ -67,33 +71,58 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
  * @license   https://www.gnu.org/licenses/agpl AGPL v3
  * @link      http://www.netresearch.de
  */
-class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
+class SyncModuleController extends ActionController
 {
-    const FUNC_SINGLE_PAGE = 46;
+    public const FUNC_SINGLE_PAGE = 46;
 
     /**
      * key to use for storing insert statements
      * in $arGlobalSqlLinesStoarage
      */
-    const STATEMENT_TYPE_INSERT = 'insert';
+    public const STATEMENT_TYPE_INSERT = 'insert';
 
     /**
      * key to use for storing delete statements
      * in $arGlobalSqlLinesStoarage
      */
-    const STATEMENT_TYPE_DELETE = 'delete';
+    public const STATEMENT_TYPE_DELETE = 'delete';
 
-    var $nDumpTableRecursion = 0;
+
+    /**
+     * @var ConnectionPool
+     */
+    private $connectionPool;
+
+    /**
+     * @var FlashMessageService
+     */
+    private $flashMessageService;
+
+    /**
+     * @var SyncListManager
+     */
+    private $syncListManager;
+
+    /**
+     * @var Urls;
+     */
+    private $urlGenerator;
+
+
+    /**
+     * @var int
+     */
+    public $nDumpTableRecursion = 0;
 
     /**
      * @var array backend page information
      */
-    var $pageinfo;
+    public $pageinfo;
 
     /**
      * @var string Where to put DB Dumps (trailing Slash)
      */
-    var $strDBFolder = '';
+    public $dbFolder = '';
 
     /**
      * @var string Where to put URL file lists
@@ -103,42 +132,37 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * @var string clearCache url format
      */
-    public $strClearCacheUrl = '?eID=nr_sync&task=clearCache&data=%s&v8=true';
+    public $strClearCacheUrl = '?nr-sync-clear-cache&task=clearCache&data=%s&new=true';
 
     /**
-     * @var integer Access rights for new folders
+     * @var int Access rights for new folders
      */
     public $nFolderRights = 0777;
 
     /**
      * @var string Dummy file
      */
-    var $strDummyFile = '';
+    public $strDummyFile = '';
 
     /**
      * @var string path to temp folder
      */
-    protected $strTempFolder = null;
-
-    /**
-     * @var int
-     */
-    protected $nRecursion = 1;
+    protected $strTempFolder;
 
     /**
      * @var array pages to sync
      */
-    protected $arPageIds = array();
+    protected $arPageIds = [];
 
     /**
      * @var array
      */
-    var $arObsoleteRows = array();
+    public $arObsoleteRows = [];
 
     /**
      * @var array
      */
-    var $arReferenceTables = array();
+    public $arReferenceTables = [];
 
     /**
      * Multidimensional array to save the lines put to the
@@ -152,21 +176,15 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @var array
      */
-    protected $arGlobalSqlLineStorage = array();
+    protected $arGlobalSqlLineStorage = [];
 
     /**
-     * ModuleTemplate Container
-     *
-     * @var ModuleTemplate
-     */
-    protected $moduleTemplate;
-
-    /**
-     * The name of the module
+     * The name of the module. Build of the configured main module name, extension name and submodule name.
      *
      * @var string
+     * @see Configuration in ext_tables.php
      */
-    protected $moduleName = 'web_txnrsyncM1';
+    private $moduleName = 'web_NrSyncAdministration';
 
     /**
      * @var IconFactory
@@ -174,37 +192,28 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected $iconFactory;
 
     /**
-     * @var StandaloneView
-     */
-    protected $view;
-
-    /**
      * @var Area
      */
-    protected $area = null;
+    protected $area;
 
     /**
      * Hook Objects
      *
      * @var array
      */
-    protected $hookObjects;
+    protected $hookObjects = [];
 
-
-    protected $arFunctions = [
+    /**
+     * Menu functions.
+     *
+     * @var array
+     */
+    protected $functions = [
         0 => BaseModule::class,
-        31 => [
-            'name'         => 'Domain Records',
-            'tables'       => [
-                'sys_domain',
-            ],
-            'dumpFileName' => 'sys_domain.sql',
-        ],
         46 => [
             'name'         => 'Single pages with content',
             'tables'       => [
                 'pages',
-                'pages_language_overlay',
                 'tt_content',
                 'sys_template',
                 'sys_file_reference',
@@ -240,18 +249,14 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             'dumpFileName' => 'scheduler.sql',
             'accessLevel'  => 100,
         ],
-        20 => [
-            'name'         => 'TextDB',
+        47 => [
+            'name'         => 'TYPO3 Redirects',
             'tables'       => [
-                'tx_aidatextdb_component',
-                'tx_aidatextdb_placeholder',
-                'tx_aidatextdb_textmodule',
-                'tx_aidatextdb_type',
-                'tx_aidatextdb_environment',
+                'sys_redirect',
             ],
-            'dumpFileName' => 'text-db.sql',
-            'accessLevel'  => 100,
-        ],
+            'dumpFileName' => 'sys_redirect.sql',
+            'accessLevel'  => 50,
+        ]
     ];
 
     /**
@@ -260,99 +265,181 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     protected $function;
 
     /**
-     * @var SyncListManager
+     * BackendTemplateContainer
+     *
+     * @var BackendTemplateView
      */
-    private $syncListManager;
+    protected $view;
 
     /**
-     * @var Urls;
+     * Backend Template Container
+     *
+     * @var string
      */
-    private $urlGenerator;
+    protected $defaultViewObjectName = BackendTemplateView::class;
 
+
+    /**
+     * The int value of the GET/POST var, 'id'. Used for submodules to the 'Web' module (page id)
+     *
+     * @var int
+     */
+    private $id;
+
+    /**
+     * A WHERE clause for selection records from the pages table based on read-permissions of the current backend user.
+     *
+     * @var string
+     */
+    private $perms_clause;
+
+    /**
+     * Loaded with the global array $MCONF which holds some module configuration from the conf.php file of backend modules.
+     *
+     * @var array
+     */
+    private $MCONF;
+
+    /**
+     * The module menu items array. Each key represents a key for which values can range between the items in the array of that key.
+     *
+     * @var array
+     */
+    private $MOD_MENU = [
+        'function' => []
+    ];
+
+    /**
+     * Current settings for the keys of the MOD_MENU array
+     *
+     * @var array
+     */
+    private $MOD_SETTINGS = [];
 
     /**
      * SyncModuleController constructor.
+     *
+     * @param ConnectionPool $connectionPool
+     * @param FlashMessageService $flashMessageService
+     * @param SyncListManager $syncListManager
+     * @param Urls $urlGenerator
      */
-    public function __construct()
-    {
-        $this->moduleTemplate = $this->getObjectManager()->get(ModuleTemplate::class);
-        $this->urlGenerator   = $this->getObjectManager()->get(Urls::class);
-        $this->getLanguageService()->includeLLFile('EXT:nr_sync/Resources/Private/Language/locallang.xlf');
+    public function __construct(
+        ConnectionPool $connectionPool,
+        FlashMessageService $flashMessageService,
+        SyncListManager $syncListManager,
+        Urls $urlGenerator
+    ) {
+        $this->connectionPool = $connectionPool;
+        $this->flashMessageService = $flashMessageService;
+        $this->syncListManager = $syncListManager;
+        $this->urlGenerator = $urlGenerator;
+
+        if (ExtensionManagementUtility::isLoaded('news')) {
+            $this->functions[48] = \Netresearch\Sync\Module\NewsModule::class;
+        }
+
+        if(ExtensionManagementUtility::isLoaded('nr_textdb')) {
+            $this->functions[20] = [
+                'name'         => 'TextDB',
+                'tables'       => [
+                    'tx_nrtextdb_domain_model_environment',
+                    'tx_nrtextdb_domain_model_component',
+                    'tx_nrtextdb_domain_model_type',
+                    'tx_nrtextdb_domain_model_translation',
+                ],
+                'dumpFileName' => 'text-db.sql',
+                'accessLevel'  => 50,
+            ];
+        }
+
         $this->MCONF = [
             'name' => $this->moduleName,
         ];
-        /*
-        $this->cshKey = '_MOD_' . $this->moduleName;
-        $this->backendTemplatePath = ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Templates/Backend/SchedulerModule/';
-        $this->view = $this->getObjectManager()->get(\TYPO3\CMS\Fluid\View\StandaloneView::class);
-        $this->view->getRequest()->setControllerExtensionName('nr_sync');
-        $this->view->setPartialRootPaths([ExtensionManagementUtility::extPath('nr_sync') . 'Resources/Private/Partials/Backend/SchedulerModule/']);
-        */
-        //$this->moduleUri = BackendUtility::getModuleUrl($this->moduleName);
 
-        $pageRenderer = $this->getObjectManager()->get(PageRenderer::class);
-        $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
-        $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/SplitButtons');
+        $this->id = (int) GeneralUtility::_GP('id');
+
+        $this->perms_clause = $this->getBackendUser()->getPagePermsClause(1);
     }
-
-
 
     /**
-     * Init sync module.
+     * Initializes the controller before invoking an action method.
      *
-     * @return void
+     * Override this method to solve tasks which all actions have in
+     * common.
      */
-    public function init()
+    protected function initializeAction(): void
     {
-        parent::init();
+        parent::initializeAction();
 
         $this->initFolders();
+        $this->menuConfig();
     }
 
+    /**
+     * Initializes the view before invoking an action method.
+     *
+     * Override this method to solve assign variables common for all actions
+     * or prepare the view in another way before the action is called.
+     *
+     * @param ViewInterface $view The view to be initialized
+     *
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
+     */
+    protected function initializeView(ViewInterface $view): void
+    {
+        parent::initializeView($view);
 
+        if ($view instanceof BackendTemplateView) {
+            $pageRenderer = $view->getModuleTemplate()->getPageRenderer();
+            $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/Modal');
+            $pageRenderer->loadRequireJsModule('TYPO3/CMS/Backend/SplitButtons');
+        }
+
+        $this->createMenu();
+        $this->createButtons();
+    }
 
     /**
      * Initialize the folders needed while synchronize.
      *
      * @return void
+     *
+     * @throws RuntimeException
      */
-    private function initFolders()
+    private function initFolders(): void
     {
         $strRootPath = $_SERVER['DOCUMENT_ROOT'];
+
         if (empty($strRootPath)) {
-            $strRootPath = substr(PATH_site, 0, -1);
+            $strRootPath = substr(Environment::getPublicPath(), 0, -1);
         }
+
         $this->strDummyFile = $strRootPath . '/db.txt';
-        $this->strDBFolder = $strRootPath . '/db/';
-        $this->strUrlFolder = $this->strDBFolder . 'url/';
-        $this->strTempFolder = $this->strDBFolder . 'tmp/';
+        $this->dbFolder = $strRootPath . '/db/';
+        $this->strUrlFolder = $this->dbFolder . 'url/';
+        $this->strTempFolder = $this->dbFolder . 'tmp/';
 
-        if (!file_exists($this->strTempFolder)) {
-            mkdir($this->strTempFolder, $this->nFolderRights, true);
+        // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+        if (!file_exists($this->strTempFolder)
+            && !is_dir($this->strTempFolder)
+            && !mkdir($this->strTempFolder, $this->nFolderRights, true)
+            && !is_dir($this->strTempFolder)
+        ) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $this->strTempFolder));
         }
-        if (!file_exists($this->strUrlFolder)) {
-            mkdir($this->strUrlFolder, $this->nFolderRights, true);
+
+        // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+
+        if (!file_exists($this->strUrlFolder)
+            && !is_dir($this->strUrlFolder)
+            && !mkdir($this->strUrlFolder, $this->nFolderRights, true)
+            && !is_dir($this->strUrlFolder)
+        ) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $this->strUrlFolder));
         }
-    }
-
-    /**
-     * Returns a TYPO3 QueryBuilder instance for a given table, without any restrcition.
-     *
-     * @param $tableName
-     *
-     * @return \TYPO3\CMS\Core\Database\Query\QueryBuilder
-     */
-    private function getQueryBuilderForTable($tableName)
-    {
-        /**
-         * @var ConnectionPool $connectionPool
-         */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        $queryBuilder = $connectionPool->getQueryBuilderForTable($tableName);
-        $queryBuilder->getRestrictions()->removeAll();
-
-        return $queryBuilder;
     }
 
     /**
@@ -360,154 +447,128 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    function menuConfig()
+    private function menuConfig(): void
     {
-        $this->MOD_MENU = array('function' => array());
+        $this->MOD_MENU = [
+            'function' => [],
+        ];
 
-        $nAccessLevel = 50;
-        if ($this->getBackendUser()->isAdmin()) {
-            $nAccessLevel = 100;
-        }
-        // menu hook
+        $accessLevel = $this->getBackendUser()->isAdmin() ? 100 : 50;
+
+        // Menu hook
         if (is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'])) {
-            foreach($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'] as $id => $hookObject) {
-                if (!is_null($hookObject)) {
-                    $this->arFunctions[$id] = $hookObject;
+            foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'] as $id => $hookObject) {
+                if ($hookObject !== null) {
+                    $this->functions[$id] = $hookObject;
                     $this->hookObjects[$id] = $hookObject;
                 }
             }
         }
-        foreach ($this->arFunctions as $functionKey => $function) {
+
+        foreach ($this->functions as $functionKey => $function) {
             $function = $this->getFunctionObject($functionKey);
-            if ($nAccessLevel >= $function->getAccessLevel()) {
+
+            if ($accessLevel >= $function->getAccessLevel()) {
                 $this->MOD_MENU['function'][$functionKey] = $function->getName();
             }
         }
 
         natcasesort($this->MOD_MENU['function']);
 
-        $this->MOD_MENU['function']
-            = array('0' => 'Please select') + $this->MOD_MENU['function'];
+        $this->MOD_MENU['function'] = [ '0' => 'Please select' ] + $this->MOD_MENU['function'];
 
-        parent::menuConfig();
+        $this->MOD_SETTINGS = BackendUtility::getModuleData(
+            $this->MOD_MENU,
+            GeneralUtility::_GP('SET'),
+            $this->MCONF['name']
+        );
     }
 
+    /**
+     * Returns a TYPO3 QueryBuilder instance for a given table, without any restriction.
+     *
+     * @param string $tableName The table name
+     *
+     * @return QueryBuilder
+     */
+    private function getQueryBuilderForTable(string $tableName): QueryBuilder
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($tableName);
+        $queryBuilder->getRestrictions()->removeAll();
 
+        return $queryBuilder;
+    }
 
     /**
      * @param int $functionKey
-     * @return BaseModule
+     *
+     * @return mixed
      */
-    protected function getFunctionObject($functionKey)
+    private function getFunctionObject(int $functionKey)
     {
-        /* @var $function BaseModule */
-        if (is_string($this->arFunctions[(int) $functionKey])) {
-            $function = $this->getObjectManager()->get($this->arFunctions[(int) $functionKey]);
+        if (is_string($this->functions[$functionKey])) {
+            $function = GeneralUtility::makeInstance($this->functions[$functionKey]);
         } else {
-            $function = $this->getObjectManager()->get(
+            $function = GeneralUtility::makeInstance(
                 BaseModule::class,
-                $this->arFunctions[(int) $functionKey]
+                $this->functions[$functionKey]
             );
         }
 
         return $function;
     }
 
-
-
     /**
-     * Injects the request object for the current request or subrequest
-     * Simply calls main() and init() and outputs the content
+     * The controllers main action.
      *
-     * @param ServerRequestInterface $request the current request
-     * @param ResponseInterface      $response
-     * @return ResponseInterface the response with the content
+     * @throws Exception
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
-    public function mainAction(ServerRequestInterface $request, ResponseInterface $response)
+    public function mainAction(): void
     {
         $GLOBALS['SOBE'] = $this;
-        $this->init();
+
         $this->main();
 
-        $this->view = $this->getFluidTemplateObject('nrsync', 'nrsync');
-        $this->view->assign('moduleName', BackendUtility::getModuleUrl($this->moduleName));
+        $this->view->assign('moduleName', $this->getModuleUrl());
         $this->view->assign('id', $this->id);
-        //$this->view->assign('functionMenuModuleContent', $this->getExtObjContent());
-        $this->view->assign('functionMenuModuleContent', $this->content);
-        // Setting up the buttons and markers for docheader
-
-        $this->getButtons();
-        $this->generateMenu();
-
-        //$this->content .= $this->view->render();
-
-        $this->moduleTemplate->setContent(
-            $this->content
-            . '</form>'
-        );
-        $response->getBody()->write($this->moduleTemplate->renderContent());
-        return $response;
     }
-
-
-
-    /**
-     * returns a new standalone view, shorthand function
-     *
-     * @param string $extensionName
-     * @param string $controllerExtensionName
-     * @param string $templateName
-     * @return StandaloneView
-     */
-    protected function getFluidTemplateObject($extensionName, $controllerExtensionName, $templateName = 'Main')
-    {
-        /** @var StandaloneView $view */
-        $view = $this->getObjectManager()->get(StandaloneView::class);
-        $view->setLayoutRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Layouts')]);
-        $view->setPartialRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Partials')]);
-        $view->setTemplateRootPaths([GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates')]);
-
-        $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName('EXT:' . $extensionName . '/Resources/Private/Templates/' . $templateName . '.html'));
-
-        $view->getRequest()->setControllerExtensionName($controllerExtensionName);
-
-        return $view;
-    }
-
-
 
     /**
      * Tests if given tables holds data on given page id.
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param integer $nId      The page id to look for.
-     * @param array   $arTables Tables this task manages.
+     * @param int        $nId    The page id to look for
+     * @param null|array $tables The tables this task manages
      *
-     * @return boolean True if data exists otherwise false.
+     * @return bool True if data exists otherwise false.
      */
-    protected function pageContainsData($nId, array $arTables = null)
+    private function pageContainsData(int $nId, array $tables = null): bool
     {
-        global $TCA;
-
-        if (null === $arTables) {
+        if ($tables === null) {
             return false;
-        } elseif (false !== array_search('pages', $arTables)) {
+        }
+
+        if (in_array('pages', $tables, true)) {
             return true;
-        } else {
-            foreach ($arTables as $strTableName) {
-                if (isset($TCA[$strTableName])) {
-                    $queryBuilder = $this->getQueryBuilderForTable($strTableName);
+        }
 
-                    $nCount = $queryBuilder->count('pid')
-                        ->from($strTableName)
-                        ->where($queryBuilder->expr()->eq('pid', intval($nId)))
-                        ->execute()
-                        ->fetchColumn(0);
+        foreach ($tables as $tableName) {
+            if (isset($GLOBALS['TCA'][$tableName])) {
+                $queryBuilder = $this->getQueryBuilderForTable($tableName);
 
-                    if ($nCount > 0) {
-                        return true;
-                    }
+                $count = $queryBuilder
+                    ->count('pid')
+                    ->from($tableName)
+                    ->where($queryBuilder->expr()->eq('pid', $nId))
+                    ->execute()
+                    ->fetchOne();
+
+                if ($count > 0) {
+                    return true;
                 }
             }
         }
@@ -515,289 +576,236 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         return false;
     }
 
-
-
     /**
      * Shows the page selection, depending on selected id and tables to look at.
      *
      * @param string $strName  Name of this page selection (Depends on task).
-     * @param array  $arTables Tables this task manages.
+     * @param array  $tables Tables this task manages.
      *
-     * @return string HTML Output for the selection box.
+     * @return void
      */
-    protected function showPageSelection(
-        $strName, array $arTables
-    ) {
-        $strPreOutput = '';
-
-        if ($this->id == 0) {
-            $this->addError(
-                'Please select a page from the page tree.'
-            );
-            return $strPreOutput;
+    private function showPageSelection(string $strName, array $tables): void
+    {
+        if ($this->id === 0) {
+            $this->addError('Please select a page from the page tree.');
+            return;
         }
 
         $record = BackendUtility::getRecord('pages', $this->id);
 
-        if (null === $record) {
-            $this->addError(
-                'Could not load record for selected page: ' . $this->id . '.'
-            );
-
-            return $strPreOutput;
+        if ($record === null) {
+            $this->addError('Could not load record for selected page: ' . $this->id . '.');
+            return;
         }
 
-        if (false === $this->getArea()->isDocTypeAllowed($record)) {
-            $this->addError(
-                'Page type not allowed to sync.'
-            );
-
-            return $strPreOutput;
+        if ($this->getArea()->isDocTypeAllowed($record) === false) {
+            $this->addError('Page type not allowed to sync.');
+            return;
         }
 
         $bShowButton = false;
+        $recursion = (int) $this->getBackendUser()->getSessionData('nr_sync_synclist_levelmax' . $strName);
 
-        $this->nRecursion = (int) $this->getBackendUser()->getSessionData(
-            'nr_sync_synclist_levelmax' . $strName
-        );
         if (isset($_POST['data']['rekursion'])) {
-            $this->nRecursion = (int) $_POST['data']['levelmax'];
-            $this->getBackendUser()->setAndSaveSessionData(
-                'nr_sync_synclist_levelmax' . $strName, $this->nRecursion
-            );
-        }
-        if ($this->nRecursion < 1) {
-            $this->nRecursion = 1;
+            $recursion = (int) $_POST['data']['levelmax'];
+
+            $this->getBackendUser()->setAndSaveSessionData('nr_sync_synclist_levelmax' . $strName, $recursion);
         }
 
-        $this->getSubpagesAndCount(
-            $this->id, $arCount, 0, $this->nRecursion,
-            $this->getArea()->getNotDocType(), $this->getArea()->getDocType(),
-            $arTables
-        );
+        if ($recursion < 1) {
+            $recursion = 1;
+        }
+
+        $arCount = [];
+
+        $this->getSyncList()
+            ->getSubpagesAndCount(
+                $this->id,
+                $arCount,
+                0,
+                $recursion,
+                $this->getArea()->getNotDocType(),
+                $this->getArea()->getDocType(),
+                $tables
+            );
 
         $strTitle = $this->getArea()->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
-        if ($record['doktype'] == 4) {
+
+        if (((int) $record['doktype']) === 4) {
             $strTitle .= ' - LINK';
         }
 
-        $strPreOutput .= '<div class="form-section">';
-        $strPreOutput .= '<input type="hidden" name="data[pageID]" value="' . $this->id . '">';
-        $strPreOutput .= '<input type="hidden" name="data[count]" value="' . $arCount['count'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[deleted]" value="' . $arCount['deleted'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[noaccess]" value="' . $arCount['noaccess'] . '">';
-        $strPreOutput .= '<input type="hidden" name="data[areaID]" value="' . $this->getArea()->getId() . '">';
+        $this->view->assign('pageValid', true);
+        $this->view->assign('title', $strTitle);
+        $this->view->assign('arCount', $arCount);
+        $this->view->assign('record', $record);
 
-
-        $strPreOutput .= '<h3>' . $strTitle . '</h3>';
-        $strPreOutput .= '<div class="form-group">';
-        if ($this->pageContainsData($this->id, $arTables)) {
-            $strPreOutput .= '<div class="checkbox">';
-            $strPreOutput .= '<label for="data_type_alone">'
-                . '<input type="radio" name="data[type]" value="alone" id="data_type_alone">'
-                . ' Only selected page</label>';
-            $strPreOutput .= '</div>';
+        if ($this->pageContainsData($this->id, $tables)) {
+            $this->view->assign('pageContainsData', true);
             $bShowButton = true;
         }
 
         if ($arCount['count'] > 0) {
-            $strPreOutput .= '<div class="checkbox">';
-            $strPreOutput .= '<label for="data_type_tree">'
-                . '<input type="radio" name="data[type]" value="tree" id="data_type_tree">'
-                . ' Selected page and all ' . $arCount['count']
-                . ' sub pages</label> <small>(thereof are '
-                . $arCount['deleted'] . ' deleted, '
-                . $arCount['noaccess'] . ' are inaccessible and '
-                . $arCount['falses'] . ' have wrong document type)</small>';
-            $strPreOutput .= '</div>';
             $bShowButton = true;
-            if ($arCount['other_area'] > 0) {
-                $strPreOutput .= '<br><b>There are restricted sub areas which are excluded from sync.</b>';
-            }
         }
-        $strPreOutput .= '</div>';
 
-        if (!$bShowButton) {
+        $this->view->assign('bShowButton', $bShowButton);
+
+        if ($bShowButton) {
+            $this->view->assign('recursion', $recursion);
+        } else {
             $this->addError(
                 'Bitte wählen Sie eine Seite mit entsprechendem Inhalt aus.'
             );
-        } else {
-            $strPreOutput .= '<div class="form-group">';
-            $strPreOutput .= '<div class="row">';
-
-            $strPreOutput .= '<div class="form-group col-xs-6">';
-            $strPreOutput .= '<button class="btn btn-default" type="submit" name="data[add]" value="Add to sync list">';
-            $strPreOutput .= $this->getIconFactory()->getIcon('actions-add', Icon::SIZE_SMALL)->render();
-            $strPreOutput .= 'Add to sync list';
-            $strPreOutput .= '</button>
-                </div>';
-
-            $strPreOutput .= '<div class="form-group col-xs-1">
-            <input class="form-control" type="number" name="data[levelmax]" value="'
-                . $this->nRecursion . '">'
-                . ' </div>
-            <div class="form-group col-xs-4 form">
-            <input class="btn btn-default" type="submit" name="data[rekursion]" value="set recursion depth">
-            </div>
-            </div>';
-
-            $strPreOutput .= '</div>';
         }
-
-
-        $strPreOutput .= '</div>';
-
-        return $strPreOutput;
     }
-
-
 
     /**
      * Manages adding and deleting of pages/trees to the sync list.
-     *
-     * @return SyncList
      */
-    protected function manageSyncList()
+    private function manageSyncList(): void
     {
-        // ID hinzufügen
+        // Add ID
         if (isset($_POST['data']['add'])) {
             if (isset($_POST['data']['type'])) {
                 $this->getSyncList()->addToSyncList($_POST['data']);
             } else {
                 $this->addError(
-                    'Bitte wählen Sie aus, wie die Seite vorgemerkt werden soll.'
+                    'Please select how the page should be bookmarked.'
                 );
             }
         }
 
-        // ID entfernen
+        // Remove ID
         if (isset($_POST['data']['delete'])) {
             $this->getSyncList()->deleteFromSyncList($_POST['data']);
         }
 
         $this->getSyncList()->saveSyncList();
-
-        return $this->getSyncList();
     }
-
-
 
     /**
      * @param mixed $syncListId
      *
      * @return SyncList
      */
-    protected function getSyncList($syncListId = null)
+    private function getSyncList($syncListId = null): SyncList
     {
-        if (null === $syncListId) {
+        if ($syncListId === null) {
             $syncListId = $this->MOD_SETTINGS['function'];
         }
-        return $this->getSyncListManager()->getSyncList($syncListId);
+
+        return $this->syncListManager->getSyncList($syncListId);
     }
-
-
 
     /**
      * @return Area
      */
-    protected function getArea()
+    private function getArea(): Area
     {
-        if (null === $this->area) {
-            $this->area = $this->getObjectManager()->get(
-                Area::class, $this->id
-            );
+        if ($this->area === null) {
+            $this->area = GeneralUtility::makeInstance(Area::class, $this->id);
         }
 
         return $this->area;
     }
 
-
-
     /**
-     * Main function of the module. Write the content to $this->content
+     * Main function of the module. Assigns relevant data to the output view.
      *
      * If you chose 'web' as main module, you will need to consider the $this->id
      * parameter which will contain the uid-number of the page clicked in the page
      * tree
      *
      * @return void
+     *
+     * @throws Exception
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws \Exception
      */
-    public function main()
+    private function main(): void
     {
         // Access check!
         // The page will show only if there is a valid page and if this page may
         // be viewed by the user
-        $this->pageinfo = BackendUtility::readPageAccess(
-            $this->id, $this->perms_clause
-        );
+        $this->pageinfo = BackendUtility::readPageAccess($this->id, $this->perms_clause);
+
         if ($this->pageinfo) {
-            $this->moduleTemplate->getDocHeaderComponent()->setMetaInformation($this->pageinfo);
+            $this->view
+                ->getModuleTemplate()
+                ->getDocHeaderComponent()
+                ->setMetaInformation($this->pageinfo);
         }
 
-        /* @var $syncLock SyncLock */
-        $syncLock = $this->getObjectManager()->get(SyncLock::class);
+        /** @var SyncLock $syncLock */
+        $syncLock = $this->objectManager->get(SyncLock::class);
 
         if ($this->getBackendUser()->isAdmin()) {
             $syncLock->handleLockRequest();
         }
 
+        $this->view->assign('syncLock', $syncLock);
+
         if ($syncLock->isLocked()) {
-            $this->content .= '<div class="alert alert-warning">';
-            $this->content .= $syncLock->getLockMessage();
-            $this->content .= '</div>';
             return;
         }
 
         if (isset($_REQUEST['lock'])) {
             foreach ($_REQUEST['lock'] as $systemName => $lockState) {
-                $systems = $this->getArea()->getSystems();
-                $system = $systems[$systemName];
-                $systemDirectory = $this->strDBFolder . $system['directory'];
+                $systems         = $this->getArea()->getSystems();
+                $system          = $systems[$systemName];
+                $systemDirectory = $this->dbFolder . $system['directory'];
                 $lockFilePath    = $systemDirectory . '/.lock';
+
                 if ($lockState) {
-                    if (!is_dir($systemDirectory)) {
-                        mkdir($systemDirectory, 0777, true);
+                    // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+                    if (!is_dir($systemDirectory)
+                        && !mkdir($systemDirectory, 0777, true)
+                        && !is_dir($systemDirectory)
+                    ) {
+                        throw new RuntimeException(sprintf('Directory "%s" was not created', $systemDirectory));
                     }
-                    $handle = fopen($lockFilePath, 'w');
+
+                    $handle = fopen($lockFilePath, 'wb');
+
                     if ($handle) {
                         fclose($handle);
                     }
+
                     $this->addSuccess('Target ' . $systemName . ' disabled for sync.');
-                } else {
-                    if (file_exists($lockFilePath)) {
-                        unlink($lockFilePath);
-                        $this->addSuccess('Target ' . $systemName . ' enabled for sync.');
-                    }
+                } elseif (file_exists($lockFilePath)) {
+                    unlink($lockFilePath);
+
+                    $this->addSuccess('Target ' . $systemName . ' enabled for sync.');
                 }
             }
         }
 
         $bUseSyncList = false;
 
-        if (! isset($this->arFunctions[(int) $this->MOD_SETTINGS['function']])) {
+        if (!isset($this->functions[$this->MOD_SETTINGS['function']])) {
             $this->MOD_SETTINGS['function'] = 0;
         }
 
-        $this->function = $this->getFunctionObject($this->MOD_SETTINGS['function']);
-        $strDumpFile    = $this->function->getDumpFileName();
+        $this->function = $this->getFunctionObject((int) $this->MOD_SETTINGS['function']);
+        $dumpFile       = $this->function->getDumpFileName();
 
-        $this->content .= '<h1>Create new sync</h1>';
-        $this->content .= '<form action="" method="POST">';
+        $this->view->assign('selectedMenuItem', (int) $this->MOD_SETTINGS['function']);
+        $this->view->assign('function', $this->function);
+        $this->view->assign('id', $this->id);
+        $this->view->assign('area', $this->getArea());
+        $this->view->assign('dbFolder', $this->dbFolder);
 
-        switch ((int)$this->MOD_SETTINGS['function']) {
-            /**
-             * Sync einzelner Pages/Pagetrees (TYPO3 6.2.x)
-             */
-            case self::FUNC_SINGLE_PAGE: {
-                $this->content .= $this->showPageSelection(
-                    $this->MOD_SETTINGS['function'],
-                    $this->function->getTableNames()
-                );
-                $this->manageSyncList();
+        // Sync single pages/page trees (TYPO3 6.2.x)
+        if (((int) $this->MOD_SETTINGS['function']) === self::FUNC_SINGLE_PAGE) {
+            $this->showPageSelection(
+                $this->MOD_SETTINGS['function'],
+                $this->function->getTableNames()
+            );
 
-                $bUseSyncList = true;
-                break;
-            }
+            $this->manageSyncList();
+            $bUseSyncList = true;
         }
 
         $this->function->run($this->getArea());
@@ -806,42 +814,38 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             $this->addError($this->function->getError());
         }
 
-        $this->content .= $this->function->getContent();
         // sync process
-        if (isset($_POST['data']['submit']) && $strDumpFile != '') {
-            $strDumpFile = $this->addInformationToSyncfileName($strDumpFile);
-            //set_time_limit(480);
+        if (isset($_POST['data']['submit']) && ($dumpFile !== '')) {
+            $dumpFile = $this->addInformationToSyncfileName($dumpFile);
+
             if ($bUseSyncList) {
                 $syncList = $this->getSyncList();
-                if (! $syncList->isEmpty()) {
 
-                    $strDumpFileArea = date('YmdHis_') . $strDumpFile;
+                if (!$syncList->isEmpty()) {
+                    $strDumpFileArea = date('YmdHis_') . $dumpFile;
 
-                    foreach ($syncList->getAsArray() as $areaID => $arSynclistArea) {
+                    foreach ($syncList->getAsArray() as $areaID => $syncListArea) {
+                        /** @var Area $area */
+                        $area = GeneralUtility::makeInstance(Area::class, $areaID);
 
-                        /* @var $area Area */
-                        $area = $this->getObjectManager()->get(Area::class, $areaID);
-
-                        $arPageIDs = $syncList->getAllPageIDs($areaID);
+                        $pageIDs = $syncList->getAllPageIDs($areaID);
                         $ret = $this->createShortDump(
-                            $arPageIDs, $this->function->getTableNames(), $strDumpFileArea,
+                            $pageIDs, $this->function->getTableNames(), $strDumpFileArea,
                             $area->getDirectories()
                         );
 
-                        if ($ret
-                            && $this->createClearCacheFile('pages', $arPageIDs)
-                        ) {
-                            if ($area->notifyMaster() == false) {
-                                $this->addError('Please re-try in a couple of minutes.');
-                                foreach ($area->getDirectories() as $strDirectory) {
-                                    @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea);
-                                    @unlink($this->strDBFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
-                                }
-                            } else {
+                        if ($ret && $this->createClearCacheFile('pages', $pageIDs)) {
+                            if ($area->notifyMaster() !== false) {
                                 $this->addSuccess(
-                                    'Sync started - should be processed within in next 15 minutes.'
+                                    'Sync started - should be processed within next 15 minutes.'
                                 );
                                 $syncList->emptyArea($areaID);
+                            } else {
+                                $this->addError('Please re-try in a couple of minutes.');
+                                foreach ($area->getDirectories() as $strDirectory) {
+                                    @unlink($this->dbFolder . $strDirectory . '/' . $strDumpFileArea);
+                                    @unlink($this->dbFolder . $strDirectory . '/' . $strDumpFileArea . '.gz');
+                                }
                             }
 
                             $syncList->saveSyncList();
@@ -849,346 +853,68 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     }
                 }
             } else {
-                foreach ($this->hookObjects as $hookClass) {
-                    $hookObject = $this->getObjectManager()->get($hookClass);
-                    if (method_exists($hookObject, 'preProcessSync')) {
-                        $hookObject->preProcessSync($arContent['uid'], $this->function->getTableNames(), $this->getPreSyncParams(), $this->getSyncList(), $this);
-                    }
-                }
+                // RSO: Introduced by TYPO-7071, but seems incomplete, $arContent not defined here!
+                //
+                //foreach ($this->hookObjects as $hookClass) {
+                //    $hookObject = GeneralUtility::makeInstance($hookClass);
+                //    if (method_exists($hookObject, 'preProcessSync')) {
+                //        $hookObject->preProcessSync($arContent['uid'], $this->function->getTableNames(), $this->getPreSyncParams(), $this->getSyncList(), $this);
+                //    }
+                //}
+
                 $bSyncResult = $this->createDumpToAreas(
-                    $this->function->getTableNames(), $strDumpFile
+                    $this->function->getTableNames(), $dumpFile
                 );
 
                 if ($bSyncResult) {
-                    $this->addSuccess(
-                        'Sync initiated.'
-                    );
+                    $this->addSuccess('Sync initiated.');
                 }
             }
         }
-
-        $this->content .= '<div class="form-section">';
 
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
-            /* @var $syncStats SyncStats */
-            $syncStats = $this->getObjectManager()->get(SyncStats::class, $this->function->getTableNames());
-            $syncStats->createTableSyncStats();
-            $this->content .= $syncStats->getContent();
+            /** @var SyncStats $syncStats */
+            $syncStats = $this->objectManager->get(
+                SyncStats::class, null, $this->function->getTableNames()
+            );
+
+            $this->view->assign('tableSyncStats', $syncStats);
+            $this->view->assign('showTableSyncStats', true);
         }
 
-        // Syncliste anzeigen
-        if ($bUseSyncList) {
-            if (! $this->getSyncList()->isEmpty()) {
-                $this->content .= $this->getSyncList()->showSyncList();
-            }
-        }
+        $this->view->assign('bUseSyncList', $bUseSyncList);
+        $this->view->assign('syncList', $this->getSyncList());
 
-        if (($bUseSyncList && ! $this->getSyncList()->isEmpty())
-            || (false === $bUseSyncList && count($this->function->getTableNames()))
+        if (($bUseSyncList && !$this->getSyncList()->isEmpty())
+            || ($bUseSyncList === false && count($this->function->getTableNames()))
         ) {
-            $this->content .= '<div class="form-group">';
-            $this->content .= '<div class="checkbox">';
-            $this->content .= '<label for="force_full_sync">'
-                . '<input type="checkbox" name="data[force_full_sync]" value="1" id="force_full_sync">'
-                . 'Force full sync. A full sync of this element will be initiated even if an incremental sync is possible. This should be avoided.'
-                . '</label>';
-            $this->content .= '</div>';
-            $this->content .= '<div class="checkbox">'
-                . '<label for="delete_obsolete_rows">'
-                . '<input type="checkbox" checked="checked" name="data[delete_obsolete_rows]" value="1" id="delete_obsolete_rows">'
-                . 'Delete obsolete Rows on LIVE system. All Rows which are hidden or deleted or where endtime is a date in past will be deleted on live system'
-                . '</label>';
-            $this->content .= '</div>';
-            $this->content .= '</div>';
-        }
-        $this->content .= '</div>';
-
-        if (!empty($this->MOD_SETTINGS['function'])) {
-            $strDisabled  = '';
-            if ($bUseSyncList && $this->getSyncList()->isEmpty()) {
-                $strDisabled = ' disabled="disabled"';
-            }
-
-            $this->content .= '<div class="form-section">';
-            $this->content .= '<div class="form-group">';
-            $this->content .= '<input class="btn btn-primary" type="Submit" name="data[submit]" value="Create sync" ' . $strDisabled . '>';
-            $this->content .= '</div>';
-            $this->content .= '</div>';
+            $this->view->assign('showCheckBoxes', true);
         }
 
-        $this->showSyncState();
+        $this->view->assign('moduleRoute', $this->moduleName);
     }
-
-
-
-    /**
-     * Shows how many files are waiting for sync and how old the oldest file is.
-     *
-     * @return void
-     */
-    protected function showSyncState()
-    {
-        $this->content .= '<h1>Waiting syncs</h1>';
-
-        foreach ($this->getArea()->getSystems() as $systemKey => $system) {
-            if (! empty($system['hide'])) {
-                continue;
-            }
-
-            $this->content .= '<h2>';
-
-            if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
-                $href =  BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'lock' => [$systemKey => '0'],
-                        'id'   => $this->id,
-                    ]
-                );
-                $icon = $this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL);
-                $this->content .= '<a href="' . $href . '" class="btn btn-warning" title="Sync disabled, click to enable">' . $icon . '</a>';
-            } else {
-                $href =  BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'lock' => [$systemKey => '1'],
-                        'id'   => $this->id,
-                    ]
-                );
-                $icon = $this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL);
-                $this->content .= '<a href="' . $href . '" class="btn btn-success" title="Sync enabled, click to disable">' . $icon . '</a>';
-            }
-
-            $this->content .= ' Sync target: "' . htmlspecialchars($system['name']) . '"</h2>';
-
-
-            $arFiles = $this->removeLinksAndFoldersFromFileList(
-                glob($this->strDBFolder . $system['directory'] . '/*')
-            );
-
-            $nDumpFiles = count($arFiles);
-            if ($nDumpFiles < 1) {
-                continue;
-            }
-
-            $strFiles = '';
-            $nSyncSize = 0;
-
-            $strFiles .= '<div class="table-fit">';
-            $strFiles .= '<table class="table table-striped table-hover" id="ts-overview">';
-            $strFiles .= '<thead>';
-            $strFiles .= '<tr><th>File</th><th>Size</th></tr>';
-            $strFiles .= '</thead>';
-            $strFiles .= '<tbody>';
-
-            foreach ($arFiles as $strFile) {
-                $nSize = filesize($strFile);
-                $nSyncSize += $nSize;
-
-                $strFiles .= '<tr class="bgColor4">';
-                $strFiles .= '<td>';
-                $strFiles .= htmlspecialchars(basename($strFile));
-                $strFiles .= '</td>';
-
-                $strFiles .= '<td>';
-                $strFiles .= number_format($nSize / 1024 / 1024, 2, '.', ',') . ' MiB';
-                $strFiles .= '</td>';
-
-                $strFiles .= '</tr>';
-            }
-
-            $strFiles .= '</tbody>';
-            $strFiles .= '</table>';
-            $strFiles .= '</div>';
-
-            $nTime = filemtime(reset($arFiles));
-            if ($nTime < time() - 60 * 15) {
-                // if oldest file time is older than 15 minutes display this in red
-                $type = FlashMessage::ERROR;
-            } else {
-                $type = FlashMessage::INFO;
-            }
-
-            /* @var $message2 FlashMessage */
-            $message = $this->getObjectManager()->get(
-                FlashMessage::class,
-                $nDumpFiles . ' file'
-                . ($nDumpFiles == 1 ? '' : 's') . ' waiting for synchronisation'
-                . ' (' . number_format($nSyncSize / 1024 / 1024, 2, '.', ',') . ' MiB).'
-                . ' Oldest file from ' . date('Y-m-d H:i', $nTime)
-                . ' and therefor ' . ceil((time() - $nTime) / 60)
-                . ' minutes old.',
-                '',
-                $type
-            );
-
-            /* @var $renderer BootstrapRenderer */
-            $renderer = $this->getObjectManager()->get(BootstrapRenderer::class);
-            $this->content .= $renderer->render([$message]);
-
-            $this->content .= $strFiles;
-        }
-    }
-
-
-
-    /**
-     * Remove links and folders from fileList for displaying SyncStat
-     *
-     * @param array $arFiles
-     *
-     * @return array
-     */
-    protected function removeLinksAndFoldersFromFileList(array $arFiles)
-    {
-        foreach ($arFiles as $index => $strPath) {
-            if (is_link($strPath) || is_dir($strPath)) {
-                unset($arFiles[$index]);
-            }
-        }
-
-        return $arFiles;
-    }
-
-
-
-    /**
-     * Gibt alle ID's aus einem Pagetree zurück.
-     *
-     * @param array $arTree The pagetree to get IDs from.
-     *
-     * @return array
-     */
-    protected function getPageIDsFromTree(array $arTree)
-    {
-        $arPageIDs = array();
-        foreach ($arTree as $value) {
-            // Schauen ob es eine Seite auf dem Ast gibt (kann wegen
-            // editierrechten fehlen)
-            if (isset($value['page'])) {
-                array_push($arPageIDs, $value['page']['uid']);
-            }
-
-            // Schauen ob es unter liegende Seiten gibt
-            if (is_array($value['sub'])) {
-                $arPageIDs = array_merge(
-                    $arPageIDs, $this->getPageIDsFromTree($value['sub'])
-                );
-            }
-        }
-        return $arPageIDs;
-    }
-
-
-
-    /**
-     * Gibt die Seite, deren Unterseiten und ihre Zählung zu einer PageID zurück,
-     * wenn sie vom User editierbar ist.
-     *
-     * @param integer $pid               The page id to count on.
-     * @param array   &$arCount          Information about the count data.
-     * @param integer $nLevel            Depth on which we are.
-     * @param integer $nLevelMax         Maximum depth to search for.
-     * @param array   $arDocTypesExclude TYPO3 doc types to exclude.
-     * @param array   $arDocTypesOnly    TYPO3 doc types to count only.
-     * @param array   $arTables          Tables this task manages.
-     *
-     * @return array
-     */
-    protected function getSubpagesAndCount(
-        $pid, &$arCount, $nLevel = 0, $nLevelMax = 1, array $arDocTypesExclude = null,
-        array $arDocTypesOnly = null, array $arTables = null
-    ) {
-        $arCountDefault = array(
-            'count'      => 0,
-            'deleted'    => 0,
-            'noaccess'   => 0,
-            'falses'     => 0,
-            'other_area' => 0,
-        );
-
-        if (!is_array($arCount)) {
-            $arCount = $arCountDefault;
-        }
-
-        $return = array();
-
-        if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
-            return $return;
-        }
-
-        $queryBuilder = $this->getQueryBuilderForTable('pages');
-
-        $result = $queryBuilder->select('*')
-            ->from('pages')
-            ->where(
-                $queryBuilder->expr()->eq('pid', intval($pid))
-            )
-            ->execute();
-
-        while ($arPage = $result->fetch()) {
-            if (is_array($arDocTypesExclude) && in_array($arPage['doktype'], $arDocTypesExclude)) {
-                continue;
-            }
-
-            if (isset($this->areas[$arPage['uid']])) {
-                $arCount['other_area']++;
-                continue;
-            }
-
-            if (count($arDocTypesOnly)
-                && !in_array($arPage['doktype'], $arDocTypesOnly)
-            ) {
-                $arCount['falses']++;
-                continue;
-            }
-
-            $arSub = $this->getSubpagesAndCount(
-                $arPage['uid'], $arCount, $nLevel + 1, $nLevelMax,
-                $arDocTypesExclude, $arDocTypesOnly, $arTables
-            );
-
-            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                $return[] = array(
-                    'page' => $arPage,
-                    'sub'  => $arSub,
-                );
-            } else {
-                $return[] = array(
-                    'sub' => $arSub,
-                );
-                $arCount['noaccess']++;
-            }
-
-            // Die Zaehlung fuer die eigene Seite
-            if ($this->pageContainsData($arPage['uid'], $arTables)) {
-                $arCount['count']++;
-                if ($arPage['deleted']) {
-                    $arCount['deleted']++;
-                }
-            }
-        }
-
-        return $return;
-    }
-
-
 
     /**
      *
-     * @param string[] $arTables     Table names
-     * @param string   $strDumpFile  Name of the dump file.
+     * @param string[] $tables Table names
+     * @param string $dumpFile Name of the dump file.
      *
-     * @return boolean success
+     * @return bool
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws \Exception
      */
-    protected function createDumpToAreas(
-        array $arTables, $strDumpFile
-    ) {
-        $filename = date('YmdHis_') . $strDumpFile;
+    private function createDumpToAreas(
+        array $tables,
+        string $dumpFile
+    ): bool {
+        $filename = date('YmdHis_') . $dumpFile;
+        $dumpFile = $this->strTempFolder . sprintf($dumpFile, '');
 
-        $strDumpFile = $this->strTempFolder . sprintf($strDumpFile, '');
-
-        if (file_exists($strDumpFile) || file_exists($strDumpFile . '.gz')
+        if (file_exists($dumpFile)
+            || file_exists($dumpFile . '.gz')
         ) {
             $this->addError('Die letzte Synchronisationsvorbereitung ist noch'
                 . ' nicht abgeschlossen. Bitte versuchen Sie es in 5'
@@ -1197,15 +923,15 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         Table::writeDumps(
-            $arTables, $strDumpFile, $arOptions = array(
-                'bForceFullSync'
-                => !empty($_POST['data']['force_full_sync']),
-                'bDeleteObsoleteRows'
-                => !empty($_POST['data']['delete_obsolete_rows'])
-            )
+            $tables,
+            $dumpFile,
+            [
+                'forceFullSync'      => !empty($_POST['data']['force_full_sync']),
+                'deleteObsoleteRows' => !empty($_POST['data']['delete_obsolete_rows']),
+            ]
         );
 
-        if (!file_exists($strDumpFile)) {
+        if (!file_exists($dumpFile)) {
             $this->addInfo(
                 'No data dumped for further processing. '
                 . 'The selected sync process did not produce any data to be '
@@ -1214,104 +940,126 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             return false;
         }
 
-        if (!$this->createGZipFile($strDumpFile)) {
-            $this->addError('Zipfehler: ' . $strDumpFile);
+        if (!$this->createGZipFile($dumpFile)) {
+            $this->addError('Zipfehler: ' . $dumpFile);
             return false;
         }
 
         foreach (Area::getMatchingAreas() as $area) {
             foreach ($area->getDirectories() as $strPath) {
-                if (!file_exists($this->strDBFolder . $strPath . '/')) {
-                    mkdir($this->strDBFolder . $strPath, $this->nFolderRights, true);
+                // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+                if (!file_exists($this->dbFolder . $strPath . '/')
+                    && !is_dir($this->dbFolder . $strPath)
+                    && !mkdir($this->dbFolder . $strPath, $this->nFolderRights, true)
+                    && !is_dir($this->dbFolder . $strPath)
+                ) {
+                    throw new RuntimeException(sprintf('Directory "%s" was not created', $this->dbFolder . $strPath));
                 }
+
                 if (!copy(
-                    $strDumpFile . '.gz',
-                    $this->strDBFolder . $strPath . '/' . $filename
+                    $dumpFile . '.gz',
+                    $this->dbFolder . $strPath . '/' . $filename
                     . '.gz'
                 )) {
                     $this->addError('Konnte ' . $this->strTempFolder
-                        . $strDumpFile . '.gz nicht nach '
-                        . $this->strDBFolder . $strPath . '/'
+                        . $dumpFile . '.gz nicht nach '
+                        . $this->dbFolder . $strPath . '/'
                         . $filename . '.gz kopieren.');
                     return false;
                 }
-                chmod($this->strDBFolder . $strPath . '/' . $filename . '.gz', 0666);
+                chmod($this->dbFolder . $strPath . '/' . $filename . '.gz', 0666);
             }
-            if (false === $area->notifyMaster()) {
+
+            if ($area->notifyMaster() === false) {
                 return false;
             }
         }
-        unlink($strDumpFile . '.gz');
+
+        unlink($dumpFile . '.gz');
+
         return true;
     }
-
 
 
     /**
      * Generates the file with the content for the clear cache task.
      *
-     * @param string   $strTable    Name of the table which cache should be cleared.
-     * @param int[]    $arUids      Array with the uids to clear cache.
+     * @param string $table Name of the table which cache should be cleared.
+     * @param int[] $arUids Array with the uids to clear cache.
      *
-     * @return boolean True if file was generateable otherwise false.
+     * @return bool True if file was generateable otherwise false.
+     *
+     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
-    private function createClearCacheFile($strTable, array $arUids)
-    {
-        $arClearCacheData = array();
+    private function createClearCacheFile(
+        string $table,
+        array $arUids
+    ): bool {
+        $arClearCacheData = [];
 
         // Create data
         foreach ($arUids as $strUid) {
-            $arClearCacheData[] = $strTable . ':' . $strUid;
+            $arClearCacheData[] = $table . ':' . $strUid;
         }
 
         $strClearCacheData = implode(',', $arClearCacheData);
         $clearCacheUrl = sprintf($this->strClearCacheUrl, $strClearCacheData);
 
         $this->urlGenerator->postProcessSync(
-            ['arUrlsOnce' => [$clearCacheUrl], 'bProcess' => true, 'bSyncResult' => true],
+            [
+                'arUrlsOnce' => [
+                    $clearCacheUrl
+                ],
+                'bProcess' => true,
+                'bSyncResult' => true
+            ],
             $this
         );
 
         return true;
     }
 
-
-
     /**
      * Baut Speciellen Dump zusammen, der nur die angewählten Pages enthällt.
      * Es werden nur Pages gedumpt, zu denen der Redakteur auch Zugriff hat.
      *
-     * @param array  $arPageIDs   List if page IDs to dump
-     * @param array  $arTables    List of tables to dump
-     * @param string $strDumpFile Name of target dump file
-     * @param array  $arPath
+     * @param array $pageIDs List if page IDs to dump
+     * @param array $tables List of tables to dump
+     * @param string $dumpFile Name of target dump file
+     * @param array $arPath
      *
-     * @return boolean success
+     * @return bool success
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function createShortDump(
-        $arPageIDs, $arTables, $strDumpFile, $arPath
-    ) {
-        if (!is_array($arPageIDs) || count($arPageIDs) <= 0) {
+    private function createShortDump(
+        array $pageIDs,
+        array $tables,
+        string $dumpFile,
+        array $arPath
+    ): bool {
+        if (!is_array($pageIDs) || count($pageIDs) <= 0) {
             $this->addError('Keine Seiten für die Synchronisation vorgemerkt.');
             return false;
         }
 
         try {
-            $fpDumpFile = $this->openTempDumpFile($strDumpFile, $arPath);
+            $fpDumpFile = $this->openTempDumpFile($dumpFile, $arPath);
         } catch (Exception $e) {
             $this->addError($e->getMessage());
             return false;
         }
 
-        foreach ($arTables as $value) {
-            $this->dumpTableByPageIDs($arPageIDs, $value, $fpDumpFile);
+        foreach ($tables as $value) {
+            $this->dumpTableByPageIDs($pageIDs, $value, $fpDumpFile);
         }
 
         // TYPO-206
         // Append Statement for Delete unused rows in LIVE environment
         $this->writeToDumpFile(
-            array(),
-            array(),
+            [],
+            [],
             $fpDumpFile,
             $this->getDeleteRowStatements()
         );
@@ -1320,7 +1068,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         try {
             fclose($fpDumpFile);
-            $this->finalizeDumpFile($strDumpFile, $arPath, true);
+            $this->finalizeDumpFile($dumpFile, $arPath, true);
         } catch (Exception $e) {
             $this->addError($e->getMessage());
             return false;
@@ -1328,8 +1076,6 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         return true;
     }
-
-
 
     /**
      * Test and opens the temporary dump file.
@@ -1340,7 +1086,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * @return resource The opened dump file
      * @throws Exception If file can't be opened or last sync is in progress.
      */
-    private function openTempDumpFile($strFileName, array $arDirectories)
+    private function openTempDumpFile(string $strFileName, array $arDirectories)
     {
         if (file_exists($this->strTempFolder . $strFileName)
             || file_exists($this->strTempFolder . $strFileName . '.gz')
@@ -1354,8 +1100,8 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         foreach ($arDirectories as $strPath) {
-            if (file_exists($this->strDBFolder . $strPath . '/' . $strFileName)
-                || file_exists($this->strDBFolder . $strPath . '/' . $strFileName . '.gz')
+            if (file_exists($this->dbFolder . $strPath . '/' . $strFileName)
+                || file_exists($this->dbFolder . $strPath . '/' . $strFileName . '.gz')
             ) {
                 throw new Exception(
                     'Die letzte Synchronisation ist noch nicht abgeschlossen.'
@@ -1364,7 +1110,7 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             }
         }
 
-        $fp = fopen($this->strTempFolder . $strFileName, 'w');
+        $fp = fopen($this->strTempFolder . $strFileName, 'wb');
 
         if ($fp === false) {
             throw new Exception(
@@ -1376,138 +1122,149 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         return $fp;
     }
 
-
-
     /**
      * Zips the tmp dump file and copy it to given directories.
      *
-     * @param string  $strDumpFile Name of the dump file.
-     * @param array   $arDirectories The directories to copy files into.
-     * @param boolean $bZipFile The directories to copy files into.
+     * @param string $dumpFile      Name of the dump file.
+     * @param array  $arDirectories The directories to copy files into.
+     * @param bool   $bZipFile      The directories to copy files into.
      *
      * @return void
      * @throws Exception If file can't be zipped or copied.
      */
-    private function finalizeDumpFile($strDumpFile, array $arDirectories, $bZipFile)
+    private function finalizeDumpFile(string $dumpFile, array $arDirectories, bool $bZipFile): void
     {
         if ($bZipFile) {
             // Dateien komprimieren
-            if (!$this->createGZipFile($this->strTempFolder . $strDumpFile)) {
+            if (!$this->createGZipFile($this->strTempFolder . $dumpFile)) {
                 throw new Exception('Could not create ZIP file.');
             }
-            $strDumpFile = $strDumpFile . '.gz';
+            $dumpFile .= '.gz';
         }
 
         // Dateien an richtige Position kopieren
         foreach ($arDirectories as $strPath) {
-            $strTargetDir = $this->strDBFolder . $strPath . '/';
+            $strTargetDir = $this->dbFolder . $strPath . '/';
             if (!file_exists($strTargetDir)) {
-                mkdir($strTargetDir, $this->nFolderRights, true);
+                // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
+                if (!is_dir($strTargetDir)
+                    && !mkdir($strTargetDir, $this->nFolderRights, true)
+                    && !is_dir($strTargetDir)
+                ) {
+                    throw new RuntimeException(sprintf('Directory "%s" was not created', $strTargetDir));
+                }
+
                 // TYPO-3713: change folder permissions to nFolderRights due to
                 // mask of mkdir could be overwritten by the host
                 chmod($strTargetDir, $this->nFolderRights);
             }
 
             $bCopied = copy(
-                $this->strTempFolder . $strDumpFile,
-                $strTargetDir . $strDumpFile
+                $this->strTempFolder . $dumpFile,
+                $strTargetDir . $dumpFile
             );
-            chmod($strTargetDir . $strDumpFile, 0666);
+
+            chmod($strTargetDir . $dumpFile, 0666);
+
             if (!$bCopied) {
                 throw new Exception(
-                    'Konnte ' . $this->strTempFolder . $strDumpFile
+                    'Konnte ' . $this->strTempFolder . $dumpFile
                     . ' nicht nach '
-                    . $strTargetDir . $strDumpFile
+                    . $strTargetDir . $dumpFile
                     . ' kopieren.'
                 );
             }
         }
-        unlink($this->strTempFolder . $strDumpFile);
+
+        unlink($this->strTempFolder . $dumpFile);
     }
-
-
 
     /**
      * Erzeugt ein Dump durch Seiten IDs.
      *
-     * @param array    $arPageIDs    Page ids to dump.
-     * @param string   $strTableName Name of table to dump from.
-     * @param resource $fpDumpFile   File pointer to the SQL dump file.
-     * @param boolean  $bContentIDs  True to interpret pageIDs as content IDs.
+     * @param array $pageIDs Page ids to dump.
+     * @param string $tableName Name of table to dump from.
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
+     * @param bool $bContentIDs True to interpret pageIDs as content IDs.
      *
      * @return void
+     *
      * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function dumpTableByPageIDs(
-        array $arPageIDs, $strTableName, $fpDumpFile, $bContentIDs = false
-    ) {
-        if (substr($strTableName, -3) == '_mm') {
+    private function dumpTableByPageIDs(
+        array $pageIDs,
+        string $tableName,
+        $fpDumpFile,
+        bool $bContentIDs = false
+    ): void {
+        if (substr($tableName, -3) === '_mm') {
             throw new Exception(
-                'MM Tabellen wie: ' . $strTableName . ' werden nicht mehr unterstützt.'
+                'MM Tabellen wie: ' . $tableName . ' werden nicht mehr unterstützt.'
             );
         }
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
         $this->nDumpTableRecursion++;
-        $arDeleteLine = array();
-        $arInsertLine = array();
+        $deleteLines = [];
+        $insertLines = [];
 
-        $arColumns = $connectionPool->getConnectionForTable($strTableName)
+        $arColumns = $this->connectionPool
+            ->getConnectionForTable($tableName)
             ->getSchemaManager()
-            ->listTableColumns($strTableName);
+            ->listTableColumns($tableName);
 
         $arColumnNames = [];
         foreach ($arColumns as $column) {
             $arColumnNames[] = $column->getName();
         }
 
-        $queryBuilder = $this->getQueryBuilderForTable($strTableName);
+        $queryBuilder = $this->getQueryBuilderForTable($tableName);
 
         // In pages und pages_language_overlay entspricht die pageID der uid
         // pid ist ja der Parent (Elternelement) ... so mehr oder weniger *lol*
-        if ($strTableName == 'pages' || $bContentIDs) {
-            $strWhere = $queryBuilder->expr()->in('uid', $arPageIDs);
+        if ($tableName === 'pages' || $bContentIDs) {
+            $strWhere = $queryBuilder->expr()->in('uid', $pageIDs);
         } else {
-            $strWhere = $queryBuilder->expr()->in('pid', $arPageIDs);
+            $strWhere = $queryBuilder->expr()->in('pid', $pageIDs);
         }
 
-        $refTableContent = $queryBuilder->select('*')
-            ->from($strTableName)
+        $refTableContent = $queryBuilder
+            ->select('*')
+            ->from($tableName)
             ->where($strWhere)
             ->execute();
+
         if ($refTableContent) {
-            while ($arContent = $refTableContent->fetch()) {
+            while ($arContent = $refTableContent->fetchAssociative()) {
                 foreach ($this->hookObjects as $hookClass) {
-                    $hookObject = $this->getObjectManager()->get($hookClass);
+                    $hookObject = GeneralUtility::makeInstance($hookClass);
                     if (method_exists($hookObject, 'preProcessSync')) {
-                        $hookObject->preProcessSync($arContent['uid'], $strTableName, $this->getPreSyncParams(), $this->getSyncList(), $this);
+                        $hookObject->preProcessSync($arContent['uid'], $tableName, $this->getPreSyncParams(), $this->getSyncList(), $this);
                     }
                 }
-                $arDeleteLine[$strTableName][$arContent['uid']]
-                    = $this->buildDeleteLine($strTableName, $arContent['uid']);
-                $arInsertLine[$strTableName][$arContent['uid']]
-                    = $this->buildInsertUpdateLine($strTableName, $arColumnNames, $arContent);
+                $deleteLines[$tableName][$arContent['uid']]
+                    = $this->buildDeleteLine($tableName, $arContent['uid']);
+                $insertLines[$tableName][$arContent['uid']]
+                    = $this->buildInsertUpdateLine($tableName, $arColumnNames, $arContent);
 
                 $this->writeMMReferences(
-                    $strTableName, $arContent, $fpDumpFile
+                    $tableName, $arContent, $fpDumpFile
                 );
-                if (count($arDeleteLine) > 50) {
 
-                    $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
-                    $arDeleteLine = array();
-                    $arInsertLine = array();
+                if (count($deleteLines) > 50) {
+                    $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
+                    $deleteLines = [];
+                    $insertLines = [];
                 }
             }
         }
 
         // TYPO-206: append delete obsolete rows on live
         if (!empty($_POST['data']['delete_obsolete_rows'])) {
-            $this->addAsDeleteRowTable($strTableName);
+            $this->addAsDeleteRowTable($tableName);
         }
 
-        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+        $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
 
         $this->nDumpTableRecursion--;
     }
@@ -1515,42 +1272,44 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
     /**
      * Get params for the presync hook.
      *
-     * @return array
+     * @return string[]
      */
-    public function getPreSyncParams()
+    private function getPreSyncParams(): array
     {
-        $postData = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('data');
-        return array(
+        $postData = GeneralUtility::_GP('data');
+
+        return [
             'area' => $this->getArea(),
             'function' => $this->MOD_SETTINGS['function'],
-            'dbFolder' => $this->strDBFolder,
-            'forceFullSync' => $postData['force_full_sync']
-        );
+            'dbFolder' => $this->dbFolder,
+            'forceFullSync' => $postData['force_full_sync'],
+        ];
     }
-
 
     /**
      * Adds the Table and its DeleteObsoleteRows statement to an array
      * if the statement does not exists in the array
      *
-     * @param string $strTableName the name of the Table the obsolete rows
-     *                             should be added to the $arObsoleteRows array
-     *                             for
+     * @param string $tableName The name of the table the obsolete rows
+     *                          should be added to the $arObsoleteRows array for
      *
      * @return void
      */
-    public function addAsDeleteRowTable($strTableName)
+    private function addAsDeleteRowTable(string $tableName): void
     {
-        $table = new Table($strTableName, 'dummy');
+        $table = GeneralUtility::makeInstance(Table::class, $tableName, 'dummy');
+
         if (!isset($this->arObsoleteRows[0])) {
-            $this->arObsoleteRows[0] = "-- Delete obsolete Rows on live, see: TYPO-206";
+            $this->arObsoleteRows[0] = '-- Delete obsolete Rows on live, see: TYPO-206';
         }
+
         $strSql = $table->getSqlDroppingObsoleteRows();
         unset($table);
 
         if (empty($strSql)) {
             return;
         }
+
         $strSqlKey = md5($strSql);
 
         if (isset($this->arObsoleteRows[$strSqlKey])) {
@@ -1560,17 +1319,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $this->arObsoleteRows[$strSqlKey] = $strSql;
     }
 
-
-
     /**
      * @return array
      */
-    public function getDeleteRowStatements()
+    private function getDeleteRowStatements(): array
     {
         return $this->arObsoleteRows;
     }
-
-
 
     /**
      * Writes the references of a table to the sync data.
@@ -1580,20 +1335,24 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * @param resource $fpDumpFile File pointer to the SQL dump file.
      *
      * @return void
+     *
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function writeMMReferences(
-        $strRefTableName, array $arContent, $fpDumpFile
-    ) {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+    private function writeMMReferences(
+        string $strRefTableName,
+        array $arContent,
+        $fpDumpFile
+    ): void {
+        $deleteLines = [];
+        $insertLines = [];
 
-        $arDeleteLine = array();
-        $arInsertLine = array();
-
-        $this->arReferenceTables = array();
+        $this->arReferenceTables = [];
         $this->addMMReferenceTables($strRefTableName);
+
         foreach ($this->arReferenceTables as $strMMTableName => $arTableFields) {
-            $arColumns = $connectionPool->getConnectionForTable($strMMTableName)
+            $arColumns = $this->connectionPool
+                ->getConnectionForTable($strMMTableName)
                 ->getSchemaManager()
                 ->listTableColumns($strMMTableName);
 
@@ -1604,17 +1363,18 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
             foreach ($arTableFields as $arMMConfig) {
                 $this->writeMMReference(
-                    $strRefTableName, $strMMTableName, $arContent['uid'],
+                    $strRefTableName,
+                    $strMMTableName,
+                    $arContent['uid'],
                     $arMMConfig,
-                    $arColumnNames, $fpDumpFile
+                    $arColumnNames,
+                    $fpDumpFile
                 );
             }
         }
 
-        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+        $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
     }
-
-
 
     /**
      * Writes the data of a MM table to the sync data.
@@ -1644,33 +1404,30 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      * - sorting - optional
      * - sorting_foreign - optional
      *
-     * @param string   $strRefTableName Table which we get the references from.
-     * @param string   $strTableName    Table to get MM data from.
-     * @param integer  $uid             The uid of element which references.
-     * @param array    $arMMConfig      The configuration of this MM reference.
-     * @param array    $arColumnNames   Table columns
-     * @param resource $fpDumpFile      File pointer to the SQL dump file.
+     * @param string $strRefTableName Table which we get the references from.
+     * @param string $tableName Table to get MM data from.
+     * @param int $uid The uid of element which references.
+     * @param array $arMMConfig The configuration of this MM reference.
+     * @param array $arColumnNames Table columns
+     * @param resource $fpDumpFile File pointer to the SQL dump file.
      *
-     * @return void
+     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function writeMMReference(
-        $strRefTableName, $strTableName, $uid, array $arMMConfig,
-        array $arColumnNames, $fpDumpFile
-    )
-    {
-        $arDeleteLine = array();
-        $arInsertLine = array();
+    private function writeMMReference(
+        string $strRefTableName,
+        string $tableName,
+        int $uid,
+        array $arMMConfig,
+        array $arColumnNames,
+        $fpDumpFile
+    ): void {
+        $deleteLines = [];
+        $insertLines = [];
 
-        $strFieldName = 'uid_foreign';
-        if (isset($arMMConfig['foreign_field'])) {
-            $strFieldName = $arMMConfig['foreign_field'];
-        }
+        $strFieldName = $arMMConfig['foreign_field'] ?? 'uid_foreign';
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable($strTableName);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         $strAdditionalWhere = ' AND ' . $connection->quoteIdentifier('tablenames')
             . ' = ' . $connection->quote($strRefTableName);
@@ -1686,20 +1443,23 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         $queryBuilder = $connection->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
-        $refTableContent = $queryBuilder->select('*')
-            ->from($strTableName)
+
+        $refTableContent = $queryBuilder
+            ->select('*')
+            ->from($tableName)
             ->where($strWhere)
             ->execute();
 
-        $arDeleteLine[$strTableName][$strWhere]
-            = 'DELETE FROM ' . $connection->quoteIdentifier($strTableName) . ' WHERE ' . $strWhere . ';';
+        $deleteLines[$tableName][$uid] = sprintf(
+            'DELETE FROM %s WHERE %s;',
+            $connection->quoteIdentifier($tableName),
+            $strWhere
+        );
 
         if ($refTableContent) {
-            while ($arContent = $refTableContent->fetch()) {
-                $strContentKey = implode('-', $arContent);
-                $arInsertLine[$strTableName][$strContentKey] = $this->buildInsertUpdateLine(
-                    $strTableName, $arColumnNames, $arContent
-                );
+            while ($arContent = $refTableContent->fetchAssociative()) {
+                $insertLines[$tableName][$arContent['uid']]
+                    = $this->buildInsertUpdateLine($tableName, $arColumnNames, $arContent);
 
                 $strDamTable = 'sys_file';
                 $strDamRefTable = 'sys_file_reference';
@@ -1709,48 +1469,46 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
                     && $arMMConfig['form_type'] === 'user'
                 ) {
                     $this->dumpTableByPageIDs(
-                        array($arContent['uid_local']), $strDamTable, $fpDumpFile,
+                        [
+                            $arContent['uid_local'],
+                        ],
+                        $strDamTable,
+                        $fpDumpFile,
                         true
                     );
                 }
             }
+
             unset($refTableContent);
         }
-        $this->prepareDump($arDeleteLine, $arInsertLine, $fpDumpFile);
+
+        $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
     }
-
-
 
     /**
      * Finds MM reference tables and the config of them. Respects flexform fields.
      * Data will be set in arReferenceTables
      *
-     * @param string $strTableName Table to find references.
+     * @param string $tableName Table to find references.
      *
      * @return void
      */
-    protected function addMMReferenceTables($strTableName)
+    private function addMMReferenceTables(string $tableName): void
     {
-        global $TCA;
-
-        if ( ! isset($TCA[$strTableName]['columns'])) {
+        if (!isset($GLOBALS['TCA'][$tableName]['columns'])) {
             return;
         }
 
-        foreach ($TCA[$strTableName]['columns'] as $strFieldName => $arColumn) {
+        foreach ($GLOBALS['TCA'][$tableName]['columns'] as $strFieldName => $arColumn) {
             if (isset($arColumn['config']['type'])) {
-                switch ($arColumn['config']['type']) {
-                    case 'inline':
-                        $this->addForeignTableToReferences($arColumn);
-                        break;
-                    default:
-                        $this->addMMTableToReferences($arColumn);
+                if ($arColumn['config']['type'] === 'inline') {
+                    $this->addForeignTableToReferences($arColumn);
+                } else {
+                    $this->addMMTableToReferences($arColumn);
                 }
             }
         }
     }
-
-
 
     /**
      * Adds Column config to references table, if a foreign_table reference config
@@ -1760,15 +1518,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function addForeignTableToReferences($arColumn)
+    private function addForeignTableToReferences(array $arColumn): void
     {
         if (isset($arColumn['config']['foreign_table'])) {
             $strForeignTable = $arColumn['config']['foreign_table'];
             $this->arReferenceTables[$strForeignTable][] = $arColumn['config'];
         }
     }
-
-
 
     /**
      * Adds Column config to references table, if a MM reference config exists.
@@ -1777,15 +1533,13 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function addMMTableToReferences(array $arColumn)
+    private function addMMTableToReferences(array $arColumn): void
     {
         if (isset($arColumn['config']['MM'])) {
             $strMMTableName = $arColumn['config']['MM'];
             $this->arReferenceTables[$strMMTableName][] = $arColumn['config'];
         }
     }
-
-
 
     /**
      * Add the passed $arSqlLines to the $arGlobalSqlLineStorage in unique way.
@@ -1795,19 +1549,18 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function addLinesToLineStorage($strStatementType, array $arSqlLines)
+    private function addLinesToLineStorage(string $strStatementType, array $arSqlLines): void
     {
-        foreach ($arSqlLines as $strTableName => $arLines) {
-            if (!is_array($arLines)) {
+        foreach ($arSqlLines as $tableName => $lines) {
+            if (!is_array($lines)) {
                 return;
             }
-            foreach ($arLines as $strIdentifier => $strLine) {
-                $this->arGlobalSqlLineStorage[$strStatementType][$strTableName][$strIdentifier] = $strLine;
+
+            foreach ($lines as $strIdentifier => $strLine) {
+                $this->arGlobalSqlLineStorage[$strStatementType][$tableName][$strIdentifier] = $strLine;
             }
         }
     }
-
-
 
     /**
      * Removes all entries from $arSqlLines which already exists in $arGlobalSqlLineStorage
@@ -1817,63 +1570,62 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    public function clearDuplicateLines($strStatementType, array &$arSqlLines)
+    private function clearDuplicateLines(string $strStatementType, array &$arSqlLines): void
     {
-        foreach ($arSqlLines as $strTableName => $arLines) {
-            foreach ($arLines as $strIdentifier => $strStatement) {
-                if (!empty($this->arGlobalSqlLineStorage[$strStatementType][$strTableName][$strIdentifier])) {
-                    unset($arSqlLines[$strTableName][$strIdentifier]);
+        foreach ($arSqlLines as $tableName => $lines) {
+            foreach ($lines as $strIdentifier => $strStatement) {
+                if (!empty($this->arGlobalSqlLineStorage[$strStatementType][$tableName][$strIdentifier])) {
+                    unset($arSqlLines[$tableName][$strIdentifier]);
                 }
             }
+
             // unset tablename key if no statement exists anymore
-            if (0 === count($arSqlLines[$strTableName])) {
-                unset($arSqlLines[$strTableName]);
+            if (count($arSqlLines[$tableName]) === 0) {
+                unset($arSqlLines[$tableName]);
             }
         }
     }
 
-
-
     /**
      * Writes the data into dump file. Line per line.
      *
-     * @param array $arDeleteLines The lines with the delete statements.
+     * @param array $deleteLines The lines with the delete statements.
      *                                        Expected structure:
-     *                                        $arDeleteLines['table1']['uid1'] = 'STATMENT1'
-     *                                        $arDeleteLines['table1']['uid2'] = 'STATMENT2'
-     *                                        $arDeleteLines['table2']['uid2'] = 'STATMENT3'
-     * @param array $arInsertLines The lines with the insert statements.
+     *                                        $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                                        $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                                        $deleteLines['table2']['uid2'] = 'STATMENT3'
+     * @param array $insertLines The lines with the insert statements.
      *                                        Expected structure:
-     *                                        $arInsertLines['table1']['uid1'] = 'STATMENT1'
-     *                                        $arInsertLines['table1']['uid2'] = 'STATMENT2'
-     *                                        $arInsertLines['table2']['uid2'] = 'STATMENT3'
+     *                                        $insertLines['table1']['uid1'] = 'STATMENT1'
+     *                                        $insertLines['table1']['uid2'] = 'STATMENT2'
+     *                                        $insertLines['table2']['uid2'] = 'STATMENT3'
      * @param resource $fpDumpFile File pointer to the SQL dump file.
      * @param array $arDeleteObsoleteRows the lines with delete obsolete
      *                                        rows statement
      *
-     * @throws Exception
      * @return void
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function writeToDumpFile(
-        array $arDeleteLines,
-        array $arInsertLines,
+    private function writeToDumpFile(
+        array $deleteLines,
+        array $insertLines,
         $fpDumpFile,
-        $arDeleteObsoleteRows = array()
-    ) {
-
+        array $arDeleteObsoleteRows = []
+    ): void {
         // Keep the current lines in mind
         $this->addLinesToLineStorage(
             self::STATEMENT_TYPE_DELETE,
-            $arDeleteLines
+            $deleteLines
         );
+
         // Keep the current lines in mind
         $this->addLinesToLineStorage(
             self::STATEMENT_TYPE_INSERT,
-            $arInsertLines
+            $insertLines
         );
 
         // Foreach Table in DeleteArray
-        foreach ($arDeleteLines as $arDelLines) {
+        foreach ($deleteLines as $arDelLines) {
             if (count($arDelLines)) {
                 $strDeleteLines = implode("\n", $arDelLines);
                 fwrite($fpDumpFile, $strDeleteLines . "\n\n");
@@ -1888,14 +1640,16 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
             fwrite($fpDumpFile, $strDeleteObsoleteRows . "\n\n");
         }
 
-        foreach ($arInsertLines as $strTable => $arInsertStatements) {
-            foreach ($arInsertStatements as $nUid => $strStatement) {
-                $this->setLastDumpTimeForElement($strTable, $nUid);
+        foreach ($insertLines as $table => $arInsertStatements) {
+            foreach ($arInsertStatements as $uid => $strStatement) {
+                if (strpos($table, '_mm') !== false) {
+                    continue;
+                }
+
+                $this->setLastDumpTimeForElement($table, $uid);
             }
         }
     }
-
-
 
     /**
      * Writes all SQL Lines from arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
@@ -1905,149 +1659,130 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
      *
      * @return void
      */
-    protected function writeInsertLines($fpDumpFile)
+    private function writeInsertLines($fpDumpFile): void
     {
-        if (!is_array(
-            $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
-        )) {
+        if (!is_array($this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT])) {
             return;
         }
 
-        $arInsertLines
-            = $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT];
+        $insertLines = $this->arGlobalSqlLineStorage[self::STATEMENT_TYPE_INSERT];
+
         // Foreach Table in InsertArray
-        foreach ($arInsertLines as $strTable => $arTableInsLines) {
+        foreach ($insertLines as $table => $arTableInsLines) {
             if (count($arTableInsLines)) {
-                $strInsertLines
-                    = '-- Insert lines for Table: '
-                    . $strTable
-                    . "\n";
-                $strInsertLines .= implode("\n", $arTableInsLines);
+                $strInsertLines = '-- Insert lines for Table: '
+                    . $table . "\n"
+                    . implode("\n", $arTableInsLines);
+
                 fwrite($fpDumpFile, $strInsertLines . "\n\n");
             }
         }
-        return;
     }
 
-
-
     /**
-     * Removes all delete statements from $arDeleteLines where an insert statement
-     * exists in $arInsertLines.
+     * Removes all delete statements from $deleteLines where an insert statement
+     * exists in $insertLines.
      *
-     * @param array &$arDeleteLines referenced array with delete statements
+     * @param array &$deleteLines referenced array with delete statements
      *                              structure should be
-     *                              $arDeleteLines['table1']['uid1'] = 'STATMENT1'
-     *                              $arDeleteLines['table1']['uid2'] = 'STATMENT2'
-     *                              $arDeleteLines['table2']['uid2'] = 'STATMENT3'
-     * @param array &$arInsertLines referenced array with insert statements
+     *                              $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $deleteLines['table2']['uid2'] = 'STATMENT3'
+     * @param array $insertLines referenced array with insert statements
      *                              structure should be
-     *                              $arDeleteLines['table1']['uid1'] = 'STATMENT1'
-     *                              $arDeleteLines['table1']['uid2'] = 'STATMENT2'
-     *                              $arDeleteLines['table2']['uid2'] = 'STATMENT3'
+     *                              $deleteLines['table1']['uid1'] = 'STATMENT1'
+     *                              $deleteLines['table1']['uid2'] = 'STATMENT2'
+     *                              $deleteLines['table2']['uid2'] = 'STATMENT3'
      *
      * @return void
      */
-    protected function diffDeleteLinesAgainstInsertLines(
-        array &$arDeleteLines, array &$arInsertLines
-    ) {
-        foreach ($arInsertLines as $strTableName => $arElements) {
+    private function diffDeleteLinesAgainstInsertLines(
+        array &$deleteLines,
+        array $insertLines
+    ): void {
+        foreach ($insertLines as $tableName => $arElements) {
             // no modification for arrays with old flat structure
             if (!is_array($arElements)) {
                 return;
             }
+
             // UNSET each delete line where an insert exists
             foreach ($arElements as $strUid => $strStatement) {
-                if (!empty($arDeleteLines[$strTableName][$strUid])) {
-                    unset($arDeleteLines[$strTableName][$strUid]);
+                if (!empty($deleteLines[$tableName][$strUid])) {
+                    unset($deleteLines[$tableName][$strUid]);
                 }
             }
 
-            if (0 === count($arDeleteLines[$strTableName])) {
-                unset($arDeleteLines[$strTableName]);
+            if (count($deleteLines[$tableName]) === 0) {
+                unset($deleteLines[$tableName]);
             }
         }
     }
 
-
-
     /**
      * Returns SQL DELETE query.
      *
-     * @param string $strTableName name of table to delete from
-     * @param integer $uid uid of row to delete
+     * @param string $tableName The name of table to delete from
+     * @param int    $uid       The UID of row to delete
      *
      * @return string
      */
-    protected function buildDeleteLine($strTableName, $uid)
+    private function buildDeleteLine(string $tableName, int $uid): string
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable($strTableName);
-
-        return 'DELETE FROM '
-            . $connection->quoteIdentifier($strTableName)
-            . ' WHERE uid = ' . (int) $uid . ';';
+        return sprintf(
+            'DELETE FROM %s WHERE uid = %d;',
+            $connection->quoteIdentifier($tableName),
+            $uid
+        );
     }
-
-
 
     /**
      * Returns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
      *
-     * @param string $strTableName name of table to insert into
+     * @param string $tableName name of table to insert into
      * @param array  $arColumnNames
      * @param array  $arContent
      *
      * @return string
      */
-    protected function buildInsertUpdateLine($strTableName, array $arColumnNames, array $arContent)
+    private function buildInsertUpdateLine(string $tableName, array $arColumnNames, array $arContent): string
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable($strTableName);
+        $arUpdateParts = [];
 
-        $arUpdateParts = array();
         foreach ($arContent as $key => $value) {
             if (!is_numeric($value)) {
                 $arContent[$key] = $connection->quote($value);
             }
+
             // TYPO-2215 - Match the column to its update value
             $arUpdateParts[$key] = $key . ' = VALUES(' . $key . ')';
         }
 
-        $strStatement = 'INSERT INTO '
-            . $connection->quoteIdentifier($strTableName)
-            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
-            . implode(', ', $arContent) . ')' . "\n"
-            . ' ON DUPLICATE KEY UPDATE '
-            . implode(', ', $arUpdateParts) . ';';
-
-        return $strStatement;
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
+            $connection->quoteIdentifier($tableName),
+            implode(', ', $arColumnNames),
+            implode(', ', $arContent),
+            implode(', ', $arUpdateParts)
+        );
     }
-
-
 
     /**
      * Returns SQL INSERT query.
      *
-     * @param string $strTableName name of table to insert into
+     * @param string $tableName name of table to insert into
      * @param array  $arTableStructure
      * @param array  $arContent
      *
      * @return string
      */
-    protected function buildInsertLine($strTableName, $arTableStructure, $arContent)
+    private function buildInsertLine(string $tableName, array $arTableStructure, array $arContent): string
     {
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
-
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable($strTableName);
+        $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         foreach ($arContent as $key => $value) {
             if (!is_numeric($value)) {
@@ -2056,85 +1791,110 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         }
 
         $arColumnNames = array_keys($arTableStructure);
-        $str = 'REPLACE INTO '
-            . $connection->quoteIdentifier($strTableName)
-            . ' (' . implode(', ', $arColumnNames) . ') VALUES ('
-            . implode(', ', $arContent) . ');';
 
-        return $str;
+        return sprintf(
+            'REPLACE INTO %s (%s) VALUES (%s);',
+            $connection->quoteIdentifier($tableName),
+            implode(', ', $arColumnNames),
+            implode(', ', $arContent)
+        );
     }
-
-
 
     /**
      * Erzeugt ein gzip vom Dump File
      *
-     * @param string $strDumpFile name of dump file to gzip
+     * @param string $dumpFile name of dump file to gzip
      *
-     * @return boolean success
+     * @return bool success
      */
-    protected function createGZipFile($strDumpFile)
+    private function createGZipFile(string $dumpFile): bool
     {
-        $strExec = 'gzip ' . escapeshellarg($strDumpFile);
+        $strExec = 'gzip ' . escapeshellarg($dumpFile);
 
         $ret = shell_exec($strExec);
 
-        if (!file_exists($strDumpFile . '.gz')) {
+        if (!file_exists($dumpFile . '.gz')) {
             $this->addError('Fehler beim Erstellen der gzip Datei aus dem Dump.');
             return false;
         }
 
-        chmod($strDumpFile . '.gz', 0666);
+        chmod($dumpFile . '.gz', 0666);
 
         return true;
     }
 
-
-
     /**
      * Generates the menu based on $this->MOD_MENU
      *
+     * @throws RouteNotFoundException
      */
-    protected function generateMenu()
+    private function createMenu(): void
     {
-        $menu = $this->moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
-        $menu->setIdentifier('WebFuncJumpMenu');
+//        $uriBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder::class);
+
+        /** @var \TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder $uriBuilder */
+        $uriBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder::class);
+        $uriBuilder->setRequest($this->request);
+
+        $menu = $this->view
+            ->getModuleTemplate()
+            ->getDocHeaderComponent()
+            ->getMenuRegistry()
+            ->makeMenu();
+
+        $menu->setIdentifier('sync');
+
         foreach ($this->MOD_MENU['function'] as $controller => $title) {
             $item = $menu
                 ->makeMenuItem()
+                ->setTitle($title)
+//                ->setTitle($this->getLanguageService()->sL('LLL:EXT:news/Resources/Private/Language/locallang_be.xlf:module.' . $action['label']))
+//                ->setHref($uriBuilder->reset()->uriFor($controller, [], 'Administration'))
                 ->setHref(
-                    BackendUtility::getModuleUrl(
-                        $this->moduleName,
+                    $this->getModuleUrl(
                         [
                             'id' => $this->id,
                             'SET' => [
-                                'function' => $controller
+                                'function' => $controller,
                             ]
                         ]
                     )
-                )
-                ->setTitle($title);
+                );
+
             if ($controller === (int) $this->MOD_SETTINGS['function']) {
                 $item->setActive(true);
             }
+
             $menu->addMenuItem($item);
         }
-        $this->moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->addMenu($menu);
+
+        $this->view
+            ->getModuleTemplate()
+            ->getDocHeaderComponent()
+            ->getMenuRegistry()
+            ->addMenu($menu);
     }
-
-
 
     /**
      * Create the panel of buttons for submitting the form or otherwise perform operations.
+     *
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
-    protected function getButtons()
+    private function createButtons(): void
     {
-        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
+        $buttonBar = $this->view
+            ->getModuleTemplate()
+            ->getDocHeaderComponent()
+            ->getButtonBar();
 
         // CSH
-        $cshButton = $buttonBar->makeHelpButton()
+        $cshButton = $buttonBar
+            ->makeHelpButton()
             ->setModuleName($this->moduleName)
             ->setFieldName('');
+
         $buttonBar->addButton($cshButton);
 
         if ($this->getBackendUser()->isAdmin()) {
@@ -2145,59 +1905,87 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
 
         if ($this->id && is_array($this->pageinfo)) {
             // Shortcut
-            $shortcutButton = $buttonBar->makeShortcutButton()
+            $shortcutButton = $buttonBar
+                ->makeShortcutButton()
                 ->setModuleName($this->moduleName)
                 ->setGetVariables(['id', 'edit_record', 'pointer', 'new_unique_uid', 'search_field', 'search_levels', 'showLimit'])
                 ->setSetVariables(array_keys($this->MOD_MENU));
+
             $buttonBar->addButton($shortcutButton);
         }
     }
 
-
-
-    protected function addButtonBarAreaLockButtons()
+    /**
+     *
+     * @throws RouteNotFoundException
+     */
+    private function addButtonBarAreaLockButtons(): void
     {
         foreach ($this->getArea()->getSystems() as $systemName => $system) {
-            if (! empty($system['hide'])) {
+            if (!empty($system['hide'])) {
                 continue;
             }
+
             $this->addButtonBarAreaLockButton($systemName, $system);
         }
     }
 
-
-
-    protected function addButtonBarAreaLockButton($systemName, array $system)
+    /**
+     * @param string $systemName
+     * @param array $system
+     *
+     * @throws RouteNotFoundException
+     */
+    private function addButtonBarAreaLockButton(string $systemName, array $system): void
     {
-        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
-
+        $buttonBar  = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
         $lockButton = $buttonBar->makeLinkButton();
 
-        if (is_file($this->strDBFolder . $system['directory'] . '/.lock')) {
-            $lockButton->setHref(
-                BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'lock' => [$systemName => '0'],
-                        'id'   => $this->id,
-                    ]
+        if (is_file($this->dbFolder . $system['directory'] . '/.lock')) {
+            $lockButton
+                ->setTitle($system['name'])
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'lock' => [
+                                $systemName => '0',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle($system['name']);
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
-            $lockButton->setClasses('btn btn-warning');
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon(
+                            'actions-lock',
+                            Icon::SIZE_SMALL
+                        )
+                )
+                ->setClasses('btn btn-warning');
         } else {
-            $lockButton->setHref(
-                BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'lock' => [$systemName => '1'],
-                        'id'   => $this->id,
-                    ]
+            $lockButton
+                ->setTitle($system['name'])
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'lock' => [
+                                $systemName => '1',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle($system['name']);
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon(
+                            'actions-unlock',
+                            Icon::SIZE_SMALL
+                        )
+                );
         }
 
         $lockButton->setShowLabelText(true);
@@ -2205,392 +1993,356 @@ class SyncModuleController extends \TYPO3\CMS\Backend\Module\BaseScriptClass
         $buttonBar->addButton($lockButton);
     }
 
-
-
     /**
      * @return void
+     *
+     * @throws ExtensionConfigurationExtensionNotConfiguredException
+     * @throws ExtensionConfigurationPathDoesNotExistException
+     * @throws RouteNotFoundException
      */
-    protected function addButtonBarLockButton()
+    private function addButtonBarLockButton(): void
     {
-        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
-
+        $buttonBar  = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
         $lockButton = $buttonBar->makeLinkButton();
 
-        /* @var $syncLock SyncLock */
-        $syncLock = $this->getObjectManager()->get(SyncLock::class);
+        /** @var SyncLock $syncLock */
+        $syncLock = $this->objectManager->get(SyncLock::class);
 
         if ($syncLock->isLocked()) {
-            $lockButton->setHref(
-                BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'data' => ['lock' => '0'],
-                        'id'   => $this->id,
-                    ]
+            $lockButton
+                ->setTitle('Unlock sync module')
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'data' => [
+                                'lock' => '0',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle('Unlock sync module');
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-lock', Icon::SIZE_SMALL));
-            $lockButton->setClasses('btn-warning');
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon('actions-lock', Icon::SIZE_SMALL)
+                )
+                ->setClasses('btn-warning');
         } else {
-            $lockButton->setHref(
-                BackendUtility::getModuleUrl(
-                    $this->moduleName,
-                    [
-                        'data' => ['lock' => '1'],
-                        'id'   => $this->id,
-                    ]
+            $lockButton
+                ->setTitle('Lock sync module')
+                ->setHref(
+                    $this->getModuleUrl(
+                        [
+                            'id' => $this->id,
+                            'data' => [
+                                'lock' => '1',
+                            ],
+                        ]
+                    )
                 )
-            );
-            $lockButton->setTitle('Lock sync module');
-            $lockButton->setIcon($this->getIconFactory()->getIcon('actions-unlock', Icon::SIZE_SMALL));
+                ->setIcon(
+                    $this->view
+                        ->getModuleTemplate()
+                        ->getIconFactory()
+                        ->getIcon('actions-unlock', Icon::SIZE_SMALL)
+                );
         }
 
         $buttonBar->addButton($lockButton, ButtonBar::BUTTON_POSITION_LEFT, 0);
     }
 
-
-
     /**
-     * @return ObjectManager
+     * Adds error message to message queue.
+     *
+     * @param string $message error message
      */
-    protected function getObjectManager()
+    public function addError(string $message): void
     {
-        /* @var $objectManager ObjectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
-        return $objectManager;
+        $this->addMessage($message, FlashMessage::ERROR);
     }
-
-
-
-    protected function getSyncListManager()
-    {
-        if (null === $this->syncListManager) {
-            $this->syncListManager = $this->getObjectManager()->get(SyncListManager::class);
-        }
-
-        return $this->syncListManager;
-    }
-
-
-
-    /**
-     * @return IconFactory
-     */
-    protected function getIconFactory()
-    {
-        if (null === $this->iconFactory) {
-            $this->iconFactory = $this->getObjectManager()->get(IconFactory::class);
-        }
-
-        return $this->iconFactory;
-    }
-
-
 
     /**
      * Adds error message to message queue.
      *
-     * @param string $strMessage error message
-     *
-     * @return void
+     * @param string $message success message
      */
-    public function addError($strMessage)
+    public function addSuccess(string $message): void
     {
-        $this->addMessage($strMessage, FlashMessage::ERROR);
+        $this->addMessage($message, FlashMessage::OK);
     }
-
-
 
     /**
      * Adds error message to message queue.
      *
-     * @param string $strMessage success message
-     *
-     * @return void
+     * @param string $message info message
      */
-    public function addSuccess($strMessage)
+    public function addInfo(string $message): void
     {
-        $this->addMessage($strMessage, FlashMessage::OK);
+        $this->addMessage($message);
     }
 
-
-
     /**
-     * Adds error message to message queue.
+     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
      *
-     * @param string $strMessage info message
-     *
-     * @return void
+     * @param string $message The message
+     * @param int    $type    The message type
      */
-    public function addInfo($strMessage)
+    public function addMessage(string $message, int $type = FlashMessage::INFO): void
     {
-        $this->addMessage($strMessage, FlashMessage::INFO);
-    }
-
-
-
-    /**
-     * Adds error message to message queue.
-     *
-     * message types are defined as class constants self::STYLE_*
-     *
-     * @param string $strMessage message
-     * @param integer $type message type
-     *
-     * @return void
-     */
-    public function addMessage($strMessage, $type)
-    {
-        /* @var $message FlashMessage */
-        $message = $this->getObjectManager()->get(
-            FlashMessage::class, $strMessage, '', $type, true
+        /** @var FlashMessage $flashMessage */
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class, $message, '', $type, true
         );
 
-        /* @var $messageService FlashMessageService */
-        $messageService = $this->getObjectManager()->get(
-            FlashMessageService::class
-        );
-
-        $messageService->getMessageQueueByIdentifier()->addMessage($message);
+        $this->flashMessageService
+            ->getMessageQueueByIdentifier()
+            ->addMessage($flashMessage);
     }
-
-
 
     /**
      * Remove entries not needed for the sync.
      *
-     * @param array $arLines lines with data to sync
+     * @param array $lines lines with data to sync
      *
      * @return array
      */
-    protected function removeNotSyncableEntries(array $arLines)
+    private function removeNotSyncableEntries(array $lines): array
     {
-        $arResult = $arLines;
-        foreach ($arLines as $strTable => $arStatements) {
-            foreach ($arStatements as $nUid => $strStatement) {
-                if (!$this->isElementSyncable($strTable, $nUid)) {
-                    unset($arResult[$strTable][$nUid]);
+        $result = $lines;
+
+        foreach ($lines as $table => $arStatements) {
+            foreach ($arStatements as $uid => $strStatement) {
+                if (strpos($table, '_mm') !== false) {
+                    continue;
+                }
+
+                if (!$this->isElementSyncable($table, $uid)) {
+                    unset($result[$table][$uid]);
                 }
             }
         }
-        return $arResult;
+        return $result;
     }
-
-
 
     /**
      * Sets time of last dump/sync for this element.
      *
-     * @param string  $strTable the table, the element contains to
-     * @param integer $nUid     the uid for the element
+     * @param string $table The table, the elements belongs to
+     * @param int $uid The uid of the element
      *
-     * @return void
-     * @throws Exception
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function setLastDumpTimeForElement($strTable, $nUid)
+    private function setLastDumpTimeForElement(string $table, int $uid): void
     {
-        if (strpos($nUid, '-')) {
-            // CRAP - we get something like: 47-18527-0-0-0--0-0-0-0-0-0-1503315964-1500542276-…
-            // happens in writeMMReference() before createupdateinsertline()
-            // take second number as ID:
-            $nUid = explode('-', $nUid)[1];
-        }
-
-        $nTime = time();
-        $nUserId = intval($this->getBackendUser()->user['uid']);
+        $nTime          = time();
+        $nUserId        = (int) $this->getBackendUser()->user['uid'];
         $strUpdateField = ($this->getForcedFullSync()) ? 'full' : 'incr';
 
-        /* @var $connectionPool ConnectionPool */
-        $connectionPool = $this->getObjectManager()->get(ConnectionPool::class);
+        $connection = $this->connectionPool
+            ->getConnectionForTable('tx_nrsync_syncstat');
 
-        /* @var $connection \TYPO3\CMS\Core\Database\Connection */
-        $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-
-        $connection->exec(
-            'INSERT INTO tx_nrsync_syncstat'
-            . " (tab, " . $strUpdateField . ", cruser_id, uid_foreign) VALUES "
-            . ' ('
-            . $connection->quote($strTable)
-            . ', ' . $connection->quote($nTime)
-            . ', ' . $connection->quote($nUserId)
-            . ', ' . $connection->quote($nUid) . ')'
-            . ' ON DUPLICATE KEY UPDATE'
-            . ' cruser_id = ' . $connection->quote($nUserId) . ', '
-            . $strUpdateField . ' = ' . $connection->quote($nTime)
+        $connection->executeStatement(
+            sprintf(
+                'INSERT INTO tx_nrsync_syncstat (tab, %s, cruser_id, uid_foreign)'
+                . ' VALUES (%s, %s, %s, %s)'
+                . ' ON DUPLICATE KEY UPDATE cruser_id = %s, %s = %s',
+                $strUpdateField,
+                $connection->quote($table),
+                $connection->quote($nTime),
+                $connection->quote($nUserId),
+                $connection->quote($uid),
+                $connection->quote($nUserId),
+                $strUpdateField,
+                $connection->quote($nTime)
+            )
         );
     }
 
-
-
     /**
-     * Fetches syncstats for an element from db.
+     * Fetches synchronisation statistics for an element from database.
      *
-     * @param string $strTable the table, the element belongs to
-     * @param integer $nUid the uid for the element
+     * @param string $table The table, the elements belongs to
+     * @param int    $uid   The uid of the element
      *
-     * @return array|boolean syncstats for an element or false if stats don't exist
-     * @throws Exception
+     * @return array|false Synchronisation statistics or FALSE if statistics don't exist
      */
-    protected function getSyncStatsForElement($strTable, $nUid)
+    private function getSyncStatsForElement(string $table, int $uid)
     {
-        $queryBuilder = $this->getQueryBuilderForTable($strTable);
+        $queryBuilder = $this->getQueryBuilderForTable($table);
 
-        $arRow = $queryBuilder->select('*')
+        return $queryBuilder
+            ->select('*')
             ->from('tx_nrsync_syncstat')
             ->where(
-                $queryBuilder->expr()->eq('tab', $queryBuilder->quote($strTable)),
-                $queryBuilder->expr()->eq('uid_foreign', intval($nUid))
+                $queryBuilder->expr()->eq('tab', $queryBuilder->quote($table)),
+                $queryBuilder->expr()->eq('uid_foreign', $uid)
             )
             ->execute()
-            ->fetch();
-
-        return $arRow;
+            ->fetchAssociative();
     }
-
 
     /**
      * Returns time stamp of this element.
      *
-     * @param string $strTable The table, the elements belongs to
-     * @param integer $nUid The uid of the element.
+     * @param string $table The table, the elements belongs to
+     * @param int    $uid   The uid of the element
      *
-     * @return integer
-     * @throws Exception
+     * @return int
      */
-    protected function getTimestampOfElement($strTable, $nUid)
+    private function getTimestampOfElement(string $table, int $uid): int
     {
-        $queryBuilder = $this->getQueryBuilderForTable($strTable);
+        $queryBuilder = $this->getQueryBuilderForTable($table);
 
-        $arRow = $queryBuilder->select('tstamp')
-            ->from($strTable)
+        $arRow = $queryBuilder
+            ->select('tstamp')
+            ->from($table)
             ->where(
-                $queryBuilder->expr()->eq('uid', intval($nUid))
+                $queryBuilder->expr()->eq('uid', $uid)
             )
             ->execute()
-            ->fetch();
+            ->fetchAssociative();
 
-        return $arRow['tstamp'];
+        return (int) $arRow['tstamp'];
     }
-
 
     /**
      * Clean up statements and prepare dump file.
      *
-     * @param array    $arDeleteLine Delete statements
-     * @param array    $arInsertLine Insert statements
-     * @param resource $fpDumpFile   dump file
+     * @param array $deleteLines Delete statements
+     * @param array $insertLines Insert statements
+     * @param resource $fpDumpFile Dump file
      *
-     * @return void
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function prepareDump(array $arDeleteLine, array $arInsertLine, $fpDumpFile)
+    private function prepareDump(array $deleteLines, array $insertLines, $fpDumpFile): void
     {
         if (!$this->getForcedFullSync()) {
-            $arDeleteLine = $this->removeNotSyncableEntries($arDeleteLine);
-            $arInsertLine = $this->removeNotSyncableEntries($arInsertLine);
+            $deleteLines = $this->removeNotSyncableEntries($deleteLines);
+            $insertLines = $this->removeNotSyncableEntries($insertLines);
         }
 
         // Remove Deletes which has a corresponding Insert statement
         $this->diffDeleteLinesAgainstInsertLines(
-            $arDeleteLine,
-            $arInsertLine
+            $deleteLines,
+            $insertLines
         );
 
         // Remove all DELETE Lines which already has been put to file
         $this->clearDuplicateLines(
             self::STATEMENT_TYPE_DELETE,
-            $arDeleteLine
+            $deleteLines
         );
+
         // Remove all INSERT Lines which already has been put to file
         $this->clearDuplicateLines(
             self::STATEMENT_TYPE_INSERT,
-            $arInsertLine
+            $insertLines
         );
-        $this->writeToDumpFile($arDeleteLine, $arInsertLine, $fpDumpFile);
 
-        $this->writeStats($arInsertLine);
+        $this->writeToDumpFile($deleteLines, $insertLines, $fpDumpFile);
+        $this->writeStats($insertLines);
     }
-
-
 
     /**
      * Write stats for the sync.
      *
-     * @param array $arInsertLines insert array ofstatements for elements to sync
+     * @param array $insertLines insert array ofstatements for elements to sync
      *
      * @return void
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
-    protected function writeStats(array $arInsertLines)
+    private function writeStats(array $insertLines): void
     {
-        foreach ($arInsertLines as $strTable => $arInstertStatements) {
-            if (strpos($strTable, '_mm') !== false) {
+        foreach ($insertLines as $table => $insertStatements) {
+            if (strpos($table, '_mm') !== false) {
                 continue;
             }
-            foreach ($arInstertStatements as $nUid => $strStatement) {
-                $this->setLastDumpTimeForElement($strTable, $nUid);
+
+            foreach ($insertStatements as $uid => $statement) {
+                $this->setLastDumpTimeForElement($table, $uid);
             }
         }
-
     }
-
-
 
     /**
      * Return true if a full sync should be forced.
      *
-     * @return boolean
+     * @return bool
      */
-    protected function getForcedFullSync()
+    private function getForcedFullSync(): bool
     {
         return isset($_POST['data']['force_full_sync'])
             && !empty($_POST['data']['force_full_sync']);
     }
 
-
-
     /**
-     * Return true if an element, given by tablename and uid is syncable.
+     * Return true if an element, given by table name and uid is syncable.
      *
-     * @param string $strTable the table, the element belongs to
-     * @param integer $nUid the uid of the element
+     * @param string $table The table, the elements belongs to
+     * @param int    $uid   The uid of the element
      *
-     * @return boolean
+     * @return bool
      */
-    protected function isElementSyncable($strTable, $nUid)
+    private function isElementSyncable(string $table, int $uid): bool
     {
-        if (strpos($strTable, '_mm') !== false) {
+        if (strpos($table, '_mm') !== false) {
             return true;
         }
 
-        $arSyncStats = $this->getSyncStatsForElement($strTable, $nUid);
-        $nTimeStamp = $this->getTimestampOfElement($strTable, $nUid);
-        if (!$nTimeStamp) {
+        $syncStats = $this->getSyncStatsForElement($table, $uid);
+        $timeStamp = $this->getTimestampOfElement($table, $uid);
+
+        if (!$timeStamp) {
             return false;
         }
-        if (isset($arSyncStats['full']) && $arSyncStats['full'] > $nTimeStamp) {
+
+        if (($syncStats !== false)
+            && isset($syncStats['full'])
+            && (((int) $syncStats['full']) > $timeStamp)
+        ) {
             return false;
         }
 
         return true;
     }
 
-
-
     /**
      * Adds information about full or inc sync to syncfile
      *
-     * @param string $strDumpFile the name of the file
+     * @param string $dumpFile the name of the file
      *
      * @return string
      */
-    protected function addInformationToSyncfileName($strDumpFile)
+    private function addInformationToSyncfileName(string $dumpFile): string
     {
         $bIsFullSync = !empty($_POST['data']['force_full_sync']);
         $strPrefix = 'inc_';
         if ($bIsFullSync) {
             $strPrefix = 'full_';
         }
-        return $strPrefix . $strDumpFile;
+        return $strPrefix . $dumpFile;
+    }
+
+    /**
+     * @return BackendUserAuthentication
+     */
+    private function getBackendUser(): BackendUserAuthentication
+    {
+        return $GLOBALS['BE_USER'];
+    }
+
+    /**
+     * @param array $parameters An array of parameters
+     *
+     * @return mixed
+     *
+     * @throws RouteNotFoundException
+     */
+    private function getModuleUrl(array $parameters = [])
+    {
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        return $uriBuilder->buildUriFromRoute($this->moduleName, $parameters);
     }
 }

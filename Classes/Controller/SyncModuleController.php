@@ -44,6 +44,7 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use function count;
 use function in_array;
 use function is_array;
@@ -865,6 +866,25 @@ class SyncModuleController extends ActionController
                 $bSyncResult = $this->createDumpToAreas(
                     $this->function->getTableNames(), $dumpFile
                 );
+
+                // MFI-152 Crate page sync files for pages which have related pages.
+                if ($bSyncResult && method_exists($this->function, 'getPagesToSync')) {
+                    $arPageIDs = $this->function->getPagesToSync();
+                    $dumpFile = "pages_" . $dumpFile;
+                    $strDumpFileArea = date('YmdHis_') . $dumpFile;
+                    $tables = [
+                        'pages',
+                        'tt_content',
+                        'sys_template',
+                        'sys_file_reference',
+                    ];
+                    $area = GeneralUtility::makeInstance(Area::class, 0);
+                    $this->createShortDump(
+                        $arPageIDs, $tables, $strDumpFileArea,
+                        $area->getDirectories()
+                    );
+                    $this->createClearCacheFile('pages', $arPageIDs);
+                }
 
                 if ($bSyncResult) {
                     $this->addSuccess('Sync initiated.');

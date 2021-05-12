@@ -12,6 +12,28 @@ Produktbeschreibung
 ===================
 Sync content from production system to LIVE frontend servers.
 
+Mitgelieferte Module
+====================
+
+####
+News
+####
+
+Um eine News vom Produktionssystem in das Live zu synchronisieren sind folgende Schritte
+durchzuführen.
+
+* Medien synchronisieren.
+    * Im Dropdown `FAL` auswählen
+    * Create Sync klicken
+
+* News Sync Erstellen
+    * Im Dropdown News auswählen
+    * Create Sync Klicken
+
+Wenn ein News Sync erstellt wird, wird auch ein Sync der Seiten estellt auf denen ein News
+Plugin verbaut ist. Damit ist auch sichergestellt das der Cache der Seiten gelöscht wird auf
+denen ein Newsplugin verbaut ist.
+
 
 ==========================
 Ablauf eines Syncprozesses
@@ -100,8 +122,7 @@ Hooks
 
 Register a hook class::
 
-    $TYPO3_CONF_VARS['SC_OPTIONS']['nr_sync/mod1/index.php']
-        ['hookClass'][$_EXTKEY] = 'Aida_Dyncat2_Sync';
+    $TYPO3_CONF_VARS['SC_OPTIONS']['nr_sync/mod1/index.php']['hookClass'][$_EXTKEY] = 'Aida_Dyncat2_Sync';
 
 
 ===================

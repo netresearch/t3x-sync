@@ -1,3 +1,10 @@
+# 0.11.1
+
+## MISC
+
+- MFI-152: Update readme. a5478a3
+- Rename readme from .md to .rst 71f6e25
+
 # 0.11.0
 
 ## MISC

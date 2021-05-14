@@ -13,7 +13,7 @@
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Netresearch Sync',
     'description' => 'Sync CMS content',
-    'version' => '0.11.1',
+    'version' => '0.11.2',
     'category' => 'module',
     'constraints' => [
         'depends' => [

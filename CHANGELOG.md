@@ -1,3 +1,12 @@
+# 0.11.2
+
+## MISC
+
+- TYPO-0: Exclude zip archive from versioning 62954ca
+- TYPO-0: Fix README 6fd2cfd
+- TYPO-0: Convert readme to markdown. 9c6a3ac
+- ATU-153: Use correct nr-sync backend mobule icon 554f584
+
 # 0.11.1
 
 ## MISC

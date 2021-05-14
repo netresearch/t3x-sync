@@ -122,10 +122,10 @@ Dies geschieht über eine TYPO3 eID: ``'nr_sync'``
 ### Parameter
 
 
-task - always 'clearCache'::
-
+task - always 'clearCache':
+````
  task=clearCache
-
+````
 data - comma seperated list of table:uid pairs
 ````
  data=pages:123,pages:124

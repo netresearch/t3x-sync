@@ -70,7 +70,7 @@ class NewsModule extends BaseModule
         $queryBuilder->select('pid')
                      ->from('tt_content')
                      ->where(
-                         $queryBuilder->expr()->like('list_type', $queryBuilder->createNamedParameter('%news%'))
+                         $queryBuilder->expr()->like('list_type', $queryBuilder->createNamedParameter('news%'))
                      )->groupBy('pid');
 
         try {

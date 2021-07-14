@@ -116,7 +116,7 @@ class Urls
 
         return [
             implode("\n", $arUrls) . "\n",
-            sprintf($strFileNameTemplate, date('YmdHis'))
+            sprintf($strFileNameTemplate, date(SyncModuleController::DATE_FORMAT))
         ];
     }
 

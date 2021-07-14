@@ -158,18 +158,9 @@ class Area
      */
     public function isDocTypeAllowed(array $record): bool
     {
-        if ($record === false) {
-            return false;
-        }
-
-        if (isset($this->area['doctype'], $this->area['not_doctype'])
-            && !in_array($record['doktype'], $this->area['doctype'], true)
+        return !(isset($this->area['doctype'], $this->area['not_doctype'])
             && in_array($record['doktype'], $this->area['not_doctype'], true)
-        ) {
-            return false;
-        }
-
-        return true;
+            && !in_array($record['doktype'], $this->area['doctype'], true));
     }
 
     /**
@@ -213,7 +204,7 @@ class Area
     }
 
     /**
-     * Returns a array with the directories where the syncfiles are stored
+     * Returns a array with the directories where the sync files are stored
      *
      * @return array
      */

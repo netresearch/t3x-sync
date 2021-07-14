@@ -224,12 +224,12 @@ class Table
     }
 
     /**
-     * Fetches a list of every updateable entry that could be found.
+     * Fetches a list of every updatable entry that could be found.
      * If force full sync is set to true, this will return every entry found.
      *
      * @return array
      */
-    public function getUpdateableEntries(): array
+    public function getUpdatableEntries(): array
     {
         /** @var ConnectionPool $connectionPool */
         $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
@@ -251,7 +251,7 @@ class Table
         }
 
         $data = $statement->execute()->fetchAllAssociative();
-        $list = array_filter(explode(',', $data['0']['uid_list']));
+        $list = $data['0']['uid_list'] ? array_filter(explode(',', $data['0']['uid_list'])) : [];
 
         $arData = [];
         foreach ($list as $row) {

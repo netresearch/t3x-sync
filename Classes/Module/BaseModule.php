@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Module;
 
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\ModuleInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
@@ -27,17 +28,17 @@ use function count;
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-class BaseModule
+class BaseModule implements ModuleInterface
 {
     /**
      * @var FlashMessageService
      */
-    private $flashMessageService;
+    private FlashMessageService $flashMessageService;
 
     /**
      * @var ConnectionPool
      */
-    protected $connectionPool;
+    protected ConnectionPool $connectionPool;
 
     /**
      * A list of table names to synchronise.
@@ -47,7 +48,7 @@ class BaseModule
     protected $tables = [];
 
     /**
-     * The name of the module.
+     * The name of the sync module to be displayed in sync module selection menu.
      *
      * @var string
      */
@@ -57,16 +58,20 @@ class BaseModule
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
      *
      * @var string
+     *
+     * @deprecated Seems deprecated. Not used anywhere?
      */
     protected $type = '';
 
     /**
+     * The name of the sync target.
+     *
      * @var string
      */
     protected $target = '';
 
     /**
-     * The name of the synchronisation file containg the SQL statements to update the database records.
+     * The name of the synchronisation file containing the SQL statements to update the database records.
      *
      * @var string
      */
@@ -128,18 +133,23 @@ class BaseModule
             $this->tables = (array) $options['tables'] ?: [];
             $this->name = $options['name'] ?: 'Default sync';
             $this->target = $options['target'] ?: '';
-            $this->type = $options['type'] ?: 'sync_tables';
+            $this->type = $options['type'] ?: ModuleInterface::SYNC_TYPE_TABLES;
             $this->dumpFileName = $options['dumpFileName'] ?: 'dump.sql';
             $this->accessLevel = (int) $options['accessLevel'] ?: 0;
         }
     }
 
+    public function isAvailable(): bool
+    {
+        return true;
+    }
+
     /**
      * @param Area $area
      *
-     * @return bool
+     * @return void
      */
-    public function run(Area $area): bool
+    public function run(Area $area): void
     {
         $rootPath = $_SERVER['DOCUMENT_ROOT'];
 
@@ -150,8 +160,6 @@ class BaseModule
         $this->dbFolder = $rootPath . '/db/';
 
         $this->testTablesForDifferences();
-
-        return true;
     }
 
     /**
@@ -172,6 +180,8 @@ class BaseModule
 
     /**
      * @return string
+     *
+     * @deprecated
      */
     public function getType(): string
     {
@@ -204,6 +214,8 @@ class BaseModule
 
     /**
      * @return string
+     *
+     * @deprecated
      */
     public function getTarget(): string
     {
@@ -212,6 +224,8 @@ class BaseModule
 
     /**
      * @return string
+     *
+     * @deprecated
      */
     public function getDescription(): string
     {

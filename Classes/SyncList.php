@@ -11,17 +11,15 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-use Doctrine\DBAL\FetchMode;
 use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use function count;
 use function in_array;
 use function is_array;
@@ -39,12 +37,12 @@ class SyncList
     /**
      * @var ConnectionPool
      */
-    private $connectionPool;
+    private ConnectionPool $connectionPool;
 
     /**
      * @var FlashMessageService
      */
-    private $flashMessageService;
+    private FlashMessageService $flashMessageService;
 
     /**
      * @var array
@@ -52,9 +50,9 @@ class SyncList
     private $syncList = [];
 
     /**
-     * @var string
+     * @var int
      */
-    private $id = '';
+    private $id;
 
     /**
      * SyncList constructor.
@@ -71,9 +69,9 @@ class SyncList
     }
 
     /**
-     * @param string $syncListId
+     * @param int $syncListId
      */
-    public function load(string $syncListId): void
+    public function load(int $syncListId): void
     {
         $this->syncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
         $this->id       = $syncListId;
@@ -137,18 +135,23 @@ class SyncList
      */
     public function deleteFromSyncList(array $data): void
     {
-        $arDeleteArea = array_keys($data['delete']);
-        $arDeletePageID = array_keys(
-            $data['delete'][$arDeleteArea[0]]
-        );
+        $arDeleteArea   = array_keys($data['delete']);
+        $arDeletePageID = array_keys($data['delete'][$arDeleteArea[0]]);
+
         foreach ($this->syncList[$arDeleteArea[0]] as $key => $value) {
             if ($value['removeable']
                 && $value['pageID'] == $arDeletePageID[0]
             ) {
                 unset($this->syncList[$arDeleteArea[0]][$key]);
-                if (count($this->syncList[$arDeleteArea[0]]) === 0) {
+
+                // Fix index order after removal
+                if (!empty($this->syncList[$arDeleteArea[0]])) {
+                    $this->syncList[$arDeleteArea[0]]
+                        = array_values($this->syncList[$arDeleteArea[0]]);
+                } else {
                     unset($this->syncList[$arDeleteArea[0]]);
                 }
+
                 break;
             }
         }
@@ -203,55 +206,57 @@ class SyncList
      * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
      * Und Editiert werden dürfen
      *
-     * @param int $areaID Area
+     * @param int $areaId Area
      *
      * @return array
      */
-    public function getAllPageIDs(int $areaID): array
+    public function getAllPageIDs(int $areaId): array
     {
-        $syncList = $this->syncList[$areaID];
+        $pageIds = [[]];
 
-        $pageIDs = [];
-        foreach ($syncList as $arSyncPage) {
+        foreach ($this->syncList[$areaId] as $syncPage) {
             // Prüfen ob User Seite Bearbeiten darf
-            $arPage = BackendUtility::getRecord('pages', (int) $arSyncPage['pageID']);
-            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
-                $pageIDs[] = (int) $arSyncPage['pageID'];
+            $pageRow = BackendUtility::getRecord('pages', (int) $syncPage['pageID']);
+
+            if ($this->getBackendUser()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
+                $pageIds[] = [
+                    (int) $syncPage['pageID'],
+                ];
             }
 
             // Wenn der ganze Baum syncronisiert werden soll
             // getSubpagesAndCount liefert nur Pages zurück die Editiert werden
             // dürfen
             // @TODO
-            if ($arSyncPage['type'] === 'tree') {
+            if ($syncPage['type'] === 'tree') {
                 /** @var Area $area */
-                $area = GeneralUtility::makeInstance(Area::class, $arSyncPage['areaID']);
+                $area = GeneralUtility::makeInstance(Area::class, $syncPage['areaID']);
+
                 $arCount = $this->getSubpagesAndCount(
-                    (int) $arSyncPage['pageID'],
+                    (int) $syncPage['pageID'],
                     $dummy,
                     0,
-                    (int) $arSyncPage['levelmax'],
+                    (int) $syncPage['levelmax'],
                     $area->getNotDocType(),
                     $area->getDocType()
                 );
 
-                $a = $this->getPageIDsFromTree($arCount);
-                $pageIDs = array_merge($pageIDs, $a);
-
+                $pageIds[] = $this->getPageIDsFromTree($arCount);
             }
         }
 
-        $pageIDs = array_merge($pageIDs, $this->getPageTranslations($pageIDs));
+        $pageIds = array_filter(array_merge(...$pageIds));
+        $pageIds = array_merge($pageIds, $this->getPageTranslations($pageIds));
 
-        return array_unique($pageIDs);
+        return array_unique($pageIds);
     }
 
     /**
-     * @param $areaID
+     * @param int $areaId
      */
-    public function emptyArea($areaID): void
+    public function emptyArea(int $areaId): void
     {
-        unset($this->syncList[$areaID]);
+        unset($this->syncList[$areaId]);
     }
 
     /**
@@ -320,26 +325,26 @@ class SyncList
             )
             ->execute();
 
-        while ($arPage = $result->fetchAssociative()) {
+        while ($pageRow = $result->fetchAssociative()) {
             if (is_array($arDocTypesExclude)
-                && in_array($arPage['doktype'], $arDocTypesExclude, true)) {
+                && in_array($pageRow['doktype'], $arDocTypesExclude, true)) {
                 continue;
             }
 
-            if (isset($this->areas[$arPage['uid']])) {
+            if (isset($this->areas[$pageRow['uid']])) {
                 $arCount['other_area']++;
                 continue;
             }
 
             if (count($arDocTypesOnly)
-                && !in_array($arPage['doktype'], $arDocTypesOnly, true)
+                && !in_array($pageRow['doktype'], $arDocTypesOnly, true)
             ) {
                 $arCount['falses']++;
                 continue;
             }
 
             $arSub = $this->getSubpagesAndCount(
-                (int) $arPage['uid'],
+                (int) $pageRow['uid'],
                 $arCount,
                 $nLevel + 1,
                 $nLevelMax,
@@ -348,9 +353,9 @@ class SyncList
                 $tables
             );
 
-            if ($this->getBackendUser()->doesUserHaveAccess($arPage, 2)) {
+            if ($this->getBackendUser()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
                 $return[] = [
-                    'page' => $arPage,
+                    'page' => $pageRow,
                     'sub'  => $arSub,
                 ];
             } else {
@@ -361,9 +366,9 @@ class SyncList
             }
 
             // Die Zaehlung fuer die eigene Seite
-            if ($this->pageContainsData($arPage['uid'], $tables)) {
+            if ($this->pageContainsData($pageRow['uid'], $tables)) {
                 $arCount['count']++;
-                if ($arPage['deleted']) {
+                if ($pageRow['deleted']) {
                     $arCount['deleted']++;
                 }
             }
@@ -396,7 +401,8 @@ class SyncList
             if (isset($GLOBALS['TCA'][$strTableName])) {
                 $queryBuilder = $this->connectionPool->getQueryBuilderForTable($strTableName);
 
-                $nCount = $queryBuilder->count('pid')
+                $nCount = $queryBuilder
+                    ->count('pid')
                     ->from($strTableName)
                     ->where($queryBuilder->expr()->eq('pid', $nId))
                     ->execute()
@@ -420,50 +426,44 @@ class SyncList
      */
     private function getPageIDsFromTree(array $tree): array
     {
-        $pageIDs = [];
+        $pageIds = [[]];
 
         foreach ($tree as $value) {
             // See if there is a page on the branch (may be missing due to editing rights)
             if (isset($value['page'])) {
-                $pageIDs[] = $value['page']['uid'];
+                $pageIds[] = [
+                    $value['page']['uid'],
+                ];
             }
 
             // See if there are any underlying pages
             if (is_array($value['sub'])) {
-                $pageIDs = array_merge(
-                    $pageIDs,
-                    $this->getPageIDsFromTree($value['sub'])
-                );
+                $pageIds[] = $this->getPageIDsFromTree($value['sub']);
             }
         }
 
-        return $pageIDs;
+        return array_filter(array_merge(...$pageIds));
     }
 
     /**
-     * Returns the page id of translation records
+     * Returns the page IDs of translation records.
      *
-     * @param array $pages Array with page ids
+     * @param int[] $pageIds Array with page IDs
      *
-     * @return array
+     * @return int[]
      */
-    private function getPageTranslations(array $pages = []): array
+    private function getPageTranslations(array $pageIds = []): array
     {
-        if (empty($pages)) {
+        if (empty($pageIds)) {
             return [];
         }
 
-        /** @var Connection $connection */
-        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
-                                    ->getConnectionForTable('pages');
+        $queryBuilder = $this->getQueryBuilderForTable('pages');
 
-        $queryBuilder = $connection->createQueryBuilder();
-
-        $queryBuilder->getRestrictions()->removeAll();
-
-        return $queryBuilder->select('uid')
+        return $queryBuilder
+            ->select('uid')
             ->from('pages')
-            ->where($queryBuilder->expr()->in('l10n_parent', $pages))
+            ->where($queryBuilder->expr()->in('l10n_parent', $pageIds))
             ->groupBy('uid')
             ->execute()
             ->fetchFirstColumn();

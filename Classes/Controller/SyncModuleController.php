@@ -11,14 +11,22 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Controller;
 
-use Netresearch\NrSync\Module\NewsModule;
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Module\AssetModule;
+use Netresearch\Sync\Module\BackendGroupsModule;
 use Netresearch\Sync\Module\BaseModule;
 use Netresearch\Sync\Module\FalModule;
-use Netresearch\Sync\Module\StateModule;
+use Netresearch\Sync\Module\FrontendGroupsModule;
+use Netresearch\Sync\Module\NewsModule;
+use Netresearch\Sync\Module\SchedulerModule;
+use Netresearch\Sync\Module\SinglePageModule;
+use Netresearch\Sync\Module\TableStateModule;
+use Netresearch\Sync\Module\Typo3RedirectsModule;
+use Netresearch\Sync\ModuleInterface;
+use Netresearch\Sync\PageSyncModuleInterface;
+use Netresearch\Sync\SinglePageSyncModuleInterface;
 use Netresearch\Sync\SyncList;
 use Netresearch\Sync\SyncListManager;
 use Netresearch\Sync\SyncLock;
@@ -36,15 +44,14 @@ use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExis
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use function count;
 use function in_array;
 use function is_array;
@@ -67,14 +74,26 @@ use function is_string;
  * @author    Michael Ablass <ma@netresearch.de>
  * @author    Alexander Opitz <alexander.opitz@netresearch.de>
  * @author    Tobias Hein <tobias.hein@netresearch.de>
+ * @author    Rico Sonntag <rico.sonntag@netresearch.de>
  * @company   Netresearch GmbH & Co.KG <info@netresearch.de>
- * @copyright 2004-2012 Netresearch GmbH & Co.KG (ma@netresearch.de)
+ * @copyright 2004-2021 Netresearch GmbH & Co.KG
  * @license   https://www.gnu.org/licenses/agpl AGPL v3
  * @link      http://www.netresearch.de
  */
 class SyncModuleController extends ActionController
 {
-    public const FUNC_SINGLE_PAGE = 46;
+    /**
+     * The default menu item IDs.
+     */
+    public const MODULE_ASSET       = 1;
+    public const MODULE_BE_GROUPS   = 2;
+    public const MODULE_FAL         = 3;
+    public const MODULE_FE_GROUPS   = 4;
+    public const MODULE_SCHEDULER   = 5;
+    public const MODULE_SINGLE_PAGE = 6;
+    public const MODULE_TABLE_STATE = 7;
+    public const MODULE_REDIRECTS   = 8;
+    public const MODULE_NEWS        = 9;
 
     /**
      * key to use for storing insert statements
@@ -88,27 +107,47 @@ class SyncModuleController extends ActionController
      */
     public const STATEMENT_TYPE_DELETE = 'delete';
 
+    /**
+     * The date format prepended to the sync files.
+     */
+    public const DATE_FORMAT = 'Ymd-His';
 
     /**
      * @var ConnectionPool
      */
-    private $connectionPool;
+    private ConnectionPool $connectionPool;
 
     /**
      * @var FlashMessageService
      */
-    private $flashMessageService;
+    private FlashMessageService $flashMessageService;
 
     /**
      * @var SyncListManager
      */
-    private $syncListManager;
+    private SyncListManager $syncListManager;
 
     /**
      * @var Urls;
      */
-    private $urlGenerator;
+    private Urls $urlGenerator;
 
+    /**
+     * Default menu functions.
+     *
+     * @var array
+     */
+    protected array $functions = [
+        self::MODULE_ASSET       => AssetModule::class,
+        self::MODULE_BE_GROUPS   => BackendGroupsModule::class,
+        self::MODULE_FAL         => FalModule::class,
+        self::MODULE_FE_GROUPS   => FrontendGroupsModule::class,
+        self::MODULE_SCHEDULER   => SchedulerModule::class,
+        self::MODULE_SINGLE_PAGE => SinglePageModule::class,
+        self::MODULE_TABLE_STATE => TableStateModule::class,
+        self::MODULE_REDIRECTS   => Typo3RedirectsModule::class,
+        self::MODULE_NEWS        => NewsModule::class,
+    ];
 
     /**
      * @var int
@@ -205,62 +244,6 @@ class SyncModuleController extends ActionController
     protected $hookObjects = [];
 
     /**
-     * Menu functions.
-     *
-     * @var array
-     */
-    protected $functions = [
-        0 => BaseModule::class,
-        46 => [
-            'name'         => 'Single pages with content',
-            'tables'       => [
-                'pages',
-                'tt_content',
-                'sys_template',
-                'sys_file_reference',
-            ],
-            'dumpFileName' => 'partly-pages.sql',
-        ],
-        8 => FalModule::class,
-        9 => [
-            'name'         => 'FE groups',
-            'type'         => 'sync_fe_groups',
-            'tables'       => [
-                'fe_groups',
-            ],
-            'dumpFileName' => 'fe_groups.sql',
-        ],
-        35 => AssetModule::class,
-        10 => [
-            'name'         => 'BE users and groups',
-            'type'         => 'sync_be_groups',
-            'tables'       => [
-                'be_users',
-                'be_groups',
-            ],
-            'dumpFileName' => 'be_users_groups.sql',
-            'accessLevel'  => 100,
-        ],
-        17 => StateModule::class,
-        40 => [
-            'name'         => 'Scheduler',
-            'tables'       => [
-                'tx_scheduler_task',
-            ],
-            'dumpFileName' => 'scheduler.sql',
-            'accessLevel'  => 100,
-        ],
-        47 => [
-            'name'         => 'TYPO3 Redirects',
-            'tables'       => [
-                'sys_redirect',
-            ],
-            'dumpFileName' => 'sys_redirect.sql',
-            'accessLevel'  => 50,
-        ]
-    ];
-
-    /**
      * @var BaseModule
      */
     protected $function;
@@ -335,24 +318,6 @@ class SyncModuleController extends ActionController
         $this->flashMessageService = $flashMessageService;
         $this->syncListManager = $syncListManager;
         $this->urlGenerator = $urlGenerator;
-
-        if (ExtensionManagementUtility::isLoaded('news')) {
-            $this->functions[48] = \Netresearch\Sync\Module\NewsModule::class;
-        }
-
-        if(ExtensionManagementUtility::isLoaded('nr_textdb')) {
-            $this->functions[20] = [
-                'name'         => 'TextDB',
-                'tables'       => [
-                    'tx_nrtextdb_domain_model_environment',
-                    'tx_nrtextdb_domain_model_component',
-                    'tx_nrtextdb_domain_model_type',
-                    'tx_nrtextdb_domain_model_translation',
-                ],
-                'dumpFileName' => 'text-db.sql',
-                'accessLevel'  => 50,
-            ];
-        }
 
         $this->MCONF = [
             'name' => $this->moduleName,
@@ -466,17 +431,20 @@ class SyncModuleController extends ActionController
             }
         }
 
-        foreach ($this->functions as $functionKey => $function) {
+        /** @var ModuleInterface $function */
+        foreach ($this->functions as $functionKey => $functionClass) {
             $function = $this->getFunctionObject($functionKey);
 
-            if ($accessLevel >= $function->getAccessLevel()) {
+            if ($function && ($accessLevel >= $function->getAccessLevel())) {
                 $this->MOD_MENU['function'][$functionKey] = $function->getName();
             }
         }
 
+        // Sort by name
         natcasesort($this->MOD_MENU['function']);
 
-        $this->MOD_MENU['function'] = [ '0' => 'Please select' ] + $this->MOD_MENU['function'];
+        // Add a "please select" entry to the menu list
+        $this->MOD_MENU['function'] = [ 0 => 'Please select' ] + $this->MOD_MENU['function'];
 
         $this->MOD_SETTINGS = BackendUtility::getModuleData(
             $this->MOD_MENU,
@@ -503,12 +471,31 @@ class SyncModuleController extends ActionController
     /**
      * @param int $functionKey
      *
-     * @return mixed
+     * @return null|ModuleInterface
      */
-    private function getFunctionObject(int $functionKey)
+    private function getFunctionObject(int $functionKey): ?ModuleInterface
     {
-        if (is_string($this->functions[$functionKey])) {
+        if (is_string($this->functions[$functionKey])
+            && class_exists($this->functions[$functionKey])
+        ) {
             $function = GeneralUtility::makeInstance($this->functions[$functionKey]);
+
+            if (!($function instanceof ModuleInterface)) {
+                $this->addError(
+                    sprintf(
+                        'The deprecated module "%s" has been disabled. It must '
+                        . 'implement \Netresearch\Sync\ModuleInterface',
+                        $this->functions[$functionKey]
+                    )
+                );
+
+                return null;
+            }
+
+            // Object is not available due some reasons
+            if (!$function->isAvailable()) {
+                return null;
+            }
         } else {
             $function = GeneralUtility::makeInstance(
                 BaseModule::class,
@@ -580,12 +567,12 @@ class SyncModuleController extends ActionController
     /**
      * Shows the page selection, depending on selected id and tables to look at.
      *
-     * @param string $strName  Name of this page selection (Depends on task).
-     * @param array  $tables Tables this task manages.
+     * @param int   $functionId The function ID of this page selection (Depends on task)
+     * @param array $tables     Tables this task manages
      *
      * @return void
      */
-    private function showPageSelection(string $strName, array $tables): void
+    private function showPageSelection(int $functionId, array $tables): void
     {
         if ($this->id === 0) {
             $this->addError('Please select a page from the page tree.');
@@ -605,12 +592,12 @@ class SyncModuleController extends ActionController
         }
 
         $bShowButton = false;
-        $recursion = (int) $this->getBackendUser()->getSessionData('nr_sync_synclist_levelmax' . $strName);
+        $recursion = (int) $this->getBackendUser()->getSessionData('nr_sync_synclist_levelmax' . $functionId);
 
         if (isset($_POST['data']['rekursion'])) {
             $recursion = (int) $_POST['data']['levelmax'];
 
-            $this->getBackendUser()->setAndSaveSessionData('nr_sync_synclist_levelmax' . $strName, $recursion);
+            $this->getBackendUser()->setAndSaveSessionData('nr_sync_synclist_levelmax' . $functionId, $recursion);
         }
 
         if ($recursion < 1) {
@@ -632,7 +619,7 @@ class SyncModuleController extends ActionController
 
         $strTitle = $this->getArea()->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
 
-        if (((int) $record['doktype']) === 4) {
+        if (((int) $record['doktype']) === PageRepository::DOKTYPE_SHORTCUT) {
             $strTitle .= ' - LINK';
         }
 
@@ -686,17 +673,19 @@ class SyncModuleController extends ActionController
     }
 
     /**
-     * @param mixed $syncListId
-     *
+     * @return int
+     */
+    private function getCurrentFunctionId(): int
+    {
+        return (int) $this->MOD_SETTINGS['function'];
+    }
+
+    /**
      * @return SyncList
      */
-    private function getSyncList($syncListId = null): SyncList
+    private function getSyncList(): SyncList
     {
-        if ($syncListId === null) {
-            $syncListId = $this->MOD_SETTINGS['function'];
-        }
-
-        return $this->syncListManager->getSyncList($syncListId);
+        return $this->syncListManager->getSyncList($this->getCurrentFunctionId());
     }
 
     /**
@@ -789,19 +778,20 @@ class SyncModuleController extends ActionController
             $this->MOD_SETTINGS['function'] = 0;
         }
 
-        $this->function = $this->getFunctionObject((int) $this->MOD_SETTINGS['function']);
+        $this->function = $this->getFunctionObject($this->getCurrentFunctionId());
         $dumpFile       = $this->function->getDumpFileName();
 
-        $this->view->assign('selectedMenuItem', (int) $this->MOD_SETTINGS['function']);
+        $this->view->assign('selectedMenuItem', $this->getCurrentFunctionId());
         $this->view->assign('function', $this->function);
         $this->view->assign('id', $this->id);
         $this->view->assign('area', $this->getArea());
         $this->view->assign('dbFolder', $this->dbFolder);
+        $this->view->assign('isSingePageSyncModule', $this->isSinglePageSyncModule());
 
         // Sync single pages/page trees (TYPO3 6.2.x)
-        if (((int) $this->MOD_SETTINGS['function']) === self::FUNC_SINGLE_PAGE) {
+        if ($this->function instanceof SinglePageSyncModuleInterface) {
             $this->showPageSelection(
-                $this->MOD_SETTINGS['function'],
+                $this->getCurrentFunctionId(),
                 $this->function->getTableNames()
             );
 
@@ -823,15 +813,18 @@ class SyncModuleController extends ActionController
                 $syncList = $this->getSyncList();
 
                 if (!$syncList->isEmpty()) {
-                    $strDumpFileArea = date('YmdHis_') . $dumpFile;
+                    $strDumpFileArea = date(self::DATE_FORMAT . '_') . $dumpFile;
 
                     foreach ($syncList->getAsArray() as $areaID => $syncListArea) {
                         /** @var Area $area */
                         $area = GeneralUtility::makeInstance(Area::class, $areaID);
 
                         $pageIDs = $syncList->getAllPageIDs($areaID);
+
                         $ret = $this->createShortDump(
-                            $pageIDs, $this->function->getTableNames(), $strDumpFileArea,
+                            $pageIDs,
+                            $this->function->getTableNames(),
+                            $strDumpFileArea,
                             $area->getDirectories()
                         );
 
@@ -854,33 +847,43 @@ class SyncModuleController extends ActionController
                     }
                 }
             } else {
-                // RSO: Introduced by TYPO-7071, but seems incomplete, $arContent not defined here!
-                //
-                //foreach ($this->hookObjects as $hookClass) {
-                //    $hookObject = GeneralUtility::makeInstance($hookClass);
-                //    if (method_exists($hookObject, 'preProcessSync')) {
-                //        $hookObject->preProcessSync($arContent['uid'], $this->function->getTableNames(), $this->getPreSyncParams(), $this->getSyncList(), $this);
-                //    }
-                //}
+                foreach ($this->hookObjects as $hookClass) {
+                    /** @var ModuleInterface $hookObject */
+                    $hookObject = GeneralUtility::makeInstance($hookClass);
+
+                    if (method_exists($hookObject, 'preProcessSync')) {
+                        $hookObject->preProcessSync(
+                            $this->function->getTableNames()[0],
+                            $this->getPreSyncParams(),
+                            $this->getSyncList()
+                        );
+                    }
+                }
 
                 $bSyncResult = $this->createDumpToAreas(
                     $this->function->getTableNames(), $dumpFile
                 );
 
-                // MFI-152 Crate page sync files for pages which have related pages.
-                if ($bSyncResult && method_exists($this->function, 'getPagesToSync')) {
+                // MFI-152 Create page sync files for pages which have related pages.
+                if ($bSyncResult
+                    && ($this->function instanceof PageSyncModuleInterface)
+                ) {
                     $arPageIDs = $this->function->getPagesToSync();
-                    $dumpFile = "pages_" . $dumpFile;
-                    $strDumpFileArea = date('YmdHis_') . $dumpFile;
+                    $dumpFile = 'pages_' . $dumpFile;
+                    $strDumpFileArea = date(self::DATE_FORMAT . '_') . $dumpFile;
                     $tables = [
                         'pages',
                         'tt_content',
                         'sys_template',
                         'sys_file_reference',
                     ];
+
                     $area = GeneralUtility::makeInstance(Area::class, 0);
+
                     $this->createShortDump(
-                        $arPageIDs, $tables, $strDumpFileArea,
+                        $arPageIDs,
+                        $tables,
+                        $strDumpFileArea,
                         $area->getDirectories()
                     );
                     $this->createClearCacheFile('pages', $arPageIDs);
@@ -915,6 +918,16 @@ class SyncModuleController extends ActionController
     }
 
     /**
+     * Returns TRUE if the current module is the single page sync module.
+     *
+     * @return bool
+     */
+    private function isSinglePageSyncModule(): bool
+    {
+        return ($this->getCurrentFunctionId()) === self::MODULE_SINGLE_PAGE;
+    }
+
+    /**
      *
      * @param string[] $tables Table names
      * @param string $dumpFile Name of the dump file.
@@ -930,7 +943,7 @@ class SyncModuleController extends ActionController
         array $tables,
         string $dumpFile
     ): bool {
-        $filename = date('YmdHis_') . $dumpFile;
+        $filename = date(self::DATE_FORMAT . '_') . $dumpFile;
         $dumpFile = $this->strTempFolder . sprintf($dumpFile, '');
 
         if (file_exists($dumpFile)
@@ -1040,7 +1053,7 @@ class SyncModuleController extends ActionController
     }
 
     /**
-     * Baut Speciellen Dump zusammen, der nur die angewählten Pages enthällt.
+     * Baut speziellen Dump zusammen, der nur die angewählten Pages enthält.
      * Es werden nur Pages gedumpt, zu denen der Redakteur auch Zugriff hat.
      *
      * @param array $pageIDs List if page IDs to dump
@@ -1228,14 +1241,14 @@ class SyncModuleController extends ActionController
         $deleteLines = [];
         $insertLines = [];
 
-        $arColumns = $this->connectionPool
+        $columns = $this->connectionPool
             ->getConnectionForTable($tableName)
             ->getSchemaManager()
             ->listTableColumns($tableName);
 
-        $arColumnNames = [];
-        foreach ($arColumns as $column) {
-            $arColumnNames[] = $column->getName();
+        $columnNames = [];
+        foreach ($columns as $column) {
+            $columnNames[] = $column->getName();
         }
 
         $queryBuilder = $this->getQueryBuilderForTable($tableName);
@@ -1248,28 +1261,35 @@ class SyncModuleController extends ActionController
             $strWhere = $queryBuilder->expr()->in('pid', $pageIDs);
         }
 
-        $refTableContent = $queryBuilder
+        $statement = $queryBuilder
             ->select('*')
             ->from($tableName)
             ->where($strWhere)
             ->execute();
 
-        if ($refTableContent) {
-            while ($arContent = $refTableContent->fetchAssociative()) {
-                foreach ($this->hookObjects as $hookClass) {
-                    $hookObject = GeneralUtility::makeInstance($hookClass);
-                    if (method_exists($hookObject, 'preProcessSync')) {
-                        $hookObject->preProcessSync($arContent['uid'], $tableName, $this->getPreSyncParams(), $this->getSyncList(), $this);
-                    }
-                }
-                $deleteLines[$tableName][$arContent['uid']]
-                    = $this->buildDeleteLine($tableName, $arContent['uid']);
-                $insertLines[$tableName][$arContent['uid']]
-                    = $this->buildInsertUpdateLine($tableName, $arColumnNames, $arContent);
+        if ($statement) {
+            foreach ($this->hookObjects as $hookClass) {
+                /** @var ModuleInterface $hookObject */
+                $hookObject = GeneralUtility::makeInstance($hookClass);
 
-                $this->writeMMReferences(
-                    $tableName, $arContent, $fpDumpFile
-                );
+                // Run hook for each
+                if (method_exists($hookObject, 'preProcessSync')) {
+                    $hookObject->preProcessSync(
+                        $tableName,
+                        $this->getPreSyncParams(),
+                        $this->getSyncList()
+                    );
+                }
+            }
+
+            while ($row = $statement->fetchAssociative()) {
+                $deleteLines[$tableName][$row['uid']]
+                    = $this->buildDeleteLine($tableName, $row['uid']);
+
+                $insertLines[$tableName][$row['uid']]
+                    = $this->buildInsertUpdateLine($tableName, $columnNames, $row);
+
+                $this->writeMMReferences($tableName, $row, $fpDumpFile);
 
                 if (count($deleteLines) > 50) {
                     $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
@@ -1300,7 +1320,7 @@ class SyncModuleController extends ActionController
 
         return [
             'area' => $this->getArea(),
-            'function' => $this->MOD_SETTINGS['function'],
+            'function' => $this->getCurrentFunctionId(),
             'dbFolder' => $this->dbFolder,
             'forceFullSync' => $postData['force_full_sync'],
         ];
@@ -1351,7 +1371,7 @@ class SyncModuleController extends ActionController
      * Writes the references of a table to the sync data.
      *
      * @param string $strRefTableName Table to reference.
-     * @param array $arContent The database row to find MM References.
+     * @param array $row The database row to find MM References.
      * @param resource $fpDumpFile File pointer to the SQL dump file.
      *
      * @return void
@@ -1361,7 +1381,7 @@ class SyncModuleController extends ActionController
      */
     private function writeMMReferences(
         string $strRefTableName,
-        array $arContent,
+        array $row,
         $fpDumpFile
     ): void {
         $deleteLines = [];
@@ -1370,24 +1390,24 @@ class SyncModuleController extends ActionController
         $this->arReferenceTables = [];
         $this->addMMReferenceTables($strRefTableName);
 
-        foreach ($this->arReferenceTables as $strMMTableName => $arTableFields) {
-            $arColumns = $this->connectionPool
-                ->getConnectionForTable($strMMTableName)
+        foreach ($this->arReferenceTables as $mmTableName => $arTableFields) {
+            $columns = $this->connectionPool
+                ->getConnectionForTable($mmTableName)
                 ->getSchemaManager()
-                ->listTableColumns($strMMTableName);
+                ->listTableColumns($mmTableName);
 
-            $arColumnNames = [];
-            foreach ($arColumns as $column) {
-                $arColumnNames[] = $column->getName();
+            $columnNames = [];
+            foreach ($columns as $column) {
+                $columnNames[] = $column->getName();
             }
 
             foreach ($arTableFields as $arMMConfig) {
                 $this->writeMMReference(
                     $strRefTableName,
-                    $strMMTableName,
-                    $arContent['uid'],
+                    $mmTableName,
+                    $row['uid'],
                     $arMMConfig,
-                    $arColumnNames,
+                    $columnNames,
                     $fpDumpFile
                 );
             }
@@ -1428,7 +1448,7 @@ class SyncModuleController extends ActionController
      * @param string $tableName Table to get MM data from.
      * @param int $uid The uid of element which references.
      * @param array $arMMConfig The configuration of this MM reference.
-     * @param array $arColumnNames Table columns
+     * @param array $columnNames Table columns
      * @param resource $fpDumpFile File pointer to the SQL dump file.
      *
      * @throws Exception
@@ -1439,7 +1459,7 @@ class SyncModuleController extends ActionController
         string $tableName,
         int $uid,
         array $arMMConfig,
-        array $arColumnNames,
+        array $columnNames,
         $fpDumpFile
     ): void {
         $deleteLines = [];
@@ -1464,7 +1484,7 @@ class SyncModuleController extends ActionController
         $queryBuilder = $connection->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
 
-        $refTableContent = $queryBuilder
+        $statement = $queryBuilder
             ->select('*')
             ->from($tableName)
             ->where($strWhere)
@@ -1476,30 +1496,27 @@ class SyncModuleController extends ActionController
             $strWhere
         );
 
-        if ($refTableContent) {
-            while ($arContent = $refTableContent->fetchAssociative()) {
-                $insertLines[$tableName][$arContent['uid']]
-                    = $this->buildInsertUpdateLine($tableName, $arColumnNames, $arContent);
+        if ($statement) {
+            while ($row = $statement->fetchAssociative()) {
+                $insertLines[$tableName][$row['uid']]
+                    = $this->buildInsertUpdateLine($tableName, $columnNames, $row);
 
-                $strDamTable = 'sys_file';
-                $strDamRefTable = 'sys_file_reference';
-
-                if ($strRefTableName !== $strDamTable
-                    && $arMMConfig['MM'] === $strDamRefTable
-                    && $arMMConfig['form_type'] === 'user'
+                if (($strRefTableName !== 'sys_file')
+                    && ($arMMConfig['MM'] === 'sys_file_reference')
+                    && ($arMMConfig['form_type'] === 'user')
                 ) {
                     $this->dumpTableByPageIDs(
                         [
-                            $arContent['uid_local'],
+                            $row['uid_local'],
                         ],
-                        $strDamTable,
+                        'sys_file',
                         $fpDumpFile,
                         true
                     );
                 }
             }
 
-            unset($refTableContent);
+            unset($statement);
         }
 
         $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
@@ -1519,12 +1536,12 @@ class SyncModuleController extends ActionController
             return;
         }
 
-        foreach ($GLOBALS['TCA'][$tableName]['columns'] as $strFieldName => $arColumn) {
-            if (isset($arColumn['config']['type'])) {
-                if ($arColumn['config']['type'] === 'inline') {
-                    $this->addForeignTableToReferences($arColumn);
+        foreach ($GLOBALS['TCA'][$tableName]['columns'] as $column) {
+            if (isset($column['config']['type'])) {
+                if ($column['config']['type'] === 'inline') {
+                    $this->addForeignTableToReferences($column);
                 } else {
-                    $this->addMMTableToReferences($arColumn);
+                    $this->addMMTableToReferences($column);
                 }
             }
         }
@@ -1534,30 +1551,29 @@ class SyncModuleController extends ActionController
      * Adds Column config to references table, if a foreign_table reference config
      * like in inline-fields exists.
      *
-     * @param array $arColumn Column config to get foreign_table data from.
+     * @param array $column Column config to get foreign_table data from.
      *
      * @return void
      */
-    private function addForeignTableToReferences(array $arColumn): void
+    private function addForeignTableToReferences(array $column): void
     {
-        if (isset($arColumn['config']['foreign_table'])) {
-            $strForeignTable = $arColumn['config']['foreign_table'];
-            $this->arReferenceTables[$strForeignTable][] = $arColumn['config'];
+        if (isset($column['config']['foreign_table'])) {
+            $strForeignTable = $column['config']['foreign_table'];
+            $this->arReferenceTables[$strForeignTable][] = $column['config'];
         }
     }
 
     /**
      * Adds Column config to references table, if a MM reference config exists.
      *
-     * @param array $arColumn Column config to get MM data from.
+     * @param array $column Column config to get MM data from.
      *
      * @return void
      */
-    private function addMMTableToReferences(array $arColumn): void
+    private function addMMTableToReferences(array $column): void
     {
-        if (isset($arColumn['config']['MM'])) {
-            $strMMTableName = $arColumn['config']['MM'];
-            $this->arReferenceTables[$strMMTableName][] = $arColumn['config'];
+        if (isset($column['config']['MM'])) {
+            $this->arReferenceTables[$column['config']['MM']][] = $column['config'];
         }
     }
 
@@ -1762,20 +1778,20 @@ class SyncModuleController extends ActionController
      * Returns SQL INSERT .. UPDATE ON DUPLICATE KEY query.
      *
      * @param string $tableName name of table to insert into
-     * @param array  $arColumnNames
-     * @param array  $arContent
+     * @param array  $columnNames
+     * @param array  $row
      *
      * @return string
      */
-    private function buildInsertUpdateLine(string $tableName, array $arColumnNames, array $arContent): string
+    private function buildInsertUpdateLine(string $tableName, array $columnNames, array $row): string
     {
         $connection = $this->connectionPool->getConnectionForTable($tableName);
 
         $arUpdateParts = [];
 
-        foreach ($arContent as $key => $value) {
+        foreach ($row as $key => $value) {
             if (!is_numeric($value)) {
-                $arContent[$key] = $connection->quote($value);
+                $row[$key] = $connection->quote($value);
             }
 
             // TYPO-2215 - Match the column to its update value
@@ -1785,38 +1801,9 @@ class SyncModuleController extends ActionController
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
             $connection->quoteIdentifier($tableName),
-            implode(', ', $arColumnNames),
-            implode(', ', $arContent),
+            implode(', ', $columnNames),
+            implode(', ', $row),
             implode(', ', $arUpdateParts)
-        );
-    }
-
-    /**
-     * Returns SQL INSERT query.
-     *
-     * @param string $tableName name of table to insert into
-     * @param array  $arTableStructure
-     * @param array  $arContent
-     *
-     * @return string
-     */
-    private function buildInsertLine(string $tableName, array $arTableStructure, array $arContent): string
-    {
-        $connection = $this->connectionPool->getConnectionForTable($tableName);
-
-        foreach ($arContent as $key => $value) {
-            if (!is_numeric($value)) {
-                $arContent[$key] = $connection->quote($value);
-            }
-        }
-
-        $arColumnNames = array_keys($arTableStructure);
-
-        return sprintf(
-            'REPLACE INTO %s (%s) VALUES (%s);',
-            $connection->quoteIdentifier($tableName),
-            implode(', ', $arColumnNames),
-            implode(', ', $arContent)
         );
     }
 
@@ -1831,7 +1818,7 @@ class SyncModuleController extends ActionController
     {
         $strExec = 'gzip ' . escapeshellarg($dumpFile);
 
-        $ret = shell_exec($strExec);
+        shell_exec($strExec);
 
         if (!file_exists($dumpFile . '.gz')) {
             $this->addError('Fehler beim Erstellen der gzip Datei aus dem Dump.');
@@ -1850,8 +1837,6 @@ class SyncModuleController extends ActionController
      */
     private function createMenu(): void
     {
-//        $uriBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder::class);
-
         /** @var \TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder $uriBuilder */
         $uriBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder::class);
         $uriBuilder->setRequest($this->request);
@@ -1864,24 +1849,22 @@ class SyncModuleController extends ActionController
 
         $menu->setIdentifier('sync');
 
-        foreach ($this->MOD_MENU['function'] as $controller => $title) {
+        foreach ($this->MOD_MENU['function'] as $functionId => $title) {
             $item = $menu
                 ->makeMenuItem()
                 ->setTitle($title)
-//                ->setTitle($this->getLanguageService()->sL('LLL:EXT:news/Resources/Private/Language/locallang_be.xlf:module.' . $action['label']))
-//                ->setHref($uriBuilder->reset()->uriFor($controller, [], 'Administration'))
                 ->setHref(
                     $this->getModuleUrl(
                         [
                             'id' => $this->id,
                             'SET' => [
-                                'function' => $controller,
+                                'function' => $functionId,
                             ]
                         ]
                     )
                 );
 
-            if ($controller === (int) $this->MOD_SETTINGS['function']) {
+            if ($functionId === $this->getCurrentFunctionId()) {
                 $item->setActive(true);
             }
 
@@ -2329,7 +2312,7 @@ class SyncModuleController extends ActionController
     }
 
     /**
-     * Adds information about full or inc sync to syncfile
+     * Adds information about full or inc sync to sync file
      *
      * @param string $dumpFile the name of the file
      *

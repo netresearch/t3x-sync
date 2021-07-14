@@ -24,7 +24,7 @@
 
                 <h2>Create new sync</h2>
 
-                <f:if condition="{selectedMenuItem} == 46 && {pageValid}">
+                <f:if condition="{isSingePageSyncModule} && {pageValid}">
                     <div class="form-section">
                         <f:render partial="PageSync" section="Main" arguments="{_all}" />
                     </div>

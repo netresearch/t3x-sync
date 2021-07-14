@@ -1,14 +1,26 @@
 <?php
-namespace Netresearch\Sync\Module;
-
-
-use Doctrine\DBAL\FetchMode;
-use Netresearch\Sync\Module\BaseModule;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Methods to work with synchronization areas
+ * This file is part of the package netresearch/nrc-resco.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
+namespace Netresearch\Sync\Module;
+
+use Doctrine\DBAL\FetchMode;
+use Exception;
+use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\ModuleInterface;
+use Netresearch\Sync\PageSyncModuleInterface;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+/**
+ * Class NewsModule
  *
  * @package    Netresearch/TYPO3/Sync
  * @author     Axel Seemann <axel.seemann@netresearch.de>
@@ -16,10 +28,35 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * @license    https://www.gnu.org/licenses/agpl AGPL v3
  * @link       http://www.netresearch.de
  */
-class NewsModule extends BaseModule
+class NewsModule extends BaseModule implements PageSyncModuleInterface
 {
     /**
-     * @var string[] Tables which should be synchronized
+     * The name of the sync module to be displayed in sync module selection menu.
+     *
+     * @var string
+     */
+    protected $name = 'News';
+
+    /**
+     * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
+     *
+     * @var string
+     *
+     * @deprecated Seems deprecated. Not used anywhere?
+     */
+    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+
+    /**
+     * Base name of the sync file.
+     *
+     * @var string
+     */
+    protected $dumpFileName = 'news.sql';
+
+    /**
+     * Tables which should be synchronized.
+     *
+     * @var string[]
      */
     protected $tables = [
         'tx_news_domain_model_link',
@@ -31,30 +68,10 @@ class NewsModule extends BaseModule
         'sys_file_reference'
     ];
 
-    /**
-     * @var string Name of the sync displayed in Backend
-     */
-    protected $name = 'News';
-
-    /**
-     * @var string Type Of Sync
-     */
-    protected $type = 'sync_tables';
-
-    /**
-     * @var string Sync Target
-     */
-    protected $target = '';
-
-    /**
-     * @var string Base name of the syncfile
-     */
-    protected $dumpFileName = 'news.sql';
-
-    /**
-     * @var int Level who is allowed to access
-     */
-    protected $accessLevel = 0;
+    public function isAvailable(): bool
+    {
+        return parent::isAvailable() && ExtensionManagementUtility::isLoaded('news');
+    }
 
     /**
      * Returns the PageIDs which should also be synchronized
@@ -63,19 +80,24 @@ class NewsModule extends BaseModule
      */
     public function getPagesToSync(): array
     {
-        $connection  = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('tt_content');
+        $connection = $this->connectionPool
+            ->getConnectionForTable('tt_content');
 
         $queryBuilder = $connection->createQueryBuilder();
-
-        $queryBuilder->select('pid')
-                     ->from('tt_content')
-                     ->where(
-                         $queryBuilder->expr()->like('list_type', $queryBuilder->createNamedParameter('news%'))
-                     )->groupBy('pid');
+        $queryBuilder
+            ->select('pid')
+            ->from('tt_content')
+            ->where(
+                $queryBuilder->expr()->like(
+                    'list_type',
+                    $queryBuilder->createNamedParameter('news%')
+                )
+            )
+            ->groupBy('pid');
 
         try {
             return $queryBuilder->execute()->fetchAll(FetchMode::COLUMN);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return [];
         }
     }

@@ -27,7 +27,7 @@ class SyncListManager implements SingletonInterface
     /**
      * @var ObjectManagerInterface
      */
-    private $objectManager;
+    private ObjectManagerInterface $objectManager;
 
     /**
      * @var SyncList[]
@@ -46,11 +46,11 @@ class SyncListManager implements SingletonInterface
     }
 
     /**
-     * @param string $syncListId
+     * @param int $syncListId
      *
      * @return SyncList
      */
-    public function getSyncList(string $syncListId): SyncList
+    public function getSyncList(int $syncListId): SyncList
     {
         if ($this->syncLists[$syncListId] === null) {
             /** @var SyncList $syncList */

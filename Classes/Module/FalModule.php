@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Module;
 
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\ModuleInterface;
 
 /**
  * Class FalModule
@@ -23,6 +24,34 @@ use Netresearch\Sync\Helper\Area;
  */
 class FalModule extends BaseModule
 {
+    /**
+     * The name of the sync module to be displayed in sync module selection menu.
+     *
+     * @var string
+     */
+    protected $name = 'FAL (File Abstraction Layer)';
+
+    /**
+     * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
+     *
+     * @var string
+     *
+     * @deprecated Seems deprecated. Not used anywhere?
+     */
+    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+
+    /**
+     * The name of the synchronisation file containing the SQL statements to update the database records.
+     *
+     * @var string
+     */
+    protected $dumpFileName = 'fal.sql';
+
+    /**
+     * A list of table names to synchronise.
+     *
+     * @var string[]
+     */
     protected $tables = [
         'sys_file',
         'sys_category',
@@ -33,11 +62,7 @@ class FalModule extends BaseModule
         'sys_file_metadata',
     ];
 
-    protected $name = 'FAL';
-    protected $type = 'sync_tables';
-    protected $dumpFileName = 'fal.sql';
-
-    public function run(Area $area): bool
+    public function run(Area $area): void
     {
         // See http://jira.aida.de/jira/browse/SDM-2099
         if (isset($_POST['data']['dam_cleanup'])) {
@@ -52,8 +77,6 @@ class FalModule extends BaseModule
             // TODO Move to a template
             $this->content = '<input class="btn btn-warning" type="Submit" name="data[dam_cleanup]" value="Clean up FAL">';
         }
-
-        return true;
     }
 
     /**

@@ -45,9 +45,14 @@ class UsernameViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
-        if ($this->arguments['id']) {
-            $user = $this->getBackendUser()->getRawUserByUid($this->arguments['id']);
-            return $user['realName'] . ' #' . $this->arguments['id'];
+        if ($this->arguments['id'] > 0) {
+            $user = $this->getBackendUser()
+                ->getRawUserByUid($this->arguments['id']);
+
+            $realName = $user['realName'] !== '' ? $user['realName'] : null;
+            $userName = $user['username'] !== '' ? $user['username'] : null;
+
+            return ($realName ?? $userName) . ' #' . $this->arguments['id'];
         }
 
         return ($this->arguments['id'] === 0) ? 'SYSTEM' : 'UNKNOWN';

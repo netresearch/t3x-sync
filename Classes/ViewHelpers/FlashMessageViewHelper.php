@@ -33,6 +33,16 @@ class FlashMessageViewHelper extends AbstractViewHelper
     private $bootstrapRenderer;
 
     /**
+     * @var bool
+     */
+    protected $escapeChildren = false;
+
+    /**
+     * @var bool
+     */
+    protected $escapeOutput = false;
+
+    /**
      * FlashMessageViewHelper constructor.
      *
      * @param BootstrapRenderer $bootstrapRenderer

@@ -12,24 +12,50 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Module;
 
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\ModuleInterface;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 
 /**
- * Class StateModule
+ * Class TableStateModule
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-class StateModule extends BaseModule
+class TableStateModule extends BaseModule
 {
+    /**
+     * The name of the sync module to be displayed in sync module selection menu.
+     *
+     * @var string
+     */
     protected $name = 'Table state';
-    protected $type = 'sync_tables';
-    protected $target = 'local';
+
+    /**
+     * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
+     *
+     * @var string
+     *
+     * @deprecated Seems deprecated. Not used anywhere?
+     */
+    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+
+    /**
+     * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
+     *
+     * @var int
+     */
     protected $accessLevel = 100;
 
-    public function run(Area $area): bool
+    /**
+     * The name of the sync target.
+     *
+     * @var string
+     */
+    protected $target = 'local';
+
+    public function run(Area $area): void
     {
         parent::run($area);
 
@@ -42,8 +68,6 @@ class StateModule extends BaseModule
         } else {
             $this->testAllTablesForDifferences();
         }
-
-        return true;
     }
 
     /**

@@ -1739,7 +1739,7 @@ class SyncModuleController extends ActionController
         array &$deleteLines,
         array $insertLines
     ): void {
-        if (empty($deleteLines)) {
+        if (count($deleteLines) === 0) {
             return;
         }
         foreach ($insertLines as $tableName => $arElements) {

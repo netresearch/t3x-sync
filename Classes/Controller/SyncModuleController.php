@@ -1490,11 +1490,14 @@ class SyncModuleController extends ActionController
             ->where($strWhere)
             ->execute();
 
-        $deleteLines[$tableName][$uid] = sprintf(
-            'DELETE FROM %s WHERE %s;',
-            $connection->quoteIdentifier($tableName),
-            $strWhere
-        );
+
+        if ($tableName !== 'sys_file_reference') {
+            $deleteLines[$tableName][$uid] = sprintf(
+                'DELETE FROM %s WHERE %s;',
+                $connection->quoteIdentifier($tableName),
+                $strWhere
+            );
+        }
 
         if ($statement) {
             while ($row = $statement->fetchAssociative()) {
@@ -1736,6 +1739,9 @@ class SyncModuleController extends ActionController
         array &$deleteLines,
         array $insertLines
     ): void {
+        if (count($deleteLines) === 0) {
+            return;
+        }
         foreach ($insertLines as $tableName => $arElements) {
             // no modification for arrays with old flat structure
             if (!is_array($arElements)) {

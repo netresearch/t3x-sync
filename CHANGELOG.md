@@ -1,3 +1,13 @@
+# 0.11.4
+
+## MISC
+
+- 26f8335 TYPO-8217: add sys_file as table which should synced with INSERT INTO REPLACE - avoid PRIMARY KEY 1 exists error message during sync, if some other files has been index in sys_file already
+
+## Contributors
+
+- Tobias.Hein
+
 # 0.11.3
 
 ## MISC

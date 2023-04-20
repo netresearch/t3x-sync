@@ -64,6 +64,16 @@ class Table
     private $deleteObsoleteRows = true;
 
     /**
+     * Array of Tables which should be synced with INSERT INTO REPLACE
+     *
+     * @var string[]
+     */
+    private $arTablesUsingReplacetatement = [
+        'sys_file_metadata',
+        'sys_file',
+    ];
+
+    /**
      * Constructor.
      *
      * @param string $tableName Name of table.
@@ -105,7 +115,7 @@ class Table
      */
     protected function useReplace(): bool
     {
-        return $this->tableName === 'sys_file_metadata';
+        return in_array($this->tableName , $this->arTablesUsingReplacetatement);
     }
 
     /**

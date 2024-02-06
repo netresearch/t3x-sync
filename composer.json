@@ -20,7 +20,13 @@
         "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
     },
     "require": {
+<<<<<<< HEAD
         "typo3/cms-core": "^10.4"
+||||||| parent of e0fefd3 (Require TYPO3 v12)
+        "typo3/cms-core": "^8.7|^9.5"
+=======
+        "typo3/cms-core": "^12.4"
+>>>>>>> e0fefd3 (Require TYPO3 v12)
     },
     "replace": {
         "nr_sync": "self.version",

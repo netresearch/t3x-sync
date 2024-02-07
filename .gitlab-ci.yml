@@ -1,20 +1,95 @@
-# This file is a template, and might need editing before it works on your project.
-# Publishes a tag/branch to Composer Packages of the current project
-publish:
-  image: curlimages/curl:latest
-  stage: build
-  variables:
-    URL: "$CI_SERVER_PROTOCOL://$CI_SERVER_HOST:$CI_SERVER_PORT/api/v4/projects/$CI_PROJECT_ID/packages/composer?job_token=$CI_JOB_TOKEN"
-  script:
-    - version=$([[ -z "$CI_COMMIT_TAG" ]] && echo "branch=$CI_COMMIT_REF_NAME" || echo "tag=$CI_COMMIT_TAG")
-    - insecure=$([ "$CI_SERVER_PROTOCOL" = "http" ] && echo "--insecure" || echo "")
-    - response=$(curl -s -w "\n%{http_code}" $insecure --data $version $URL)
-    - code=$(echo "$response" | tail -n 1)
-    - body=$(echo "$response" | head -n 1)
-    # Output state information
-    - if [ $code -eq 201 ]; then
-        echo "Package created - Code $code - $body";
-      else
-        echo "Could not create package - Code $code - $body";
-        exit 1;
-      fi
+stages:
+    - preparation
+    - testing
+
+.parallel-hidden-job:
+    parallel:
+        matrix:
+            -   TYPO3: [ '^12.0' ]
+                PHP: [ '8.1', '8.2', '8.3' ]
+
+default:
+    before_script:
+        # Update image
+        - apt-get update -yqq
+        - apt-get install -yqq git libxml2-dev libzip-dev zip unzip gnupg2
+
+        # Install PHP extensions
+        - docker-php-ext-install intl xml zip
+        - php --version
+
+        # Install composer
+        - curl -sS https://getcomposer.org/installer | php
+
+.php:
+    extends: .parallel-hidden-job
+    image: php:$PHP
+    before_script:
+        - !reference [ default, before_script ]
+
+composer:
+    stage: preparation
+    extends:
+        - .php
+    variables:
+        COMPOSER_AUTH: |
+    script:
+        # Install all project dependencies
+        - echo "Install dependencies with typo3/cms-core:$TYPO3"
+        - php composer.phar config -g gitlab-oauth.git.netresearch.de $GITLAB_ACCESS_TOKEN
+        - php composer.phar require typo3/cms-core:$TYPO3 --no-progress --no-update
+        - php composer.phar require typo3/cms-scheduler:$TYPO3 --no-progress --no-update
+        - php composer.phar require typo3/cms-fluid:$TYPO3 --no-progress --no-update
+        - php composer.phar install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+        - git checkout composer.json
+    artifacts:
+        paths:
+            - .build/
+        expire_in: 1 days
+        when: always
+    cache:
+        paths:
+            - .build/
+
+phplint:
+    stage: testing
+    extends:
+        - .php
+    needs:
+        - composer
+    script:
+        - php composer.phar ci:test:php:lint
+
+phpstan:
+    stage: testing
+    extends:
+        - .php
+    needs:
+        - composer
+    script:
+        - php composer.phar ci:test:php:phpstan -- --memory-limit=-1 --error-format=gitlab > phpstan-report.json
+    artifacts:
+        paths:
+            - "phpstan-report.json"
+        expire_in: 1 days
+        when: always
+        reports:
+            codequality: "./phpstan-report.json"
+
+rector:
+    stage: testing
+    extends:
+        - .php
+    needs:
+        - composer
+    script:
+        - php composer.phar ci:test:php:rector
+
+coding-style:
+    stage: testing
+    extends:
+        - .php
+    needs:
+        - composer
+    script:
+        - php composer.phar ci:cgl -- --dry-run

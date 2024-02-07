@@ -7,7 +7,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-defined('TYPO3_MODE') || die();
+defined('TYPO3') || die('Access denied.');
 
 // Register icons
 $iconRegistry = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(

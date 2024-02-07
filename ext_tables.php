@@ -7,11 +7,11 @@
  * LICENSE file that was distributed with this source code.
  */
 
-defined('TYPO3_MODE') || die();
+defined('TYPO3') || die('Access denied.');
 
 call_user_func(static function () {
 
-    if (TYPO3_MODE === 'BE') {
+    if (TYPO3 === 'BE') {
         // Add module
         \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerModule(
             'NrSync',

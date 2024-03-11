@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the package netresearch/nrc-resco.
+ * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
  * LICENSE file that was distributed with this source code.
@@ -24,11 +24,25 @@ interface ModuleInterface
 {
     /**
      * Table sync types.
+     *
+     * @var string
      */
-    public const SYNC_TYPE_TABLES    = 'sync_tables';
+    public const SYNC_TYPE_TABLES = 'sync_tables';
+
+    /**
+     * @var string
+     */
     public const SYNC_TYPE_FE_GROUPS = 'sync_fe_groups';
+
+    /**
+     * @var string
+     */
     public const SYNC_TYPE_BE_GROUPS = 'sync_be_groups';
-    public const SYNC_TYPE_BACKSYNC  = 'backsync_tables';
+
+    /**
+     * @var string
+     */
+    public const SYNC_TYPE_BACKSYNC = 'backsync_tables';
 
     /**
      * Returns TRUE if the module is available, otherwise FALSE.
@@ -45,21 +59,14 @@ interface ModuleInterface
     public function getName(): string;
 
     /**
-     * Returns a list of table names to synchronise.
+     * Returns a list of table names to synchronize.
      *
      * @return string[]
      */
     public function getTableNames(): array;
 
     /**
-     * Returns the access level of the module (value between 0 and 100).
-     *
-     * @return int
-     */
-    public function getAccessLevel(): int;
-
-    /**
-     * Returns the name of the synchronisation file containing the SQL statements to update the database records.
+     * Returns the name of the synchronization file containing the SQL statements to update the database records.
      *
      * @return string
      */

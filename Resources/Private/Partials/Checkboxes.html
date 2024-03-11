@@ -1,0 +1,26 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+>
+    <f:section name="Main">
+        <div class="form-section">
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="hidden" name="data[force_full_sync]" value="0">
+                    <input class="form-check-input" type="checkbox" name="data[force_full_sync]" value="1" id="force_full_sync">
+                    <label class="form-check-label" for="force_full_sync">
+                        <nrs:translate id="label.force_full_sync" />
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input type="hidden" name="data[delete_obsolete_rows]" value="0">
+                    <input class="form-check-input" type="checkbox" name="data[delete_obsolete_rows]" value="1" id="delete_obsolete_rows" checked="checked">
+                    <label class="form-check-label" for="delete_obsolete_rows">
+                        <nrs:translate id="label.delete_obsolete_rows" />
+                    </label>
+                </div>
+            </div>
+        </div>
+    </f:section>
+</html>

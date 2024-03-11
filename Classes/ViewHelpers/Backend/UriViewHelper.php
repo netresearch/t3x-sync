@@ -42,7 +42,7 @@ class UriViewHelper extends AbstractBackendViewHelper
         $this->registerArgument(
             'pid',
             'int',
-            'The page id',
+            'The page UID',
             true
         );
 
@@ -55,8 +55,8 @@ class UriViewHelper extends AbstractBackendViewHelper
 
         $this->registerArgument(
             'lock',
-            'bool',
-            'TRUE or FALSE to lock/unlock the area',
+            'int',
+            '1 or 0 to lock/unlock the area',
             true
         );
     }
@@ -70,18 +70,15 @@ class UriViewHelper extends AbstractBackendViewHelper
      */
     public function render(): string
     {
-        $parameters = [
-            'lock' => [
-                $this->arguments['area'] => $this->arguments['lock'],
-            ],
-            'id' => $this->arguments['pid'],
-        ];
-
-        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
-
-        return (string) $uriBuilder->buildUriFromRoute(
-            $this->arguments['route'],
-            $parameters
-        );
+        return (string) GeneralUtility::makeInstance(UriBuilder::class)
+            ->buildUriFromRoute(
+                $this->arguments['route'],
+                [
+                    'id'   => $this->arguments['pid'],
+                    'lock' => [
+                        $this->arguments['area'] => $this->arguments['lock'],
+                    ],
+                ]
+            );
     }
 }

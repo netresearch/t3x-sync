@@ -7,18 +7,20 @@
  * LICENSE file that was distributed with this source code.
  */
 
-use Netresearch\Sync\Service\ClearCache;
+declare(strict_types=1);
+
+use Netresearch\Sync\Service\ClearCacheService;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-defined('TYPO3') || die('Access denied.');
+defined('TYPO3') || exit('Access denied.');
 
-call_user_func(static function () {
+call_user_func(static function (): void {
     ExtensionManagementUtility::addService(
         'nr_sync',
         'nrClearCache',
-        ClearCache::class,
+        ClearCacheService::class,
         [
-            'title'       => 'NrSync Cache Clear Service',
+            'title'       => 'NrSync cache clear service',
             'description' => 'Clears the cache of given tables',
             'subtype'     => '',
             'available'   => true,
@@ -26,7 +28,20 @@ call_user_func(static function () {
             'quality'     => 50,
             'os'          => '',
             'exec'        => '',
-            'className'   => ClearCache::class,
+            'className'   => ClearCacheService::class,
         ]
+    );
+
+    // Add TypoScript automatically (to use it in backend modules)
+    ExtensionManagementUtility::addTypoScript(
+        'nr_sync',
+        'constants',
+        '@import "EXT:nr_sync/Configuration/TypoScript/constants.typoscript"'
+    );
+
+    ExtensionManagementUtility::addTypoScript(
+        'nr_sync',
+        'setup',
+        '@import "EXT:nr_sync/Configuration/TypoScript/setup.typoscript"'
     );
 });

@@ -1,7 +1,7 @@
 {
     "name": "netresearch/nr-sync",
     "type": "typo3-cms-extension",
-    "description": "Netresearch Sync",
+    "description": "A module for synchronizing content from a production system to a single or multiple target systems.",
     "license": [
         "GPL-3.0-or-later"
     ],
@@ -52,7 +52,7 @@
         "phpstan/phpstan": "^1.10",
         "phpstan/phpstan-strict-rules": "^1.5",
         "phpstan/phpstan-deprecation-rules": "^1.1",
-        "ssch/typo3-rector": "^1.8"
+        "ssch/typo3-rector": "^2.0"
     },
     "extra": {
         "typo3/cms": {

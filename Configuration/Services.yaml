@@ -1,14 +1,42 @@
 services:
-  _defaults:
-    autowire: true
-    autoconfigure: true
-    public: false
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
 
-  Netresearch\Sync\:
-    resource: '../Classes/*'
+    Netresearch\Sync\:
+        resource: '../Classes/*'
+        exclude: '../Classes/Domain/Model/*'
 
-  Netresearch\Sync\Command\ClearCache:
-    tags:
-      - name: 'console.command'
-        command: 'sync:cache:clear'
-        schedulable: true
+    Netresearch\Sync\Command\ClearCache:
+        tags:
+            -   name: 'console.command'
+                command: 'sync:cache:clear'
+                schedulable: true
+
+    Netresearch\Sync\SyncLock:
+        public: true
+
+    Netresearch\Sync\SyncList:
+        public: true
+
+    Netresearch\Sync\Service\TableDifference:
+        public: true
+
+    Netresearch\Sync\Controller\BaseSyncModuleController:
+        tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\Controller\AssetSyncModuleController:
+        tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\Controller\FalSyncModuleController:
+        tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\Controller\NewsSyncModuleController:
+        tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\Controller\SinglePageSyncModuleController:
+        tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\Controller\TableStateSyncModuleController:
+        tags: [ 'backend.controller' ]

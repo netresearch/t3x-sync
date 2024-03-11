@@ -15,7 +15,7 @@ use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Class SyncListManager
+ * Class SyncListManager.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -30,13 +30,15 @@ class SyncListManager implements SingletonInterface
     private array $syncLists = [];
 
     /**
-     * @param int $syncListId
+     * @param string $syncListId
      *
      * @return SyncList
      */
-    public function getSyncList(int $syncListId): SyncList
+    public function getSyncList(string $syncListId): SyncList
     {
-        if ($this->syncLists[$syncListId] === null) {
+        if (!isset($this->syncLists[$syncListId])
+            || (!$this->syncLists[$syncListId] instanceof SyncList)
+        ) {
             /** @var SyncList $syncList */
             $syncList = GeneralUtility::makeInstance(SyncList::class);
             $syncList->load($syncListId);

@@ -1,0 +1,19 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+>
+    <f:section name="Main">
+        <f:variable name="disabled" value="" />
+
+        <f:if condition="{useSyncList} && {syncList.empty}">
+            <f:variable name="disabled" value="disabled" />
+        </f:if>
+
+        <input class="btn btn-primary"
+               type="submit"
+               name="data[submit]"
+               value="{nrs:translate(id: 'button.create_sync')}"
+               {disabled}>
+    </f:section>
+</html>

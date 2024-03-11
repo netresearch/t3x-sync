@@ -1,0 +1,56 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+>
+    <f:layout name="Module" />
+
+    <f:section name="Content">
+        <f:if condition="{syncLock.locked}">
+            <f:then>
+                <f:render partial="AlertMessage" section="Main" arguments="{message: syncLock.lockMessage}" />
+            </f:then>
+            <f:else>
+                <f:if condition="{showTableSyncStats}">
+                    <f:render partial="SyncStatus" section="Main" arguments="{_all}" />
+                </f:if>
+
+                <form method="post" action="{moduleUrl}">
+                    <input type="hidden" name="id" value="{pageUid}" />
+
+                    <f:if condition="!{isSingePageSyncModule} || {pageValid}">
+                        <h1{f:if(condition: showTableSyncStats, else: ' class="headline"')}>
+                            <nrs:translate id="headline.create_sync" />
+                        </h1>
+                    </f:if>
+
+                    <f:if condition="{isSingePageSyncModule} && {pageValid}">
+                        <f:render partial="SinglePageSync" section="Main" arguments="{_all}" />
+                    </f:if>
+
+                    <f:if condition="{useSyncList} && !{syncList.empty}">
+                        <f:render partial="SyncList" section="Main" arguments="{_all}" />
+                    </f:if>
+
+                    <f:if condition="{showCheckBoxes}">
+                        <f:render partial="Checkboxes" section="Main" arguments="{_all}" />
+                    </f:if>
+
+                    <f:if condition="{selectedMenuItem}">
+                        <div class="form-section">
+                            <div class="form-group">
+                                <f:render partial="CreateSyncButton" section="Main" arguments="{_all}" />
+
+                                <f:if condition="{customModulePartial}">
+                                    <f:render partial="{customModulePartial}" arguments="{_all}" />
+                                </f:if>
+                            </div>
+                        </div>
+                    </f:if>
+                </form>
+
+                <f:render partial="WaitList" section="Main" arguments="{_all}" />
+            </f:else>
+        </f:if>
+    </f:section>
+</html>

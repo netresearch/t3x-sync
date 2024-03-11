@@ -6,26 +6,13 @@ stages:
     parallel:
         matrix:
             -   TYPO3: [ '^12.0' ]
-                PHP: [ '8.1', '8.2', '8.3' ]
-
-default:
-    before_script:
-        # Update image
-        - apt-get update -yqq
-        - apt-get install -yqq git libxml2-dev libzip-dev zip unzip gnupg2
-
-        # Install PHP extensions
-        - docker-php-ext-install intl xml zip
-        - php --version
-
-        # Install composer
-        - curl -sS https://getcomposer.org/installer | php
+                PHP: [ '82' ]
 
 .php:
     extends: .parallel-hidden-job
-    image: php:$PHP
-    before_script:
-        - !reference [ default, before_script ]
+    image:
+        name: registry.netresearch.de/support/typo3-12/build:$PHP
+        entrypoint: [ '/bin/bash', '-c' ]
 
 composer:
     stage: preparation
@@ -36,12 +23,9 @@ composer:
     script:
         # Install all project dependencies
         - echo "Install dependencies with typo3/cms-core:$TYPO3"
-        - php composer.phar config -g gitlab-oauth.git.netresearch.de $GITLAB_ACCESS_TOKEN
-        - php composer.phar require typo3/cms-core:$TYPO3 --no-progress --no-update
-        - php composer.phar require typo3/cms-scheduler:$TYPO3 --no-progress --no-update
-        - php composer.phar require typo3/cms-fluid:$TYPO3 --no-progress --no-update
-        - php composer.phar install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
-        - git checkout composer.json
+        - php --version
+        - composer config -g gitlab-oauth.git.netresearch.de $GITLAB_ACCESS_TOKEN
+        - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
     artifacts:
         paths:
             - .build/
@@ -58,7 +42,7 @@ phplint:
     needs:
         - composer
     script:
-        - php composer.phar ci:test:php:lint
+        - composer ci:test:php:lint
 
 phpstan:
     stage: testing
@@ -67,7 +51,7 @@ phpstan:
     needs:
         - composer
     script:
-        - php composer.phar ci:test:php:phpstan -- --memory-limit=-1 --error-format=gitlab > phpstan-report.json
+        - composer ci:test:php:phpstan -- --memory-limit=-1 --error-format=gitlab > phpstan-report.json
     artifacts:
         paths:
             - "phpstan-report.json"
@@ -83,7 +67,7 @@ rector:
     needs:
         - composer
     script:
-        - php composer.phar ci:test:php:rector
+        - composer ci:test:php:rector
 
 coding-style:
     stage: testing
@@ -92,4 +76,4 @@ coding-style:
     needs:
         - composer
     script:
-        - php composer.phar ci:cgl -- --dry-run
+        - composer ci:cgl -- --dry-run

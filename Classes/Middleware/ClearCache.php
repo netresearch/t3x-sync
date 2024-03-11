@@ -11,12 +11,13 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Middleware;
 
-use Netresearch\Sync\Service\ClearCache as ClearCacheService;
+use Netresearch\Sync\Service\ClearCacheService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Authentication\Mfa\MfaRequiredException;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -34,7 +35,7 @@ class ClearCache implements MiddlewareInterface
      *
      * @var ClearCacheService
      */
-    private ClearCacheService $clearCacheService;
+    private readonly ClearCacheService $clearCacheService;
 
     /**
      * ClearCache constructor.
@@ -46,6 +47,14 @@ class ClearCache implements MiddlewareInterface
         $this->clearCacheService = $clearCacheService;
     }
 
+    /**
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     *
+     * @return ResponseInterface
+     *
+     * @throws MfaRequiredException
+     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!isset($request->getQueryParams()['nr-sync-clear-cache'])) {
@@ -59,11 +68,11 @@ class ClearCache implements MiddlewareInterface
             return (new Response())->withStatus(400, 'Task unknown');
         }
 
-        if (empty($data)) {
+        if (($data === '') || ($data === [])) {
             return (new Response())->withStatus(400, 'Data parameter absent');
         }
 
-        $this->runClearCacheService(explode(',', $data));
+        $this->runClearCacheService($request, explode(',', $data));
 
         return (new Response())->withStatus(200);
     }
@@ -71,7 +80,7 @@ class ClearCache implements MiddlewareInterface
     /**
      * @return BackendUserAuthentication
      */
-    private function getBackendUser(): BackendUserAuthentication
+    private function getBackendUserAuthentication(): BackendUserAuthentication
     {
         $GLOBALS['BE_USER'] = GeneralUtility::makeInstance(BackendUserAuthentication::class);
 
@@ -81,16 +90,18 @@ class ClearCache implements MiddlewareInterface
     /**
      * Run the service.
      *
-     * @param array $data Array with values in table:uid order.
+     * @param string[] $data array with values in table:uid order
      *
      * @return void
+     *
+     * @throws MfaRequiredException
      */
-    private function runClearCacheService(array $data): void
+    private function runClearCacheService(ServerRequestInterface $request, array $data): void
     {
-        $backendUser = $this->getBackendUser();
-        $backendUser->start();
+        $backendUser = $this->getBackendUserAuthentication();
+        $backendUser->start($request);
 
-        // SDM-12632 try increased memory limit
+        // Try increased memory limit
         ini_set('memory_limit', '256M');
 
         $this->clearCacheService->clearCaches($data);

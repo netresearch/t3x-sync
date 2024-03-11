@@ -729,7 +729,7 @@ class SyncModuleController extends ActionController
         }
 
         /** @var SyncLock $syncLock */
-        $syncLock = $this->objectManager->get(SyncLock::class);
+        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
         if ($this->getBackendUser()->isAdmin()) {
             $syncLock->handleLockRequest();
@@ -897,8 +897,10 @@ class SyncModuleController extends ActionController
 
         if (empty($bUseSyncList) && !empty($this->function->getTableNames())) {
             /** @var SyncStats $syncStats */
-            $syncStats = $this->objectManager->get(
-                SyncStats::class, null, $this->function->getTableNames()
+            $syncStats = GeneralUtility::makeInstance(
+                SyncStats::class,
+                null,
+                $this->function->getTableNames()
             );
 
             $this->view->assign('tableSyncStats', $syncStats);
@@ -2015,7 +2017,7 @@ class SyncModuleController extends ActionController
         $lockButton = $buttonBar->makeLinkButton();
 
         /** @var SyncLock $syncLock */
-        $syncLock = $this->objectManager->get(SyncLock::class);
+        $syncLock = GeneralUtility::makeInstance(SyncLock::class);
 
         if ($syncLock->isLocked()) {
             $lockButton

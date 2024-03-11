@@ -17,8 +17,7 @@ use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\Exception;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
+
 use function in_array;
 
 /**
@@ -138,16 +137,11 @@ class Area
      *                                 "sync_fe_groups", "sync_be_groups", "backsync_tables"
      *
      * @return Area[]
-     *
-     * @throws Exception
      */
     public static function getMatchingAreas(array $arAreas = null, $strTableType = ''): array
     {
-        /** @var ObjectManager $objectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-
         return [
-            $objectManager->get(self::class, 0),
+            GeneralUtility::makeInstance(self::class, 0),
         ];
     }
 

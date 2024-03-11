@@ -13,10 +13,8 @@ namespace Netresearch\Sync\Module;
 
 use Doctrine\DBAL\FetchMode;
 use Exception;
-use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\ModuleInterface;
 use Netresearch\Sync\PageSyncModuleInterface;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
@@ -35,7 +33,7 @@ class NewsModule extends BaseModule implements PageSyncModuleInterface
      *
      * @var string
      */
-    protected $name = 'News';
+    protected mixed $name = 'News';
 
     /**
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
@@ -44,21 +42,21 @@ class NewsModule extends BaseModule implements PageSyncModuleInterface
      *
      * @deprecated Seems deprecated. Not used anywhere?
      */
-    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+    protected mixed $type = ModuleInterface::SYNC_TYPE_TABLES;
 
     /**
      * Base name of the sync file.
      *
      * @var string
      */
-    protected $dumpFileName = 'news.sql';
+    protected mixed $dumpFileName = 'news.sql';
 
     /**
      * Tables which should be synchronized.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'tx_news_domain_model_link',
         'tx_news_domain_model_news',
         'tx_news_domain_model_news_related_mm',
@@ -68,6 +66,9 @@ class NewsModule extends BaseModule implements PageSyncModuleInterface
         'sys_file_reference'
     ];
 
+    /**
+     * @return bool
+     */
     public function isAvailable(): bool
     {
         return parent::isAvailable() && ExtensionManagementUtility::isLoaded('news');
@@ -97,7 +98,7 @@ class NewsModule extends BaseModule implements PageSyncModuleInterface
 
         try {
             return $queryBuilder->execute()->fetchAll(FetchMode::COLUMN);
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return [];
         }
     }

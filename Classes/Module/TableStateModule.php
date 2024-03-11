@@ -11,9 +11,10 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
+use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\ModuleInterface;
-use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\AbstractMessage;
 
 /**
  * Class TableStateModule
@@ -30,7 +31,7 @@ class TableStateModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'Table state';
+    protected mixed $name = 'Table state';
 
     /**
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
@@ -39,22 +40,28 @@ class TableStateModule extends BaseModule
      *
      * @deprecated Seems deprecated. Not used anywhere?
      */
-    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+    protected mixed $type = ModuleInterface::SYNC_TYPE_TABLES;
 
     /**
      * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
      *
      * @var int
      */
-    protected $accessLevel = 100;
+    protected int $accessLevel = 100;
 
     /**
      * The name of the sync target.
      *
      * @var string
      */
-    protected $target = 'local';
+    protected mixed $target = 'local';
 
+    /**
+     * @param Area $area
+     *
+     * @return void
+     * @throws Exception
+     */
     public function run(Area $area): void
     {
         parent::run($area);
@@ -62,7 +69,7 @@ class TableStateModule extends BaseModule
         if (isset($_POST['data']['submit'])) {
             if ($this->createNewDefinitions()) {
                 $this->addMessage(
-                    'Updated table state.', FlashMessage::OK
+                    'Updated table state.', AbstractMessage::OK
                 );
             }
         } else {
@@ -74,6 +81,7 @@ class TableStateModule extends BaseModule
      * Tests if the tables of db differs from saved file.
      *
      * @return void
+     * @throws Exception
      */
     private function testAllTablesForDifferences(): void
     {
@@ -89,6 +97,7 @@ class TableStateModule extends BaseModule
      * Writes the table definition of database into an file.
      *
      * @return bool True if file was written else false.
+     * @throws Exception
      */
     private function createNewDefinitions(): bool
     {
@@ -117,7 +126,7 @@ class TableStateModule extends BaseModule
         if (file_exists($file) && !is_writable($file)) {
             $this->addMessage(
                 'Tabellendefinitionsdatei ist nicht schreibar!' . ' ' . $file,
-                FlashMessage::ERROR
+                AbstractMessage::ERROR
             );
             return false;
         }
@@ -127,7 +136,7 @@ class TableStateModule extends BaseModule
         if ($fpDumpFile === false) {
             $this->addMessage(
                 'Konnte Tabellendefinitionsdatei nicht öffnen!' . ' ' . $file,
-                FlashMessage::ERROR);
+                AbstractMessage::ERROR);
             return false;
         }
 
@@ -136,7 +145,7 @@ class TableStateModule extends BaseModule
         if ($ret === false) {
             $this->addMessage(
                 'Konnte Tabellendefinitionsdatei nicht schreiben!' . ' ' . $file,
-                FlashMessage::ERROR);
+                AbstractMessage::ERROR);
             return false;
         }
 

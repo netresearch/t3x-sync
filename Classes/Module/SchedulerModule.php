@@ -25,28 +25,28 @@ class SchedulerModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'Scheduler tasks';
+    protected mixed $name = 'Scheduler tasks';
 
     /**
      * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
      *
      * @var int
      */
-    protected $accessLevel = 100;
+    protected int $accessLevel = 100;
 
     /**
      * Base name of the sync file.
      *
      * @var string
      */
-    protected $dumpFileName = 'scheduler.sql';
+    protected mixed $dumpFileName = 'scheduler.sql';
 
     /**
      * Tables which should be synchronized.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'tx_scheduler_task',
     ];
 }

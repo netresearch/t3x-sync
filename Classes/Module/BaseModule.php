@@ -11,10 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
+use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\ModuleInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -33,7 +35,7 @@ class BaseModule implements ModuleInterface
     /**
      * @var FlashMessageService
      */
-    private FlashMessageService $flashMessageService;
+    private readonly FlashMessageService $flashMessageService;
 
     /**
      * @var ConnectionPool
@@ -45,14 +47,14 @@ class BaseModule implements ModuleInterface
      *
      * @var string[]
      */
-    protected $tables = [];
+    protected array $tables = [];
 
     /**
      * The name of the sync module to be displayed in sync module selection menu.
      *
      * @var string
      */
-    protected $name = 'Please select';
+    protected mixed $name = 'Please select';
 
     /**
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
@@ -61,33 +63,33 @@ class BaseModule implements ModuleInterface
      *
      * @deprecated Seems deprecated. Not used anywhere?
      */
-    protected $type = '';
+    protected mixed $type = '';
 
     /**
      * The name of the sync target.
      *
      * @var string
      */
-    protected $target = '';
+    protected mixed $target = '';
 
     /**
      * The name of the synchronisation file containing the SQL statements to update the database records.
      *
      * @var string
      */
-    protected $dumpFileName = '';
+    protected mixed $dumpFileName = '';
 
     /**
      * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
      *
      * @var int
      */
-    protected $accessLevel = 0;
+    protected int $accessLevel = 0;
 
     /**
      * @var null|string
      */
-    protected $error;
+    protected ?string $error = null;
 
     /**
      * Additional content to output by the module.
@@ -96,28 +98,28 @@ class BaseModule implements ModuleInterface
      *
      * @deprecated Provide additional content by views/templates instead
      */
-    protected $content = '';
+    protected string $content = '';
 
     /**
      * The current table definition.
      *
      * @var array
      */
-    private $tableDefinition;
+    private array $tableDefinition;
 
     /**
      * File where to store table information.
      *
      * @var string
      */
-    private $tableSerializedFile = 'tables_serialized.txt';
+    private string $tableSerializedFile = 'tables_serialized.txt';
 
     /**
      * Where to put DB Dumps (trailing Slash).
      *
      * @var string
      */
-    private $dbFolder = '';
+    private string $dbFolder = '';
 
     /**
      * BaseModule constructor.
@@ -139,6 +141,9 @@ class BaseModule implements ModuleInterface
         }
     }
 
+    /**
+     * @return bool
+     */
     public function isAvailable(): bool
     {
         return true;
@@ -148,13 +153,14 @@ class BaseModule implements ModuleInterface
      * @param Area $area
      *
      * @return void
+     * @throws Exception
      */
     public function run(Area $area): void
     {
         $rootPath = $_SERVER['DOCUMENT_ROOT'];
 
         if (empty($rootPath)) {
-            $rootPath = substr(Environment::getPublicPath(), 0, -1);
+            $rootPath = substr((string) Environment::getPublicPath(), 0, -1);
         }
 
         $this->dbFolder = $rootPath . '/db/';
@@ -284,6 +290,7 @@ class BaseModule implements ModuleInterface
      * @param string $tableName Name of table.
      *
      * @return bool True if file differs otherwise false.
+     * @throws Exception
      */
     protected function isTableDifferent(string $tableName): bool
     {
@@ -326,7 +333,7 @@ class BaseModule implements ModuleInterface
      * @param string $message The message
      * @param int    $type    The message type
      */
-    public function addMessage(string $message, int $type = FlashMessage::INFO): void
+    public function addMessage(string $message, int $type = AbstractMessage::INFO): void
     {
         /** @var FlashMessage $flashMessage */
         $flashMessage = GeneralUtility::makeInstance(
@@ -344,6 +351,7 @@ class BaseModule implements ModuleInterface
      * @param string[] $tableNames
      *
      * @return void
+     * @throws Exception
      */
     protected function testTablesForDifferences(array $tableNames = null): void
     {
@@ -363,7 +371,7 @@ class BaseModule implements ModuleInterface
             $this->addMessage(
                 'Following tables have changed, please contact your TYPO3 admin: '
                 . implode(', ', $errorTables),
-                FlashMessage::WARNING
+                AbstractMessage::WARNING
             );
         }
     }

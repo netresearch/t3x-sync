@@ -25,28 +25,28 @@ class Typo3RedirectsModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'TYPO3 redirects';
+    protected mixed $name = 'TYPO3 redirects';
 
     /**
      * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
      *
      * @var int
      */
-    protected $accessLevel = 50;
+    protected int $accessLevel = 50;
 
     /**
      * Base name of the sync file.
      *
      * @var string
      */
-    protected $dumpFileName = 'sys_redirect.sql';
+    protected mixed $dumpFileName = 'sys_redirect.sql';
 
     /**
      * Tables which should be synchronized.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'sys_redirect',
     ];
 }

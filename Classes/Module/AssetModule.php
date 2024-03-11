@@ -29,22 +29,28 @@ class AssetModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'Assets';
+    protected mixed $name = 'Assets';
 
     /**
      * The access level of the module (value between 0 and 100). 100 requires admin access to typo3 backend.
      *
      * @var int
      */
-    protected $accessLevel = 100;
+    protected int $accessLevel = 100;
 
     /**
      * The name of the sync target.
      *
      * @var string
      */
-    protected $target = 'sync server';
+    protected mixed $target = 'sync server';
 
+    /**
+     * @param Area $area
+     *
+     * @return void
+     * @throws Exception
+     */
     public function run(Area $area): void
     {
         parent::run($area);

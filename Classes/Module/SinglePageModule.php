@@ -12,8 +12,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Module;
 
 use Netresearch\Sync\SinglePageSyncModuleInterface;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 
 /**
  * Class SinglePageModule
@@ -29,21 +27,21 @@ class SinglePageModule extends BaseModule implements SinglePageSyncModuleInterfa
      *
      * @var string
      */
-    protected $name = 'Single pages with content';
+    protected mixed $name = 'Single pages with content';
 
     /**
      * Base name of the sync file.
      *
      * @var string
      */
-    protected $dumpFileName = 'partly-pages.sql';
+    protected mixed $dumpFileName = 'partly-pages.sql';
 
     /**
      * Tables which should be synchronized.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'pages',
         'tt_content',
         'sys_template',

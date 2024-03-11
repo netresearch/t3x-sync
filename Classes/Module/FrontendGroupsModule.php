@@ -27,7 +27,7 @@ class FrontendGroupsModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'FE groups';
+    protected mixed $name = 'FE groups';
 
     /**
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
@@ -36,21 +36,21 @@ class FrontendGroupsModule extends BaseModule
      *
      * @deprecated Seems deprecated. Not used anywhere?
      */
-    protected $type = ModuleInterface::SYNC_TYPE_FE_GROUPS;
+    protected mixed $type = ModuleInterface::SYNC_TYPE_FE_GROUPS;
 
     /**
      * Base name of the sync file.
      *
      * @var string
      */
-    protected $dumpFileName = 'fe_groups.sql';
+    protected mixed $dumpFileName = 'fe_groups.sql';
 
     /**
      * Tables which should be synchronized.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'fe_groups',
     ];
 }

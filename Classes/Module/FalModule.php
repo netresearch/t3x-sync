@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Module;
 
+use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\ModuleInterface;
 
@@ -29,7 +30,7 @@ class FalModule extends BaseModule
      *
      * @var string
      */
-    protected $name = 'FAL (File Abstraction Layer)';
+    protected mixed $name = 'FAL (File Abstraction Layer)';
 
     /**
      * The type of tables to sync, e.g. "sync_tables", "sync_fe_groups", "sync_be_groups" or "backsync_tables".
@@ -38,21 +39,21 @@ class FalModule extends BaseModule
      *
      * @deprecated Seems deprecated. Not used anywhere?
      */
-    protected $type = ModuleInterface::SYNC_TYPE_TABLES;
+    protected mixed $type = ModuleInterface::SYNC_TYPE_TABLES;
 
     /**
      * The name of the synchronisation file containing the SQL statements to update the database records.
      *
      * @var string
      */
-    protected $dumpFileName = 'fal.sql';
+    protected mixed $dumpFileName = 'fal.sql';
 
     /**
      * A list of table names to synchronise.
      *
      * @var string[]
      */
-    protected $tables = [
+    protected array $tables = [
         'sys_file',
         'sys_category',
         'sys_filemounts',
@@ -62,6 +63,12 @@ class FalModule extends BaseModule
         'sys_file_metadata',
     ];
 
+    /**
+     * @param Area $area
+     *
+     * @return void
+     * @throws Exception
+     */
     public function run(Area $area): void
     {
         // See http://jira.aida.de/jira/browse/SDM-2099
@@ -104,6 +111,7 @@ class FalModule extends BaseModule
      * http://jira.aida.de/jira/browse/SDM-2099
      *
      * @return void
+     * @throws Exception
      */
     private function testDAMForErrors(): void
     {
@@ -111,11 +119,7 @@ class FalModule extends BaseModule
 
         $count = $queryBuilder
             ->count('*')
-            ->from('sys_file_reference')
-            ->where(
-                $queryBuilder->expr()->eq('uid_foreign', 0)
-            )
-            ->execute()
+            ->from('sys_file_reference')->where($queryBuilder->expr()->eq('uid_foreign', 0))->executeQuery()
             ->fetchOne();
 
         if ($count > 0) {

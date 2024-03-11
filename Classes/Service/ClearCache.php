@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Service;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
@@ -23,8 +25,10 @@ use TYPO3\CMS\Core\Service\AbstractService;
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-class ClearCache extends AbstractService
+class ClearCache implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * @var DataHandler
      */
@@ -35,20 +39,16 @@ class ClearCache extends AbstractService
      *
      * @var string
      */
-    public $prefixId = __CLASS__;
+    public string $prefixId = __CLASS__;
 
     /**
      * ClearCache constructor.
      *
      * @param DataHandler $dataHandler
-     * @param LogManager $logManager
      */
-    public function __construct(
-        DataHandler $dataHandler,
-        LogManager $logManager
-    ) {
+    public function __construct(DataHandler $dataHandler)
+    {
         $this->dataHandler = $dataHandler;
-        $this->logger = $logManager->getLogger(__CLASS__);
     }
 
     /**

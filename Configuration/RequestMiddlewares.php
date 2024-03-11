@@ -9,10 +9,12 @@
 
 declare(strict_types=1);
 
+use Netresearch\Sync\Middleware\ClearCache;
+
 return [
     'frontend' => [
         'nr/nr-sync/clear-cache' => [
-            'target' => \Netresearch\Sync\Middleware\ClearCache::class,
+            'target' => ClearCache::class,
             'before' => [
             ],
             'after' => [

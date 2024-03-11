@@ -11,7 +11,10 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Backend;
 
-use TYPO3\CMS\Fluid\ViewHelpers\Be\UriViewHelper as BackendUriViewHelper;
+use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Fluid\ViewHelpers\Be\AbstractBackendViewHelper;
 
 /**
  * A ViewHelper for creating URIs to modules.
@@ -20,7 +23,7 @@ use TYPO3\CMS\Fluid\ViewHelpers\Be\UriViewHelper as BackendUriViewHelper;
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-class UriViewHelper extends BackendUriViewHelper
+class UriViewHelper extends AbstractBackendViewHelper
 {
     /**
      * @return void
@@ -28,6 +31,13 @@ class UriViewHelper extends BackendUriViewHelper
     public function initializeArguments(): void
     {
         parent::initializeArguments();
+
+        $this->registerArgument(
+            'route',
+            'string',
+            'The name of the route',
+            true
+        );
 
         $this->registerArgument(
             'pid',
@@ -55,16 +65,23 @@ class UriViewHelper extends BackendUriViewHelper
      * Render stuff.
      *
      * @return string
+     *
+     * @throws RouteNotFoundException
      */
     public function render(): string
     {
-        $this->arguments['parameters'] = [
+        $parameters = [
             'lock' => [
                 $this->arguments['area'] => $this->arguments['lock'],
             ],
             'id' => $this->arguments['pid'],
         ];
 
-        return parent::render();
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+
+        return (string) $uriBuilder->buildUriFromRoute(
+            $this->arguments['route'],
+            $parameters
+        );
     }
 }

@@ -114,7 +114,7 @@ class Area
                 continue;
             }
 
-            if ($key === 'archive') {
+            if (strtolower($key) === 'archive') {
                 continue;
             }
 

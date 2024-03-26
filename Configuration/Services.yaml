@@ -40,3 +40,8 @@ services:
 
     Netresearch\Sync\Controller\TableStateSyncModuleController:
         tags: [ 'backend.controller' ]
+
+    Netresearch\Sync\EventListener\FalSyncEventListener:
+        tags:
+            - name: event.listener
+              event: Netresearch\Sync\Event\FalSyncEvent

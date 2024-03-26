@@ -192,6 +192,18 @@ class BaseSyncModuleController
     }
 
     /**
+     * @param ModuleData|null $moduleData
+     *
+     * @return BaseSyncModuleController
+     */
+    public function setModuleData(?ModuleData $moduleData): BaseSyncModuleController
+    {
+        $this->moduleData = $moduleData;
+
+        return $this;
+    }
+
+    /**
      * The default action to call.
      *
      * @param ServerRequestInterface $request
@@ -200,6 +212,8 @@ class BaseSyncModuleController
      */
     public function indexAction(ServerRequestInterface $request): ResponseInterface
     {
+        $this->setModuleData($request->getAttribute('moduleData'));
+        $this->initFolders($this->getArea());
         $this->initializeAction($request);
 
         if (($request->getMethod() === 'POST')
@@ -213,10 +227,6 @@ class BaseSyncModuleController
                 $dumpFile = $this->addInformationToSyncfileName($dumpFile);
 
                 $this->performSync($dumpFile);
-
-                // DebuggerUtility::var_dump(__METHOD__);
-                // DebuggerUtility::var_dump($dumpFile);
-                //                exit;
             }
         }
 
@@ -233,7 +243,6 @@ class BaseSyncModuleController
         $parsedBody  = $request->getParsedBody();
         $queryParams = $request->getQueryParams();
 
-        $this->moduleData     = $request->getAttribute('moduleData');
         $this->pageUid        = $this->getPageId($request);
         $this->moduleTemplate = $this->getModuleTemplate($request, $this->pageUid);
         $this->target         = $parsedBody['target'] ?? $queryParams['target'] ?? 'all';
@@ -299,7 +308,6 @@ class BaseSyncModuleController
 
         $moduleTemplate->assign('syncLock', $this->syncLock);
 
-        $this->initFolders();
         $this->handleTargetLock();
         $this->sortMenuItems($moduleTemplate);
         $this->createButtons($moduleTemplate);
@@ -575,8 +583,8 @@ class BaseSyncModuleController
         $moduleTemplate->assign('moduleUrl', $this->getModuleUrl());
         $moduleTemplate->assign('pageUid', $this->pageUid);
 
-        if (($this->useSyncList && !$this->getSyncList()->isEmpty())
-            || (($this->useSyncList === false) && ($this->getTables() !== []))
+        if ((($this->useSyncList === false) && ($this->getTables() !== []))
+            || ($this->useSyncList && !$this->getSyncList()->isEmpty())
         ) {
             $moduleTemplate->assign('showCheckBoxes', true);
         }
@@ -638,11 +646,11 @@ class BaseSyncModuleController
      * @throws InsufficientFolderAccessPermissionsException
      * @throws InsufficientFolderWritePermissionsException
      */
-    private function initFolders(): void
+    public function initFolders(Area $area): void
     {
         $syncFolder = $this->storageService->getSyncFolder();
 
-        foreach ($this->getArea()->getSystems() as $system) {
+        foreach ($area->getSystems() as $system) {
             if ($syncFolder->hasFolder($system['directory'] . '/') === false) {
                 $syncFolder->createFolder($system['directory'] . '/');
             }
@@ -672,7 +680,7 @@ class BaseSyncModuleController
     /**
      * @return string[]
      */
-    protected function getTables(): array
+    public function getTables(): array
     {
         return $this->moduleData->get('tables', []);
     }
@@ -680,7 +688,7 @@ class BaseSyncModuleController
     /**
      * @return string|null
      */
-    protected function getDumpFile(): ?string
+    public function getDumpFile(): ?string
     {
         return $this->moduleData->get('dumpFile');
     }

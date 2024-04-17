@@ -212,7 +212,7 @@
                 <target>Nachrichten</target>
             </trans-unit>
             <trans-unit id="mod_fal">
-                <target>Medien und Bilder</target>
+                <target>TYPO3: Medien und Bilder</target>
             </trans-unit>
             <trans-unit id="mod_asset">
                 <target>Assets</target>
@@ -224,7 +224,7 @@
                 <target>TYPO3: Frontend-Gruppen</target>
             </trans-unit>
             <trans-unit id="mod_scheduler">
-                <target>TYPO3: Planer Aufgaben</target>
+                <target>TYPO3: Aufgaben des Planers</target>
             </trans-unit>
             <trans-unit id="mod_redirect">
                 <target>TYPO3: Weiterleitungen</target>
@@ -233,7 +233,7 @@
                 <target>Tabellenstatus</target>
             </trans-unit>
             <trans-unit id="mod_singlePage">
-                <target>Einzelne Seiten mit Inhalt</target>
+                <target>TYPO3: Einzelne Seiten mit Inhalt</target>
             </trans-unit>
         </body>
     </file>

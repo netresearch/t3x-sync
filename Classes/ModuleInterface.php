@@ -23,28 +23,6 @@ use Netresearch\Sync\Helper\Area;
 interface ModuleInterface
 {
     /**
-     * Table sync types.
-     *
-     * @var string
-     */
-    public const SYNC_TYPE_TABLES = 'sync_tables';
-
-    /**
-     * @var string
-     */
-    public const SYNC_TYPE_FE_GROUPS = 'sync_fe_groups';
-
-    /**
-     * @var string
-     */
-    public const SYNC_TYPE_BE_GROUPS = 'sync_be_groups';
-
-    /**
-     * @var string
-     */
-    public const SYNC_TYPE_BACKSYNC = 'backsync_tables';
-
-    /**
      * Returns TRUE if the module is available, otherwise FALSE.
      *
      * @return bool
@@ -52,25 +30,23 @@ interface ModuleInterface
     public function isAvailable(): bool;
 
     /**
-     * Returns the name of the module.
-     *
-     * @return string
-     */
-    public function getName(): string;
-
-    /**
      * Returns a list of table names to synchronize.
      *
      * @return string[]
      */
-    public function getTableNames(): array;
+    public function getTables(): array;
 
     /**
      * Returns the name of the synchronization file containing the SQL statements to update the database records.
      *
-     * @return string
+     * @return string|null
      */
-    public function getDumpFileName(): string;
+    public function getDumpFile(): ?string;
+
+    /**
+     * @return string[]
+     */
+    public function getClearCacheEntries(): array;
 
     /**
      * @return string

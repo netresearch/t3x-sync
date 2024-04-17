@@ -16,7 +16,7 @@
                         <f:if condition="{nrs:folder.lockFileExists(directory: system.directory)}">
                             <f:then>
                                 <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 0, pid: pageUid)}"
-                                   class="btn btn-warning"
+                                   class="btn btn-danger"
                                    title="Sync disabled, click to enable"
                                 >
                                     <core:icon identifier="actions-lock" size="small" /></a>

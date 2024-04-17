@@ -33,7 +33,7 @@ class AssetSyncModuleController extends BaseSyncModuleController
      *
      * @throws Exception
      */
-    protected function run(Area $area): void
+    public function run(Area $area): void
     {
         parent::run($area);
 

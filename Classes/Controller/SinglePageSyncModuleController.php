@@ -33,7 +33,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
      *
      * @return void
      */
-    protected function run(Area $area): void
+    public function run(Area $area): void
     {
         parent::run($area);
 

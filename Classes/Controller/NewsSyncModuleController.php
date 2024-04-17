@@ -46,7 +46,7 @@ class NewsSyncModuleController extends BaseSyncModuleController implements PageS
     /**
      * @return bool
      */
-    protected function isAvailable(): bool
+    public function isAvailable(): bool
     {
         return parent::isAvailable()
             && ExtensionManagementUtility::isLoaded('georgringer/news');

@@ -35,7 +35,7 @@ class TableStateSyncModuleController extends BaseSyncModuleController
      *
      * @return void
      */
-    protected function run(Area $area): void
+    public function run(Area $area): void
     {
         // Do not call parent method
 

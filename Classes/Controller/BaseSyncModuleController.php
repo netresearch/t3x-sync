@@ -14,6 +14,7 @@ namespace Netresearch\Sync\Controller;
 use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\ModuleInterface;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\SyncList;
 use Netresearch\Sync\SyncListManager;
@@ -53,7 +54,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-class BaseSyncModuleController
+class BaseSyncModuleController implements ModuleInterface
 {
     use FlashMessageTrait;
     use TranslationTrait;
@@ -267,8 +268,6 @@ class BaseSyncModuleController
      */
     protected function htmlResponse(): ResponseInterface
     {
-        //        $this->pageRenderer->setTemplateFile();
-
         return $this->moduleTemplate->renderResponse('Backend/DefaultSyncModule');
     }
 
@@ -282,11 +281,9 @@ class BaseSyncModuleController
     {
         $this->updateRoutePackageName($request);
 
-        $moduleTemplate        = $this->moduleTemplateFactory->create($request);
-        $permissionClause      = $this->getBackendUserAuthentication()->getPagePermsClause(Permission::PAGE_SHOW);
-        $additionalQueryParams = [];
-
-        $pageRecord = BackendUtility::readPageAccess($pageUid, $permissionClause);
+        $moduleTemplate   = $this->moduleTemplateFactory->create($request);
+        $permissionClause = $this->getBackendUserAuthentication()->getPagePermsClause(Permission::PAGE_SHOW);
+        $pageRecord       = BackendUtility::readPageAccess($pageUid, $permissionClause);
 
         if ($pageRecord !== false) {
             $moduleTemplate
@@ -294,11 +291,9 @@ class BaseSyncModuleController
                 ->setMetaInformation($pageRecord);
         }
 
-        //        if ($this instanceof PageSyncModuleInterface) {
         $additionalQueryParams = [
             'id' => $this->getPageId($request),
         ];
-        //        }
 
         $moduleTemplate->makeDocHeaderModuleMenu($additionalQueryParams);
 
@@ -549,6 +544,17 @@ class BaseSyncModuleController
         return $this->error;
     }
 
+    /**
+     * @param ModuleTemplate $moduleTemplate
+     *
+     * @return void
+     *
+     * @throws Exception
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
+     * @throws RouteNotFoundException
+     */
     protected function initModule(ModuleTemplate $moduleTemplate): void
     {
         if ($this->syncLock->isLocked() || $this->isTargetLocked()) {
@@ -617,7 +623,6 @@ class BaseSyncModuleController
      *
      * @return bool
      *
-     * @throws ExistingTargetFolderException
      * @throws InsufficientFolderAccessPermissionsException
      * @throws InsufficientFolderWritePermissionsException
      */
@@ -696,7 +701,7 @@ class BaseSyncModuleController
     /**
      * @return string[]
      */
-    protected function getClearCacheEntries(): array
+    public function getClearCacheEntries(): array
     {
         return $this->moduleData->get('clearCacheEntries', []);
     }
@@ -758,7 +763,7 @@ class BaseSyncModuleController
     /**
      * @return bool
      */
-    protected function isAvailable(): bool
+    public function isAvailable(): bool
     {
         return true;
     }
@@ -772,7 +777,7 @@ class BaseSyncModuleController
      *
      * @throws Exception
      */
-    protected function run(Area $area): void
+    public function run(Area $area): void
     {
         $this->testTablesForDifferences($this->getTables());
     }

@@ -212,7 +212,7 @@
                 <source>News</source>
             </trans-unit>
             <trans-unit id="mod_fal">
-                <source>FAL (File Abstraction Layer)</source>
+                <source>TYPO3: FAL (File Abstraction Layer)</source>
             </trans-unit>
             <trans-unit id="mod_asset">
                 <source>Assets</source>
@@ -233,7 +233,7 @@
                 <source>Table state</source>
             </trans-unit>
             <trans-unit id="mod_singlePage">
-                <source>Single pages with content</source>
+                <source>TYPO3: Single pages with content</source>
             </trans-unit>
         </body>
     </file>

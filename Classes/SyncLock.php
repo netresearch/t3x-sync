@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
+use Exception;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
@@ -58,11 +59,11 @@ class SyncLock
         try {
             $this->storeLockConfiguration();
             $this->addInfoMessage('Sync module was ' . ($this->isLockRequested() ? 'locked.' : 'unlocked.'));
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             throw new Exception(
                 'Error in nr_sync configuration: '
                 . $exception->getMessage()
-                . ' Please check configuration in the Extension Manager.'
+                . ' Please check configuration in the Extension Manager.', $exception->getCode(), $exception
             );
         }
     }
@@ -96,7 +97,7 @@ class SyncLock
     {
         try {
             return $this->extensionConfiguration->get('nr_sync')['syncModuleLockedMessage'];
-        } catch (\Exception) {
+        } catch (Exception) {
             return '';
         }
     }
@@ -110,7 +111,7 @@ class SyncLock
     {
         try {
             return (bool) $this->extensionConfiguration->get('nr_sync')['syncModuleLocked'];
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -129,7 +130,7 @@ class SyncLock
 
             // Write new/updated configuration
             $this->extensionConfiguration->set('nr_sync', $configuration);
-        } catch (\Exception) {
+        } catch (Exception) {
         }
     }
 }

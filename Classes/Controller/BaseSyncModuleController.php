@@ -461,7 +461,7 @@ class BaseSyncModuleController implements ModuleInterface
     private function addButtonBarAreaLockButtons(ModuleTemplate $moduleTemplate): void
     {
         foreach ($this->getArea()->getSystems() as $systemName => $system) {
-            if (isset($system['hide']) && ($system['hide'] === true)) {
+            if (isset($system['hide']) && $system['hide']) {
                 continue;
             }
 

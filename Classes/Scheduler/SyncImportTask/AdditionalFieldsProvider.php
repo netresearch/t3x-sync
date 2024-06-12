@@ -58,7 +58,7 @@ class AdditionalFieldsProvider extends AbstractAdditionalFieldProvider
     }
 
     /**
-     * Returns the array with the field configuration
+     * Returns the array with the field configuration.
      *
      * @return array
      */

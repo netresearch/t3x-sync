@@ -22,7 +22,6 @@ use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsExcepti
 use TYPO3\CMS\Core\Resource\File;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-use function count;
 use function is_array;
 
 /**
@@ -64,9 +63,10 @@ class Task extends AbstractTask
     }
 
     /**
-     * Executes the task
+     * Executes the task.
      *
      * @return bool
+     *
      * @throws FileOperationErrorException
      * @throws InsufficientFileAccessPermissionsException
      * @throws InsufficientFolderAccessPermissionsException
@@ -78,7 +78,7 @@ class Task extends AbstractTask
     }
 
     /**
-     * Import the sql files
+     * Import the sql files.
      *
      * @return bool
      *
@@ -88,16 +88,16 @@ class Task extends AbstractTask
      */
     private function importSqlFiles(): bool
     {
-        $sqlFiles= $this->findFilesToImport();
+        $sqlFiles = $this->findFilesToImport();
 
-        if (count($sqlFiles) === 0) {
+        if ($sqlFiles === []) {
             $this->logger->info('Nothing to import');
         }
 
         $databaseConnection = $this->getDefaultDatabaseConnection();
 
         foreach ($sqlFiles as $name => $file) {
-            $this->logger->info("Start import of file $name");
+            $this->logger->info('Start import of file ' . $name);
 
             $tmpFile = '/tmp/' . $name;
             file_put_contents($tmpFile, gzdecode($file->getContents()));
@@ -113,16 +113,16 @@ class Task extends AbstractTask
             );
 
             $output = [];
-            $return = "";
+            $return = '';
             exec($command, $output, $return);
             unlink($tmpFile);
 
             if ($return > 0) {
-                $this->logger->error("Something went wrong on importing $name. Please check further logs and the file.");
+                $this->logger->error(sprintf('Something went wrong on importing %s. Please check further logs and the file.', $name));
                 throw new Exception(implode(PHP_EOL, $output));
             }
 
-            $this->logger->info("Import $name is finished. Delete File.");
+            $this->logger->info(sprintf('Import %s is finished. Delete File.', $name));
             $this->logger->info('Import was done successful.');
         }
 
@@ -130,7 +130,7 @@ class Task extends AbstractTask
     }
 
     /**
-     * Runs the clear cache command to flush the page caches
+     * Runs the clear cache command to flush the page caches.
      *
      * @return bool
      *
@@ -143,7 +143,7 @@ class Task extends AbstractTask
         $urlFiles = $this->findUrlFiles();
 
         foreach ($urlFiles as $name => $file) {
-            $this->logger->info("start processing $name");
+            $this->logger->info('start processing ' . $name);
 
             $matches = [];
             preg_match_all('/[a-zA-Z]+:[0-9|a-zA-Z\-_]+/', $file->getContents(), $matches);
@@ -158,18 +158,19 @@ class Task extends AbstractTask
                 ->clearCaches($cacheEntries);
 
             $this->deleteFile($file);
-            $this->logger->info("finish processing $name");
+            $this->logger->info('finish processing ' . $name);
         }
 
         return true;
     }
 
     /**
-     * Returns all files in a folder in the default storage
+     * Returns all files in a folder in the default storage.
      *
      * @param string $folderPath Path to folder
      *
      * @return File[]
+     *
      * @throws InsufficientFolderAccessPermissionsException
      */
     private function findFilesInFolder(string $folderPath): array
@@ -181,7 +182,7 @@ class Task extends AbstractTask
     }
 
     /**
-     * Deletes a file in the default storage
+     * Deletes a file in the default storage.
      *
      * @param File $file File object of file to delte
      *
@@ -226,7 +227,7 @@ class Task extends AbstractTask
     {
         $files = $this->findFilesInFolder($this->syncUrlsPath);
 
-        foreach ($files as $name => $file) {
+        foreach (array_keys($files) as $name) {
             if ((bool) preg_match('/once\.txt$/', $name) === false) {
                 unset($files[$name]);
             }

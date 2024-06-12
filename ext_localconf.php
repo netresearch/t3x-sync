@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+use Netresearch\Sync\Scheduler\SyncImportTask\AdditionalFieldsProvider;
+use Netresearch\Sync\Scheduler\SyncImportTask\Task;
 use Netresearch\Sync\Service\ClearCacheService;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
@@ -44,4 +46,11 @@ call_user_func(static function (): void {
         'setup',
         '@import "EXT:nr_sync/Configuration/TypoScript/setup.typoscript"'
     );
+
+    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['scheduler']['tasks'][Task::class] = [
+        'extension'        => 'nr_sync',
+        'title'            => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_scheduler.xlf:tx_nrcsync_scheduler_import.name',
+        'description'      => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_scheduler.xlf:tx_nrcsync_scheduler_import.description',
+        'additionalFields' => AdditionalFieldsProvider::class,
+    ];
 });

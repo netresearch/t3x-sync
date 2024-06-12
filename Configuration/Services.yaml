@@ -20,7 +20,7 @@ services:
     Netresearch\Sync\SyncList:
         public: true
 
-    Netresearch\Sync\Service\TableDifference:
+    Netresearch\Sync\Service\ClearCacheService:
         public: true
 
     Netresearch\Sync\Controller\BaseSyncModuleController:

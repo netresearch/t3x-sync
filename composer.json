@@ -27,6 +27,12 @@
     "support": {
         "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
     },
+    "repositories": {
+        "netresearch/nr-scheduler": {
+            "type": "gitlab",
+            "url": "https://git.netresearch.de/typo3-extensions/nr-scheduler.git"
+        }
+    },
     "config": {
         "bin-dir": ".build/bin",
         "vendor-dir": ".build/vendor",
@@ -34,16 +40,22 @@
         "sort-packages": true,
         "optimize-autoloader": true,
         "platform-check": false,
+        "gitlab-domains": [
+            "git.netresearch.de"
+        ],
         "allow-plugins": {
             "typo3/cms-composer-installers": true,
             "typo3/class-alias-loader": true
         }
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
         "typo3/cms-core": "^12.4",
         "typo3/cms-backend": "^12.4",
         "typo3/cms-extbase": "^12.4",
-        "typo3/cms-fluid": "^12.4"
+        "typo3/cms-fluid": "^12.4",
+        "netresearch/nr-scheduler": "*"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.1",

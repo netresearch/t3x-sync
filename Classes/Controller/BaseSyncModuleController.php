@@ -41,6 +41,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
@@ -371,6 +372,9 @@ class BaseSyncModuleController implements ModuleInterface
      */
     private function createButtons(ModuleTemplate $moduleTemplate): void
     {
+        GeneralUtility::makeInstance(PageRenderer::class)
+            ->addCssFile('EXT:nr_sync/Resources/Public/Css/Administration.css');
+
         $buttonBar = $moduleTemplate
             ->getDocHeaderComponent()
             ->getButtonBar();
@@ -428,7 +432,7 @@ class BaseSyncModuleController implements ModuleInterface
                         Icon::SIZE_SMALL
                     )
                 )
-                ->setClasses('btn-warning');
+                ->setClasses('custom-btn-danger');
         } else {
             $lockButton
                 ->setTitle($this->getLabel('label.lock_module'))
@@ -501,7 +505,7 @@ class BaseSyncModuleController implements ModuleInterface
                         Icon::SIZE_SMALL
                     )
                 )
-                ->setClasses('btn-warning');
+                ->setClasses('custom-btn-danger');
         } else {
             $lockButton
                 ->setTitle($this->getLabel('label.lock_target', ['{system}' => $system['name']]))

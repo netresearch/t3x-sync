@@ -59,9 +59,6 @@ return static function (RectorConfig $rectorConfig): void {
         ClassPropertyAssignToConstructorPromotionRector::class,
         MixedTypeRector::class,
         NullToStrictStringFuncCallArgRector::class,
-        RemoveUselessParamTagRector::class,
-        RemoveUselessReturnTagRector::class,
-        RemoveUselessVarTagRector::class,
         TypedPropertyFromAssignsRector::class,
         TypedPropertyFromStrictConstructorRector::class,
     ]);

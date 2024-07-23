@@ -577,7 +577,7 @@ trait DumpFileTrait
 
         $columnNames = [];
         foreach ($columns as $column) {
-            $columnNames[] = $column->getQuotedName($connection->getDatabasePlatform());
+            $columnNames[] = $column->getName();
         }
 
         $queryBuilder = $this->getQueryBuilderForTable($tableName);
@@ -638,6 +638,7 @@ trait DumpFileTrait
      */
     private function addAsDeleteRowTable(string $tableName): void
     {
+        /** @var Table $table */
         $table = GeneralUtility::makeInstance(Table::class, $tableName, 'dummy');
 
         if (!isset($this->obsoleteRows[0])) {
@@ -714,13 +715,16 @@ trait DumpFileTrait
             }
 
             // TYPO-2215 - Match the column to its update value
-            $updateParts[$key] = $key . ' = VALUES(' . $key . ')';
+            $updateParts[$key] =  \sprintf(
+                '%1$s = VALUES(%1$s)',
+                $connection->quoteIdentifier($key)
+            );
         }
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
             $connection->quoteIdentifier($tableName),
-            implode(', ', $columnNames),
+            implode(', ', $connection->quoteIdentifiers($columnNames)),
             implode(', ', $row),
             implode(', ', $updateParts)
         );
@@ -871,15 +875,11 @@ trait DumpFileTrait
         $strFieldName = $arMMConfig['foreign_field'] ?? 'uid_foreign';
         $connection   = $this->connectionPool->getConnectionForTable($tableName);
 
-        $strAdditionalWhere = ' AND ' . $connection->quoteIdentifier('tablenames')
-            . ' = ' . $connection->quote($strRefTableName);
+        $strWhere = $connection->quoteIdentifier($strFieldName) . ' = ' . $uid;
 
-        $strWhere = $strFieldName . ' = ' . $uid;
-
-        if (isset($arMMConfig['foreign_match_fields'])) {
-            foreach ($arMMConfig['foreign_match_fields'] as $strName => $strValue) {
-                $strWhere .= ' AND ' . $connection->quoteIdentifier($strName) . ' = ' . $connection->quote($strValue)
-                    . $strAdditionalWhere;
+        if (isset($arMMConfig['MM_match_fields'])) {
+            foreach ($arMMConfig['MM_match_fields'] as $strName => $strValue) {
+                $strWhere .= ' AND ' . $connection->quoteIdentifier($strName) . ' = ' . $connection->quote($strValue);
             }
         }
 

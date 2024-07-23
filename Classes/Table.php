@@ -575,7 +575,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         /** @var ConnectionPool $connectionPool */
         $connectionPool  = GeneralUtility::makeInstance(ConnectionPool::class);
         $connection      = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-        $arControlFields = $this->getControlFieldsFromTcaByTableName();
+        $arControlFields = $connection->quoteIdentifiers($this->getControlFieldsFromTcaByTableName());
 
         if ($arControlFields === []) {
             return null;

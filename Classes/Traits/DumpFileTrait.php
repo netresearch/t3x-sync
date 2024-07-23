@@ -533,14 +533,12 @@ trait DumpFileTrait
 
         $tmpFile = $tempStorage->createFile($filename, $tempFolder);
 
-        $encodingHeader = "/*!40101 SET NAMES %s */;" . PHP_EOL;
+        $encodingHeader = '/*!40101 SET NAMES %s */;' . PHP_EOL;
 
         $tmpFile->setContents(sprintf($encodingHeader, $this->getDbConnectionCharSet()));
 
         return $tmpFile;
-
     }
-
 
     /**
      * Returns the charset for the database connection.
@@ -733,7 +731,7 @@ trait DumpFileTrait
             }
 
             // TYPO-2215 - Match the column to its update value
-            $updateParts[$key] =  \sprintf(
+            $updateParts[$key] = \sprintf(
                 '%1$s = VALUES(%1$s)',
                 $connection->quoteIdentifier($key)
             );

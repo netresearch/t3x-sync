@@ -531,7 +531,25 @@ trait DumpFileTrait
             }
         }
 
-        return $tempStorage->createFile($filename, $tempFolder);
+        $tmpFile = $tempStorage->createFile($filename, $tempFolder);
+
+        $encodingHeader = "/*!40101 SET NAMES %s */;" . PHP_EOL;
+
+        $tmpFile->setContents(sprintf($encodingHeader, $this->getDbConnectionCharSet()));
+
+        return $tmpFile;
+
+    }
+
+
+    /**
+     * Returns the charset for the database connection.
+     *
+     * @return string
+     */
+    private function getDbConnectionCharSet(): string
+    {
+        return $GLOBALS['TYPO3_CONF_VARS']['DB']['Connections']['Default']['charset'] ?? 'utf8';
     }
 
     /**

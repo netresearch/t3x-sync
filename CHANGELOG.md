@@ -1,3 +1,14 @@
+# 1.0.1
+
+## MISC
+
+- 1b76223 Update rector configuration
+- 9379f80 Update phpstan configuration
+
+## Contributors
+
+- Rico Sonntag
+
 # 1.0.0
 
 ## MISC

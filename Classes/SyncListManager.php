@@ -12,10 +12,10 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use TYPO3\CMS\Core\SingletonInterface;
-use TYPO3\CMS\Extbase\Object\ObjectManagerInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Class SyncListManager
+ * Class SyncListManager.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -25,36 +25,22 @@ use TYPO3\CMS\Extbase\Object\ObjectManagerInterface;
 class SyncListManager implements SingletonInterface
 {
     /**
-     * @var ObjectManagerInterface
-     */
-    private ObjectManagerInterface $objectManager;
-
-    /**
      * @var SyncList[]
      */
     private array $syncLists = [];
 
     /**
-     * SyncListManager constructor.
-     *
-     * @param ObjectManagerInterface $objectManager
-     */
-    public function __construct(
-        ObjectManagerInterface $objectManager
-    ) {
-        $this->objectManager = $objectManager;
-    }
-
-    /**
-     * @param int $syncListId
+     * @param string $syncListId
      *
      * @return SyncList
      */
-    public function getSyncList(int $syncListId): SyncList
+    public function getSyncList(string $syncListId): SyncList
     {
-        if ($this->syncLists[$syncListId] === null) {
+        if (!isset($this->syncLists[$syncListId])
+            || (!$this->syncLists[$syncListId] instanceof SyncList)
+        ) {
             /** @var SyncList $syncList */
-            $syncList = $this->objectManager->get(SyncList::class);
+            $syncList = GeneralUtility::makeInstance(SyncList::class);
             $syncList->load($syncListId);
 
             $this->syncLists[$syncListId] = $syncList;

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file target-language="de" datatype="plaintext" original="messages" date="2024-01-01T00:00:00Z"
+          product-name="nr_sync">
+        <header/>
+        <body>
+            <trans-unit id="mlang_tabs_tab">
+                <target>Sync</target>
+            </trans-unit>
+            <trans-unit id="mlang_labels_tablabel">
+                <target>Sync</target>
+            </trans-unit>
+            <trans-unit id="mlang_labels_tabdescr">
+                <target>Ein Modul zur Synchronisierung von Inhalten von einem Produktionssystem auf ein einzelnes oder auf mehrere Ziel-Systeme.</target>
+            </trans-unit>
+
+            <!-- Labels -->
+            <trans-unit id="headline.create_sync">
+                <target>Neue Synchronisierung erstellen</target>
+            </trans-unit>
+            <trans-unit id="button.create_sync">
+                <target>Synchronisierung erstellen</target>
+            </trans-unit>
+            <trans-unit id="label.force_full_sync">
+                <target>Erzwinge eine vollständige Synchronisierung. Eine vollständige Synchronisierung dieses Elements wird initiiert, auch wenn eine inkrementelle Synchronisierung möglich ist. Dies sollte, wenn möglich, vermieden werden.</target>
+            </trans-unit>
+            <trans-unit id="label.delete_obsolete_rows">
+                <target>Löscht veraltete Datensätze auf dem Zielsystem. Alle Datensätze, die als ausgeblendet oder  gelöscht markiert sind oder bei denen die Endzeit des Datensatzes ein Datum in der Vergangenheit ist, werden auf dem Zielsystem gelöscht.</target>
+            </trans-unit>
+            <trans-unit id="headline.table_state">
+                <target>Synchronisierungsstatus der Tabellen</target>
+            </trans-unit>
+            <trans-unit id="column.table">
+                <target>Tabelle</target>
+            </trans-unit>
+            <trans-unit id="column.last_sync">
+                <target>Zuletzt synchronisiert</target>
+            </trans-unit>
+            <trans-unit id="column.last_type">
+                <target>Typ der letzten Synchronisierung</target>
+            </trans-unit>
+            <trans-unit id="column.last_user">
+                <target>Zuletzt angestoßen durch</target>
+            </trans-unit>
+            <trans-unit id="sync_type.full">
+                <target>vollständig</target>
+            </trans-unit>
+            <trans-unit id="sync_type.incr">
+                <target>inkrementell</target>
+            </trans-unit>
+            <trans-unit id="headline.sync_list">
+                <target>Synchronisierungsliste</target>
+            </trans-unit>
+            <trans-unit id="headline.waiting_syncs">
+                <target>Wartende Synchronisierungen</target>
+            </trans-unit>
+            <trans-unit id="waitingfiles">
+                <target>{files} Dateien warten auf Synchronisierung ({size}). Die älteste Datei ist von {oldestFile} und somit {minutes} Minuten alt.</target>
+            </trans-unit>
+            <trans-unit id="column.file">
+                <target>Datei</target>
+            </trans-unit>
+            <trans-unit id="column.size">
+                <target>Größe</target>
+            </trans-unit>
+            <trans-unit id="column.item">
+                <target>Seite</target>
+            </trans-unit>
+            <trans-unit id="column.action">
+                <target>Aktion</target>
+            </trans-unit>
+            <trans-unit id="label.sync_target">
+                <target>Zielsystem:</target>
+            </trans-unit>
+            <trans-unit id="message.target_locked">
+                <target>Ziel '{target}' wurde für die Synchronisierung gesperrt.</target>
+            </trans-unit>
+            <trans-unit id="message.target_unlocked">
+                <target>Ziel '{target}' wurde für die Synchronisierung aktiviert.</target>
+            </trans-unit>
+            <trans-unit id="label.lock_module">
+                <target>Sync-Modul sperren</target>
+            </trans-unit>
+            <trans-unit id="label.unlock_module">
+                <target>Sync-Modul entsperren</target>
+            </trans-unit>
+            <trans-unit id="label.lock_target">
+                <target>Sync-Ziel sperren: {system}</target>
+            </trans-unit>
+            <trans-unit id="label.unlock_target">
+                <target>Sync-Ziel entsperren: {system}</target>
+            </trans-unit>
+            <trans-unit id="label.page_only">
+                <target>Nur die ausgewählte Seite</target>
+            </trans-unit>
+            <trans-unit id="label.page_and_subpages">
+                <target>Ausgewählte Seite und alle {pages} Unterseiten</target>
+            </trans-unit>
+            <trans-unit id="label.subpages_including">
+                <target>(davon sind {deleted} gelöscht, {noaccess} gesperrt und {falses} haben den falschen Seitentyp)</target>
+            </trans-unit>
+            <trans-unit id="label.list_with_subs">
+                <target>({pages} Unterseiten, inklusive {deleted} gelöschte und {noaccess} gesperrt)</target>
+            </trans-unit>
+            <trans-unit id="label.page">
+                <target>Seite: {id}</target>
+            </trans-unit>
+            <trans-unit id="label.excluded_pages">
+                <target>Es gibt eingeschränkte Unterbereiche, die von der Synchronisierung ausgeschlossen sind.</target>
+            </trans-unit>
+            <trans-unit id="label.recursion">
+                <target>Rekursion</target>
+            </trans-unit>
+            <trans-unit id="button.add_to_list">
+                <target>Zur Synchronisierungsliste hinzufügen</target>
+            </trans-unit>
+            <trans-unit id="button.recursion_depth">
+                <target>Rekursionstiefe setzen</target>
+            </trans-unit>
+            <trans-unit id="message.notify_success">
+                <target>Ziel '{target}' wurde über neue Synchronisierungen benachrichtigt.</target>
+            </trans-unit>
+            <trans-unit id="message.notify_failed">
+                <target>Ziel '{target}' konnte aufgrund eines Fehlers nicht benachrichtigt werden.</target>
+            </trans-unit>
+            <trans-unit id="message.notify_unknown">
+                <target>Benachrichtigung für '{target}' wurde übersprungen. Type '{notify_type}' ist nicht bekannt.</target>
+            </trans-unit>
+            <trans-unit id="message.notify_disabled">
+                <target>Benachrichtigung für '{target}' wurde übersprungen, da deaktiviert.</target>
+            </trans-unit>
+            <trans-unit id="message.notify_skipped_context">
+                <target>Benachrichtigung für '{target}' wurde wegen falschem Kontext übersprungen. Erlaubte Kontexte sind: {allowed_contexts}</target>
+            </trans-unit>
+            <trans-unit id="message.notify_skipped_table">
+                <target>Tabelle '{table}' übersprungen – keine Änderungen seit der letzten Synchronisierung.</target>
+            </trans-unit>
+            <trans-unit id="success.sync_assest_init">
+                <target>Synchronisierung der Assets eingeleitet</target>
+            </trans-unit>
+            <trans-unit id="success.sync_initiated">
+                <target>Synchronisierung eingeleitet.</target>
+            </trans-unit>
+            <trans-unit id="success.sync_in_progress">
+                <target>Synchronisierung wurde gestartet und sollte in den nächsten 15 Minuten abgearbeitet werden.</target>
+            </trans-unit>
+            <trans-unit id="message.table_state_success">
+                <target>Tabellenstatus wurde aktualisiert.</target>
+            </trans-unit>
+            <trans-unit id="message.hook_files">
+                <target>{number} Hook-Url-Dateien wurden erstellt</target>
+            </trans-unit>
+            <trans-unit id="info.no_data_dumped">
+                <target>Es wurden keine Daten zur weiteren Verarbeitung erzeugt. Der ausgewählte Synchronisierungsprozess lieferte keine Daten, die mit dem Zielsystem synchronisiert werden sollten.</target>
+            </trans-unit>
+            <trans-unit id="warning.urls_system_locked">
+                <target>System '{target}' ist für die Synchronisierung gesperrt. Es werden keine Hook-Dateien erstellt.</target>
+            </trans-unit>
+            <trans-unit id="warning.table_state">
+                <target>Die folgenden Tabellen weisen Änderungen auf, bitte kontaktieren Sie Ihren TYPO3 Administrator:</target>
+            </trans-unit>
+            <trans-unit id="warning.system_locked">
+                <target>Das System '{system}' ist für die Synchronisierung gesperrt, daher werden keine Dateien zur Synchronisierung erstellt.</target>
+            </trans-unit>
+            <trans-unit id="error.no_page">
+                <target>Bitte wählen Sie eine Seite aus dem Seitenbaum.</target>
+            </trans-unit>
+            <trans-unit id="error.page_not_load">
+                <target>Der Datensatz für die Seite '{page_selected}' konnte nicht geladen werden.</target>
+            </trans-unit>
+            <trans-unit id="error.page_type_not_allowed">
+                <target>Der gewählte Seitentyp darf nicht synchronisiert werden.</target>
+            </trans-unit>
+            <trans-unit id="error.could_not_write_tablestate">
+                <target>Datei für Tabellenstatus kann nicht geschrieben werden.</target>
+            </trans-unit>
+            <trans-unit id="error.no_pages_marked">
+                <target>Es sind keine Seiten für die Synchronisierung vorgemerkt.</target>
+            </trans-unit>
+            <trans-unit id="error.last_sync_not_finished">
+                <target>Die letzte Synchronisierungsvorbereitung ist noch nicht abgeschlossen. Bitte versuchen Sie es in 5 Minuten noch einmal.</target>
+            </trans-unit>
+            <trans-unit id="error.zip_failure">
+                <target>Archiv für {file} kann nicht erzeugt werden.</target>
+            </trans-unit>
+            <trans-unit id="error.cannot_move_file">
+                <target>Die Datei {file} konnte nicht nach {target} kopiert werden.</target>
+            </trans-unit>
+            <trans-unit id="error.select_mark_type">
+                <target>Bitte wählen Sie aus, wie die Seite zur Übertragung vorgemerkt werden soll.</target>
+            </trans-unit>
+            <trans-unit id="error.page_is_marked">
+                <target>Die Seite wurde bereits für die Synchronisierung vorgemerkt.</target>
+            </trans-unit>
+            <trans-unit id="error.mm_tables">
+                <source>MM-Tabellen wie {tableName} werden nicht mehr unterstützt.</source>
+            </trans-unit>
+
+            <!-- FAL -->
+            <trans-unit id="error.fal_dirty">
+                <target>FAL hat korrupte Einträge. (Einträge mit uid_foreign = 0)</target>
+            </trans-unit>
+            <trans-unit id="label.done">
+                <target>Fertig</target>
+            </trans-unit>
+            <trans-unit id="label.clean_fal">
+                <target>Diese Aufgaben können einige Zeit in Anspruch nehmen, bitte haben Sie etwas Geduld.</target>
+            </trans-unit>
+
+            <!-- Sync modules -->
+            <trans-unit id="mod_news">
+                <target>Nachrichten</target>
+            </trans-unit>
+            <trans-unit id="mod_fal">
+                <target>TYPO3: Medien und Bilder</target>
+            </trans-unit>
+            <trans-unit id="mod_asset">
+                <target>Assets</target>
+            </trans-unit>
+            <trans-unit id="mod_be_users">
+                <target>TYPO3: Backend-Benutzer und -Gruppen</target>
+            </trans-unit>
+            <trans-unit id="mod_fe_groups">
+                <target>TYPO3: Frontend-Gruppen</target>
+            </trans-unit>
+            <trans-unit id="mod_scheduler">
+                <target>TYPO3: Aufgaben des Planers</target>
+            </trans-unit>
+            <trans-unit id="mod_redirect">
+                <target>TYPO3: Weiterleitungen</target>
+            </trans-unit>
+            <trans-unit id="mod_tableState">
+                <target>Tabellenstatus</target>
+            </trans-unit>
+            <trans-unit id="mod_singlePage">
+                <target>TYPO3: Einzelne Seiten mit Inhalt</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -1,42 +1,102 @@
 {
     "name": "netresearch/nr-sync",
     "type": "typo3-cms-extension",
-    "description": "Netresearch Sync",
+    "description": "A module for synchronizing content from a production system to a single or multiple target systems.",
+    "license": [
+        "GPL-3.0-or-later"
+    ],
+    "keywords": [
+        "TYPO3",
+        "extension",
+        "sync"
+    ],
     "authors": [
         {
             "name": "Sebastian Mendel",
             "email": "sebastian.mendel@netresearch.de",
             "role": "Developer",
-            "homepage": "http://www.netresearch.de/"
+            "homepage": "https://www.netresearch.de/"
         },
         {
             "name": "Rico Sonntag",
             "email": "rico.sonntag@netresearch.de",
             "role": "Developer",
-            "homepage": "http://www.netresearch.de/"
+            "homepage": "https://www.netresearch.de/"
         }
     ],
     "support": {
         "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
     },
-    "require": {
-        "typo3/cms-core": "^10.4"
-    },
-    "replace": {
-        "nr_sync": "self.version",
-        "typo3-ter/nr-sync": "self.version"
-    },
-    "autoload": {
-        "psr-4": {
-            "Netresearch\\Sync\\": "Classes/"
+    "repositories": {
+        "netresearch/nr-scheduler": {
+            "type": "gitlab",
+            "url": "https://git.netresearch.de/typo3-extensions/nr-scheduler.git"
         }
+    },
+    "config": {
+        "bin-dir": ".build/bin",
+        "vendor-dir": ".build/vendor",
+        "discard-changes": true,
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "platform-check": false,
+        "gitlab-domains": [
+            "git.netresearch.de"
+        ],
+        "allow-plugins": {
+            "typo3/cms-composer-installers": true,
+            "typo3/class-alias-loader": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "typo3/cms-core": "^12.4",
+        "typo3/cms-backend": "^12.4",
+        "typo3/cms-extbase": "^12.4",
+        "typo3/cms-fluid": "^12.4",
+        "netresearch/nr-scheduler": "*"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.1",
+        "friendsoftypo3/phpstan-typo3": "^0.9",
+        "overtrue/phplint": "^9.0",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-strict-rules": "^1.5",
+        "phpstan/phpstan-deprecation-rules": "^1.1",
+        "ssch/typo3-rector": "^2.0"
     },
     "extra": {
         "typo3/cms": {
-            "extension-key": "nr_sync"
-        },
-        "branch-alias": {
-            "dev-master": "0.11.x-dev"
+            "extension-key": "nr_sync",
+            "web-dir": ".build/public"
         }
+    },
+    "autoload": {
+        "psr-4": {
+            "Netresearch\\Sync\\": "Classes"
+        }
+    },
+    "scripts": {
+        "ci:test:php:lint": [
+            "phplint --configuration Build/.phplint.yml"
+        ],
+        "ci:test:php:phpstan": [
+            "phpstan analyze --configuration Build/phpstan.neon"
+        ],
+        "ci:test:php:phpstan:baseline": [
+            "phpstan analyze --configuration Build/phpstan.neon --generate-baseline Build/phpstan-baseline.neon --allow-empty-baseline"
+        ],
+        "ci:test:php:rector": [
+            "rector process --config Build/rector.php --dry-run"
+        ],
+        "ci:test": [
+            "@ci:test:php:lint",
+            "@ci:test:php:phpstan",
+            "@ci:test:php:rector"
+        ],
+        "ci:cgl": [
+            "php-cs-fixer fix --config Build/.php-cs-fixer.dist.php --diff --verbose --cache-file .build/.php-cs-fixer.cache"
+        ]
     }
 }

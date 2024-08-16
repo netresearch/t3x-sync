@@ -11,18 +11,18 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Helper;
 
+use Netresearch\Sync\Exception;
+use Netresearch\Sync\Traits\FlashMessageTrait;
+use Netresearch\Sync\Traits\TranslationTrait;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\ApplicationContext;
 use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\Exception;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
+
 use function in_array;
 
 /**
- * Methods to work with synchronization areas
+ * Methods to work with synchronization areas.
  *
  * @author  Christian Weiske <christian.weiske@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -31,65 +31,20 @@ use function in_array;
  */
 class Area
 {
+    use TranslationTrait;
+    use FlashMessageTrait;
+
     /**
-     * @var array[]
+     * @var array<int, array<string, int|string|bool|mixed>>
      */
-    private $areas = [
-        0 => [
-            'name'                 => 'All',
-            'description'          => 'Sync to live server',
-            'not_doctype'          => [],
-            'system'               => [
-                'LIVE-AWS' => [
-                    'name'      => 'Live',
-                    'directory' => 'aida-aws-live',
-                    'url-path'  => 'aida-aws-live/url',
-                    'notify'    => [
-                        'type'     => 'ftp',
-                        'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-prod-typo3_10',
-                        'password' => 'Thu2phoh',
-                        'contexts' => [
-                            'Production/Stage',
-                        ],
-                    ],
-                ],
-                'ITG-AWS'  => [
-                    'name'      => 'ITG',
-                    'directory' => 'aida-aws-itg',
-                    'url-path'  => 'aida-aws-itg/url',
-                    'notify'    => [
-                        'type'     => 'ftp',
-                        'host'     => 'uzsync12.aida.de',
-                        'user'     => 'aida-aws-itg-typo3_10',
-                        'password' => 'zo6Aelow',
-                        'contexts' => [
-                            'Production/Stage',
-                        ],
-                    ],
-                ],
-                'archive'  => [
-                    'name'      => 'Archive',
-                    'directory' => 'archive',
-                    'url-path'  => 'url/archive',
-                    'notify'    => [
-                        'type'     => 'none',
-                    ],
-                    'hide'      => true,
-                ],
-            ],
-            'sync_fe_groups'       => true,
-            'sync_be_groups'       => true,
-            'sync_tables'          => true,
-        ],
-    ];
+    public array $areas = [];
 
     /**
      * Active area configuration.
      *
-     * @var array
+     * @var array<string, int|string|bool|mixed>
      */
-    private $area = [
+    protected array $area = [
         'id'             => 0,
         'name'           => '',
         'description'    => '',
@@ -101,29 +56,40 @@ class Area
     ];
 
     /**
-     * @var FlashMessageService
+     * The system which is selected for sync.
+     *
+     * @var string
      */
-    private $flashMessageService;
+    protected string $selectedTarget = 'all';
 
     /**
-     * Area constructor.
+     * Constructor.
      *
-     * @param int $pid The page ID
+     * @param int    $pid    The page ID
+     * @param string $target The system which is selected for sync
+     *
+     * @throws Exception
      */
-    public function __construct(int $pid)
+    public function __construct(int $pid, string $target = 'all')
     {
-        $this->flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+        $this->loadSyncAreas();
+
+        $this->selectedTarget = $target;
 
         if (isset($this->areas[$pid])) {
-            $this->area = $this->areas[$pid];
+            $this->area       = $this->areas[$pid];
             $this->area['id'] = $pid;
+
+            $this->removeUnwantedSystems();
         } else {
             $rootLine = BackendUtility::BEgetRootLine($pid);
 
             foreach ($rootLine as $element) {
                 if (isset($this->areas[$element['uid']])) {
-                    $this->area = $this->areas[$element['uid']];
+                    $this->area       = $this->areas[$element['uid']];
                     $this->area['id'] = $element['uid'];
+
+                    $this->removeUnwantedSystems();
                     break;
                 }
             }
@@ -131,28 +97,47 @@ class Area
     }
 
     /**
-     * Return all areas that shall get synced for the given table type
-     *
-     * @param null|array $arAreas Area configurations
-     * @param string $strTableType Type of tables to sync, e.g. "sync_tables",
-     *                                 "sync_fe_groups", "sync_be_groups", "backsync_tables"
-     *
-     * @return Area[]
-     *
-     * @throws Exception
+     * @return void
      */
-    public static function getMatchingAreas(array $arAreas = null, $strTableType = ''): array
+    private function removeUnwantedSystems(): void
     {
-        /** @var ObjectManager $objectManager */
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
+        if ($this->selectedTarget === 'all') {
+            return;
+        }
 
+        foreach ($this->area['system'] as $key => $system) {
+            if ($this->selectedTarget === '') {
+                continue;
+            }
+
+            if ($this->selectedTarget === $key) {
+                continue;
+            }
+
+            if (strtolower($key) === 'archive') {
+                continue;
+            }
+
+            unset($this->area['system'][$key]);
+        }
+    }
+
+    /**
+     * Return all areas that shall get synced for the given table type.
+     *
+     * @param string $target Target to sync to
+     *
+     * @return self[]
+     */
+    public static function getMatchingAreas(string $target = 'all'): array
+    {
         return [
-            $objectManager->get(self::class, 0),
+            GeneralUtility::makeInstance(self::class, 0, $target),
         ];
     }
 
     /**
-     * @param array $record
+     * @param array<string, mixed> $record
      *
      * @return bool
      */
@@ -164,135 +149,197 @@ class Area
     }
 
     /**
-     * Returns the name of AREA
+     * Returns the name of the area.
      *
-     * @return mixed
+     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
-        return $this->area['name'];
+        return $this->area['name'] ?? '';
     }
 
     /**
-     * Returns the ID of the area
+     * Returns the ID of the area.
      *
-     * @return mixed
+     * @return int
+     *
+     * @deprecated
      */
-    public function getId()
+    public function getId(): int
     {
-        return $this->area['id'];
+        return $this->area['id'] ?? 0;
     }
 
     /**
-     * Returns the description of the area
+     * Returns the description of the area.
      *
-     * @return mixed
+     * @return string
      */
-    public function getDescription()
+    public function getDescription(): string
     {
-        return $this->area['description'];
+        return $this->area['description'] ?? '';
     }
 
     /**
-     * Returns the files which should be synced
+     * Returns the files which should be synced.
      *
-     * @return mixed
+     * @return string[]
      */
-    public function getFilesToSync()
+    public function getFilesToSync(): array
     {
-        return $this->area['files_to_sync'];
+        return $this->area['files_to_sync'] ?? [];
     }
 
     /**
-     * Returns a array with the directories where the sync files are stored
+     * Returns an array with the directories where the sync files are stored.
      *
-     * @return array
+     * @return string[]
      */
     public function getDirectories(): array
     {
-        $arPaths = [];
+        $paths = [];
 
-        foreach ($this->area['system'] as $arSystem) {
-            $arPaths[] = $arSystem['directory'];
-        }
-
-        return $arPaths;
-    }
-
-    /**
-     * Returns a array with the directories where the url files should be stored
-     *
-     * @return array
-     */
-    public function getUrlDirectories(): array
-    {
-        $arPaths = [];
-
-        foreach ($this->area['system'] as  $arSystem) {
-            if (empty($arSystem['url-path'])) {
+        foreach ($this->getSystems() as $system) {
+            if (!isset($system['directory'])) {
                 continue;
             }
 
-            $arPaths[] = $arSystem['url-path'];
+            if ($system['directory'] === '') {
+                continue;
+            }
+
+            $paths[] = $system['directory'];
         }
 
-        return $arPaths;
+        return $paths;
     }
 
     /**
-     * Returns the doctypes wich should be ignored for sync
+     * Returns an array with the directories where the url files should be stored.
      *
-     * @return array
+     * @return string[]
+     */
+    public function getUrlDirectories(): array
+    {
+        $paths = [];
+
+        foreach ($this->getSystems() as $system) {
+            if (!isset($system['url-path'])) {
+                continue;
+            }
+
+            if ($system['url-path'] === '') {
+                continue;
+            }
+
+            $paths[] = $system['url-path'];
+        }
+
+        return $paths;
+    }
+
+    /**
+     * Returns the doc types wich should be ignored for sync.
+     *
+     * @return int[]
      */
     public function getNotDocType(): array
     {
-        return (array) $this->area['not_doctype'];
+        return $this->area['not_doctype'] ?? [];
     }
 
     /**
-     * Returns the syncabel docktypes
+     * Returns the synchronizeable doc types.
      *
-     * @return array
+     * @return int[]
      */
     public function getDocType(): array
     {
-        return (array) $this->area['doctype'];
+        return $this->area['doctype'] ?? [];
     }
 
     /**
-     * Returns the systems
+     * Returns the systems.
      *
-     * @return array
+     * @return array<string, array{
+     *     name: string,
+     *     directory: string,
+     *     url-path: string,
+     *     notify: array<string, string|string[]>,
+     *     hide: bool
+     * }>
      */
     public function getSystems(): array
     {
-        return (array) $this->area['system'];
+        return $this->area['system'] ?? [];
     }
 
     /**
-     * Informiert Master(LIVE) Server per zb. FTP
+     * Returns the data of the given system.
      *
-     * @return bool True if all went well, false otherwise
+     * @param string $systemName
      *
-     * @throws \Exception
+     * @return array{
+     *      name: string,
+     *      directory: string,
+     *      url-path: string,
+     *      notify: array<string, string|string[]>,
+     *      hide: bool
+     *  }
      */
-    public function notifyMaster(): bool
+    public function getSystem(string $systemName): array
     {
-        foreach ($this->getSystems() as $arSystem) {
-            if ($this->systemIsNotifyEnabled($arSystem)) {
-                if ($arSystem['notify']['type'] === 'ftp') {
-                    $this->notifyMasterViaFtp($arSystem['notify']);
-                    $this->addMessage('Signaled "' . $arSystem['name'] . '" target for new sync.');
-                } else {
+        return $this->getSystems()[$systemName] ?? [];
+    }
+
+    /**
+     * Informs master (LIVE) server via e.g. FTP.
+     *
+     * @return void
+     */
+    public function notifyMaster(): void
+    {
+        foreach ($this->getSystems() as $system) {
+            if (!$this->systemIsNotifyEnabled($system)) {
+                continue;
+            }
+
+            if (isset($system['notify']['type'])
+                && ($system['notify']['type'] === 'ftp')
+            ) {
+                try {
+                    $this->notifyMasterViaFtp($system['notify']);
+
                     $this->addMessage(
-                        'Skipped signaling "' . $arSystem['name'] . '" target.'
-                        . ' Unknown notify type: "' . $arSystem['notify']['type'] . '".'
+                        $this->getLabel(
+                            'message.notify_success',
+                            [
+                                '{target}' => $system['name'],
+                            ]
+                        )
+                    );
+                } catch (\Exception) {
+                    $this->addErrorMessage(
+                        $this->getLabel(
+                            'message.notify_failed',
+                            [
+                                '{target}' => $system['name'],
+                            ]
+                        )
                     );
                 }
+            } else {
+                $this->addMessage(
+                    $this->getLabel(
+                        'message.notify_unknown',
+                        [
+                            '{target}'      => $system['name'],
+                            '{notify_type}' => $system['notify']['type'],
+                        ]
+                    )
+                );
             }
         }
-
-        return true;
     }
 
     /**
@@ -312,15 +359,20 @@ class Area
      * TYPO3_CONTEXT = Production/Stage/Instance01
      * returns true
      *
-     * @param array $system
+     * @param array{name: string, directory: string, url-path: string, notify: array<string, string|string[]>, hide: bool} $system
      *
      * @return bool
      */
-    private function systemIsNotifyEnabled(array $system): bool
+    protected function systemIsNotifyEnabled(array $system): bool
     {
-        if (empty($system['notify']['contexts'])) {
+        if (!isset($system['notify']['contexts'])) {
             $this->addMessage(
-                'Skipped signaling "' . $system['name'] . '" target due to signaling disabled.'
+                $this->getLabel(
+                    'message.notify_disabled',
+                    [
+                        '{target}' => $system['name'],
+                    ]
+                )
             );
 
             return false;
@@ -329,79 +381,79 @@ class Area
         foreach ($system['notify']['contexts'] as $context) {
             $configuredContext = GeneralUtility::makeInstance(ApplicationContext::class, $context);
 
-            $contextCheck = strpos(
-                (string) Environment::getContext(),
-                (string) $configuredContext
-            );
-
-            if ($contextCheck === 0) {
+            if (str_starts_with((string) Environment::getContext(), (string) $configuredContext)) {
                 return true;
             }
         }
 
         $this->addMessage(
-            'Skipped signaling "' . $system['name'] . '" target due to invalid context.'
-            . ' Allowed contexts: ' . implode(', ', $system['notify']['contexts'])
+            $this->getLabel(
+                'message.notify_skipped_context',
+                [
+                    '{target}'           => $system['name'],
+                    '{allowed_contexts}' => implode(', ', $system['notify']['contexts']),
+                ]
+            )
         );
 
         return false;
     }
 
     /**
-     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
-     *
-     * @param string $message The message
-     * @param int    $type    The message type
-     */
-    public function addMessage(string $message, int $type = FlashMessage::INFO): void
-    {
-        /** @var FlashMessage $flashMessage */
-        $flashMessage = GeneralUtility::makeInstance(
-            FlashMessage::class, $message, '', $type, true
-        );
-
-        $this->flashMessageService
-            ->getMessageQueueByIdentifier()
-            ->addMessage($flashMessage);
-    }
-
-    /**
-     * Inform the Master(LIVE) Server per FTP
+     * Inform the Master(LIVE) Server per FTP.
      *
      * @param string[] $ftpConfig Config of the ftp connection
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    private function notifyMasterViaFtp(array $ftpConfig): void
+    protected function notifyMasterViaFtp(array $ftpConfig): void
     {
-        $connection = ftp_connect($ftpConfig['host']);
+        // Suppress the PHP warning message if the host is invalid
+        $connection = @ftp_connect($ftpConfig['host'] ?? '');
 
         if (!$connection) {
-            throw new \Exception('Signal: FTP connection failed.');
+            throw new Exception('Signal: FTP connection failed.');
         }
 
         $loginResult = ftp_login($connection, $ftpConfig['user'], $ftpConfig['password']);
 
         if (!$loginResult) {
-            throw new \Exception('Signal: FTP auth failed.');
+            throw new Exception('Signal: FTP auth failed.');
         }
 
-        // TYPO-3844: enforce passive mode
+        // Enforce passive mode
         ftp_pasv($connection, true);
 
-        // create trigger file
+        // Create trigger file
         $sourceFile = tempnam(sys_get_temp_dir(), 'prefix');
 
         if (ftp_put($connection, 'db.txt', $sourceFile) === false) {
             ftp_close($connection);
-            throw new \Exception('Signal: FTP put db.txt failed.');
+            throw new Exception('Signal: FTP put db.txt failed.');
         }
 
         if (ftp_put($connection, 'files.txt', $sourceFile) === false) {
             ftp_close($connection);
-            throw new \Exception('Signal: FTP put files.txt failed.');
+            throw new Exception('Signal: FTP put files.txt failed.');
         }
 
         ftp_close($connection);
+    }
+
+    /**
+     * Load the Area configuration.
+     *
+     * @throws Exception
+     */
+    protected function loadSyncAreas(): void
+    {
+        if (file_exists(Environment::getPublicPath() . '/typo3conf/SyncAreaConfiguration.php') === false) {
+            throw new Exception(
+                'Area configuration s missing, please provide a Config file in path '
+                . '`public/typo3conf/SyncAreaConfiguration.php`'
+            );
+        }
+
+        $this->areas = include Environment::getPublicPath() . '/typo3conf/SyncAreaConfiguration.php';
     }
 }

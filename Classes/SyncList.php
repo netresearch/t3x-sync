@@ -11,21 +11,23 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
+use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Traits\FlashMessageTrait;
+use Netresearch\Sync\Traits\TranslationTrait;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use function count;
+
 use function in_array;
 use function is_array;
 
 /**
- * Class SyncList
+ * Class SyncList.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -34,46 +36,54 @@ use function is_array;
  */
 class SyncList
 {
+    use TranslationTrait;
+    use FlashMessageTrait;
+
+    /**
+     * @var string[][][][]
+     */
+    public array $areas;
+
     /**
      * @var ConnectionPool
      */
-    private ConnectionPool $connectionPool;
+    private readonly ConnectionPool $connectionPool;
 
     /**
-     * @var FlashMessageService
+     * @var array<int, array<int, array<string, string|bool>>>
      */
-    private FlashMessageService $flashMessageService;
+    private array $syncList = [];
 
     /**
-     * @var array
+     * @var string
      */
-    private $syncList = [];
-
-    /**
-     * @var int
-     */
-    private $id;
+    private string $id = self::class;
 
     /**
      * SyncList constructor.
      *
      * @param ConnectionPool $connectionPool
-     * @param FlashMessageService $flashMessageService
      */
     public function __construct(
-        ConnectionPool $connectionPool,
-        FlashMessageService $flashMessageService
+        ConnectionPool $connectionPool
     ) {
         $this->connectionPool = $connectionPool;
-        $this->flashMessageService = $flashMessageService;
     }
 
     /**
-     * @param int $syncListId
+     * @return string
      */
-    public function load(int $syncListId): void
+    public function getId(): string
     {
-        $this->syncList = (array) $this->getBackendUser()->getSessionData('nr_sync_synclist' . $syncListId);
+        return $this->id;
+    }
+
+    /**
+     * @param string $syncListId
+     */
+    public function load(string $syncListId): void
+    {
+        $this->syncList = (array) $this->getBackendUserAuthentication()->getSessionData('nr_sync_synclist' . $syncListId);
         $this->id       = $syncListId;
     }
 
@@ -82,14 +92,15 @@ class SyncList
      */
     public function saveSyncList(): void
     {
-        $this->getBackendUser()
+        $this
+            ->getBackendUserAuthentication()
             ->setAndSaveSessionData('nr_sync_synclist' . $this->id, $this->syncList);
     }
 
     /**
-     * Adds given data to sync list, if page ID doesn't already exists.
+     * Adds given data to sync list, if page ID doesn't already exist.
      *
-     * @param array $data Data to add to sync list.
+     * @param array<string, array<int, array<int, mixed>>> $data The data to add to sync list
      *
      * @return void
      */
@@ -98,58 +109,42 @@ class SyncList
         $data['removeable'] = true;
 
         // TODO: Nur Prüfen ob gleiche PageID schon drin liegt
-        if ($this->isInTree((int) $data['pageID'], $this->syncList[$data['areaID']])) {
+        if (isset($data['pageID'], $this->syncList[(int) $data['areaID']])
+            && $this->isInTree((int) $data['pageID'], $this->syncList[(int) $data['areaID']])
+        ) {
             $this->addMessage(
-                'Diese Seite wurde bereits zur Synchronisation vorgemerkt.',
-                FlashMessage::ERROR
+                $this->getLabel('error.page_is_marked'),
+                ContextualFeedbackSeverity::ERROR
             );
         } else {
-            $this->syncList[$data['areaID']][] = $data;
+            $this->syncList[(int) $data['areaID']][] = $data;
         }
     }
 
     /**
-     * Adds error message to message queue. Message types are defined as class constants self::STYLE_*.
+     * Removes given data from the sync list.
      *
-     * @param string $message The message
-     * @param int    $type    The message type
-     */
-    public function addMessage(string $message, int $type = FlashMessage::INFO): void
-    {
-        /** @var FlashMessage $flashMessage */
-        $flashMessage = GeneralUtility::makeInstance(
-            FlashMessage::class, $message, '', $type, true
-        );
-
-        $this->flashMessageService
-            ->getMessageQueueByIdentifier()
-            ->addMessage($flashMessage);
-    }
-
-    /**
-     * Adds given data to sync list, if pageId does not already exists.
-     *
-     * @param array $data Data to add to sync list.
+     * @param array<string, array<int, array<int, mixed>>> $data Data to remove to sync list
      *
      * @return void
      */
     public function deleteFromSyncList(array $data): void
     {
-        $arDeleteArea   = array_keys($data['delete']);
-        $arDeletePageID = array_keys($data['delete'][$arDeleteArea[0]]);
+        $deleteArea   = array_keys($data['delete']);
+        $deletePageId = array_keys($data['delete'][$deleteArea[0]]);
 
-        foreach ($this->syncList[$arDeleteArea[0]] as $key => $value) {
-            if ($value['removeable']
-                && $value['pageID'] == $arDeletePageID[0]
+        foreach ($this->syncList[$deleteArea[0]] as $key => $syncPage) {
+            if ($syncPage['removeable']
+                && ((int) $syncPage['pageID']) === $deletePageId[0]
             ) {
-                unset($this->syncList[$arDeleteArea[0]][$key]);
+                unset($this->syncList[$deleteArea[0]][$key]);
 
                 // Fix index order after removal
-                if (!empty($this->syncList[$arDeleteArea[0]])) {
-                    $this->syncList[$arDeleteArea[0]]
-                        = array_values($this->syncList[$arDeleteArea[0]]);
+                if ($this->syncList[$deleteArea[0]] !== []) {
+                    $this->syncList[$deleteArea[0]]
+                        = array_values($this->syncList[$deleteArea[0]]);
                 } else {
-                    unset($this->syncList[$arDeleteArea[0]]);
+                    unset($this->syncList[$deleteArea[0]]);
                 }
 
                 break;
@@ -160,16 +155,16 @@ class SyncList
     /**
      * Checks whether the given page ID is already in the sync list.
      *
-     * @param int        $pid      The page ID
-     * @param null|array $syncList A list of page IDs
+     * @param int                                   $pid      The page ID
+     * @param array<int, array<string, mixed>>|null $syncList A list of pages
      *
      * @return bool
      */
-    private function isInTree(int $pid, array $syncList = null): bool
+    private function isInTree(int $pid, ?array $syncList = null): bool
     {
         if (is_array($syncList)) {
-            foreach ($syncList as $value) {
-                if ($value['pageID'] === $pid) {
+            foreach ($syncList as $syncPage) {
+                if (((int) $syncPage['pageID']) === $pid) {
                     return true;
                 }
             }
@@ -181,7 +176,7 @@ class SyncList
     /**
      * @return BackendUserAuthentication
      */
-    private function getBackendUser(): BackendUserAuthentication
+    private function getBackendUserAuthentication(): BackendUserAuthentication
     {
         return $GLOBALS['BE_USER'];
     }
@@ -191,11 +186,11 @@ class SyncList
      */
     public function isEmpty(): bool
     {
-        return count($this->syncList) < 1;
+        return $this->syncList === [];
     }
 
     /**
-     * @return array
+     * @return array<int, array<int, array<string, string|bool>>>
      */
     public function getAsArray(): array
     {
@@ -204,11 +199,13 @@ class SyncList
 
     /**
      * Gibt alle PageIDs zurück die durch eine Syncliste definiert wurden.
-     * Und Editiert werden dürfen
+     * Und Editiert werden dürfen.
      *
      * @param int $areaId Area
      *
-     * @return array
+     * @return int[]
+     *
+     * @throws Exception
      */
     public function getAllPageIDs(int $areaId): array
     {
@@ -218,7 +215,7 @@ class SyncList
             // Prüfen ob User Seite Bearbeiten darf
             $pageRow = BackendUtility::getRecord('pages', (int) $syncPage['pageID']);
 
-            if ($this->getBackendUser()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
+            if ($this->getBackendUserAuthentication()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
                 $pageIds[] = [
                     (int) $syncPage['pageID'],
                 ];
@@ -230,15 +227,17 @@ class SyncList
             // @TODO
             if ($syncPage['type'] === 'tree') {
                 /** @var Area $area */
-                $area = GeneralUtility::makeInstance(Area::class, $syncPage['areaID']);
+                $area = GeneralUtility::makeInstance(
+                    Area::class,
+                    (int) $syncPage['areaID']
+                );
 
                 $arCount = $this->getSubpagesAndCount(
                     (int) $syncPage['pageID'],
+                    $area,
                     $dummy,
                     0,
-                    (int) $syncPage['levelmax'],
-                    $area->getNotDocType(),
-                    $area->getDocType()
+                    (int) $syncPage['levelmax']
                 );
 
                 $pageIds[] = $this->getPageIDsFromTree($arCount);
@@ -275,27 +274,25 @@ class SyncList
     }
 
     /**
-     * Returns the page, its sub-pages and their number for a given page ID,
-     * if this page can be edited by the user.
+     * Returns the page, its subpages and their number for a given page ID if the user can edit this page.
      *
-     * @param int        $pid               The page id to count on
-     * @param null|array &$arCount          Information about the count data
-     * @param int        $nLevel            Depth on which we are
-     * @param int        $nLevelMax         Maximum depth to search for
-     * @param null|array $arDocTypesExclude TYPO3 doc types to exclude
-     * @param null|array $arDocTypesOnly    TYPO3 doc types to count only
-     * @param null|array $tables            Tables this task manages
+     * @param int                     $pid      The page id to count on
+     * @param array<string, int>|null &$arCount Information about the count data
+     * @param int                     $level    Depth on which we are
+     * @param int                     $levelMax Maximum depth to search for
+     * @param string[]|null           $tables   Tables this task manages
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
+     *
+     * @throws Exception
      */
     public function getSubpagesAndCount(
         int $pid,
-        array &$arCount = null,
-        int $nLevel = 0,
-        int $nLevelMax = 1,
-        array $arDocTypesExclude = null,
-        array $arDocTypesOnly = null,
-        array $tables = null
+        Area $area,
+        ?array &$arCount = null,
+        int $level = 0,
+        int $levelMax = 1,
+        ?array $tables = null
     ): array {
         $arCountDefault = [
             'count'      => 0,
@@ -305,13 +302,13 @@ class SyncList
             'other_area' => 0,
         ];
 
-        if (!is_array($arCount) || empty($arCount)) {
+        if (!is_array($arCount) || $arCount === []) {
             $arCount = $arCountDefault;
         }
 
         $return = [];
 
-        if ($pid < 0 || ($nLevel >= $nLevelMax && $nLevelMax !== 0)) {
+        if ($pid < 0 || ($level >= $levelMax && $levelMax !== 0)) {
             return $return;
         }
 
@@ -323,37 +320,35 @@ class SyncList
             ->where(
                 $queryBuilder->expr()->eq('pid', $pid)
             )
-            ->execute();
+            ->executeQuery();
 
         while ($pageRow = $result->fetchAssociative()) {
-            if (is_array($arDocTypesExclude)
-                && in_array($pageRow['doktype'], $arDocTypesExclude, true)) {
+            if (in_array($pageRow['doktype'], $area->getNotDocType(), true)) {
                 continue;
             }
 
-            if (isset($this->areas[$pageRow['uid']])) {
-                $arCount['other_area']++;
+            if (isset($area->areas[$pageRow['uid']])) {
+                ++$arCount['other_area'];
                 continue;
             }
 
-            if (count($arDocTypesOnly)
-                && !in_array($pageRow['doktype'], $arDocTypesOnly, true)
+            if (($area->getDocType() !== [])
+                && !in_array($pageRow['doktype'], $area->getDocType(), true)
             ) {
-                $arCount['falses']++;
+                ++$arCount['falses'];
                 continue;
             }
 
             $arSub = $this->getSubpagesAndCount(
                 (int) $pageRow['uid'],
+                $area,
                 $arCount,
-                $nLevel + 1,
-                $nLevelMax,
-                $arDocTypesExclude,
-                $arDocTypesOnly,
+                $level + 1,
+                $levelMax,
                 $tables
             );
 
-            if ($this->getBackendUser()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
+            if ($this->getBackendUserAuthentication()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {
                 $return[] = [
                     'page' => $pageRow,
                     'sub'  => $arSub,
@@ -362,14 +357,15 @@ class SyncList
                 $return[] = [
                     'sub' => $arSub,
                 ];
-                $arCount['noaccess']++;
+                ++$arCount['noaccess'];
             }
 
-            // Die Zaehlung fuer die eigene Seite
+            // The count for our own site
             if ($this->pageContainsData($pageRow['uid'], $tables)) {
-                $arCount['count']++;
-                if ($pageRow['deleted']) {
-                    $arCount['deleted']++;
+                ++$arCount['count'];
+
+                if ($pageRow['deleted'] === 1) {
+                    ++$arCount['deleted'];
                 }
             }
         }
@@ -382,12 +378,14 @@ class SyncList
      * Returns true if "pages" is one of the tables to look for without checking
      * if page exists.
      *
-     * @param int        $nId    The page id to look for
-     * @param null|array $tables Tables this task manages
+     * @param int           $id     The page id to look for
+     * @param string[]|null $tables Tables this task manages
      *
-     * @return bool TRUE if data exists otherwise FALSE.
+     * @return bool TRUE if data exists otherwise FALSE
+     *
+     * @throws Exception
      */
-    private function pageContainsData(int $nId, array $tables = null): bool
+    public function pageContainsData(int $id, ?array $tables = null): bool
     {
         if ($tables === null) {
             return false;
@@ -397,18 +395,18 @@ class SyncList
             return true;
         }
 
-        foreach ($tables as $strTableName) {
-            if (isset($GLOBALS['TCA'][$strTableName])) {
-                $queryBuilder = $this->connectionPool->getQueryBuilderForTable($strTableName);
+        foreach ($tables as $tableName) {
+            if (isset($GLOBALS['TCA'][$tableName])) {
+                $queryBuilder = $this->connectionPool->getQueryBuilderForTable($tableName);
 
-                $nCount = $queryBuilder
+                $count = $queryBuilder
                     ->count('pid')
-                    ->from($strTableName)
-                    ->where($queryBuilder->expr()->eq('pid', $nId))
-                    ->execute()
+                    ->from($tableName)
+                    ->where($queryBuilder->expr()->eq('pid', $id))
+                    ->executeQuery()
                     ->fetchOne();
 
-                if ($nCount > 0) {
+                if ($count > 0) {
                     return true;
                 }
             }
@@ -420,9 +418,9 @@ class SyncList
     /**
      * Returns all IDs from a page tree.
      *
-     * @param array $tree The page tree to get IDs from
+     * @param array<int|string, array<string, mixed>> $tree The page tree to get IDs from
      *
-     * @return array
+     * @return int[]
      */
     private function getPageIDsFromTree(array $tree): array
     {
@@ -451,10 +449,12 @@ class SyncList
      * @param int[] $pageIds Array with page IDs
      *
      * @return int[]
+     *
+     * @throws Exception
      */
     private function getPageTranslations(array $pageIds = []): array
     {
-        if (empty($pageIds)) {
+        if ($pageIds === []) {
             return [];
         }
 
@@ -465,7 +465,7 @@ class SyncList
             ->from('pages')
             ->where($queryBuilder->expr()->in('l10n_parent', $pageIds))
             ->groupBy('uid')
-            ->execute()
+            ->executeQuery()
             ->fetchFirstColumn();
     }
 }

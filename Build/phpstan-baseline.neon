@@ -1,0 +1,41 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Only booleans are allowed in an elseif condition, mixed given\\.$#"
+			count: 1
+			path: ../Classes/Command/ClearCache.php
+
+		-
+			message: "#^Only booleans are allowed in an if condition, mixed given\\.$#"
+			count: 1
+			path: ../Classes/Command/ClearCache.php
+
+		-
+			message: "#^Method Netresearch\\\\Sync\\\\Scheduler\\\\SyncImportTask\\\\AdditionalFieldsProvider\\:\\:getFieldConfiguration\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php
+
+		-
+			message: "#^Parameter \\#1 \\$submittedData \\(array\\<string\\>\\) of method Netresearch\\\\Sync\\\\Scheduler\\\\SyncImportTask\\\\AdditionalFieldsProvider\\:\\:saveAdditionalFields\\(\\) should be contravariant with parameter \\$submittedData \\(array\\) of method Netresearch\\\\NrScheduler\\\\AbstractAdditionalFieldProvider\\:\\:saveAdditionalFields\\(\\)$#"
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php
+
+		-
+			message: "#^Parameter \\#1 \\$submittedData \\(array\\<string\\>\\) of method Netresearch\\\\Sync\\\\Scheduler\\\\SyncImportTask\\\\AdditionalFieldsProvider\\:\\:saveAdditionalFields\\(\\) should be contravariant with parameter \\$submittedData \\(array\\) of method TYPO3\\\\CMS\\\\Scheduler\\\\AdditionalFieldProviderInterface\\:\\:saveAdditionalFields\\(\\)$#"
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php
+
+		-
+			message: "#^Return type \\(array\\) of method Netresearch\\\\Sync\\\\Scheduler\\\\SyncImportTask\\\\AdditionalFieldsProvider\\:\\:getFieldConfiguration\\(\\) should be covariant with return type \\(array\\<string, array\\<string, array\\<string\\>\\|bool\\|int\\|string\\>\\>\\) of method Netresearch\\\\NrScheduler\\\\AbstractAdditionalFieldProvider\\:\\:getFieldConfiguration\\(\\)$#"
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php
+
+		-
+			message: "#^Return type \\(array\\<TYPO3\\\\CMS\\\\Core\\\\Resource\\\\File\\>\\) of method Netresearch\\\\Sync\\\\ViewHelpers\\\\Folder\\\\FilesViewHelper\\:\\:renderStatic\\(\\) should be compatible with return type \\(string\\) of method TYPO3Fluid\\\\Fluid\\\\Core\\\\ViewHelper\\\\ViewHelperInterface\\:\\:renderStatic\\(\\)$#"
+			count: 1
+			path: ../Classes/ViewHelpers/Folder/FilesViewHelper.php
+
+		-
+			message: "#^Return type \\(bool\\) of method Netresearch\\\\Sync\\\\ViewHelpers\\\\Folder\\\\LockFileExistsViewHelper\\:\\:renderStatic\\(\\) should be compatible with return type \\(string\\) of method TYPO3Fluid\\\\Fluid\\\\Core\\\\ViewHelper\\\\ViewHelperInterface\\:\\:renderStatic\\(\\)$#"
+			count: 1
+			path: ../Classes/ViewHelpers/Folder/LockFileExistsViewHelper.php

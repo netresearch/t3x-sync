@@ -11,11 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers;
 
-use Netresearch\Sync\Helper\Area;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
+
 use function constant;
 
 /**
@@ -30,7 +31,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
     /**
      * @var BootstrapRenderer
      */
-    private $bootstrapRenderer;
+    private readonly BootstrapRenderer $bootstrapRenderer;
 
     /**
      * @var bool
@@ -71,18 +72,18 @@ class FlashMessageViewHelper extends AbstractViewHelper
     /**
      * Returns the renderer flash message.
      *
-     * @return Area
+     * @return string
      */
     public function render(): string
     {
         /** @var FlashMessage $message */
         $message = GeneralUtility::makeInstance(
             FlashMessage::class,
-            $this->renderChildren(),
+            trim($this->renderChildren()),
             '',
-            constant(FlashMessage::class . '::' . $this->arguments['type'])
+            constant(ContextualFeedbackSeverity::class . '::' . $this->arguments['type'])
         );
 
-        return $this->bootstrapRenderer->render([ $message ]);
+        return $this->bootstrapRenderer->render([$message]);
     }
 }

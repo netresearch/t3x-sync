@@ -7,32 +7,50 @@
  * LICENSE file that was distributed with this source code.
  */
 
-defined('TYPO3_MODE') || die();
+declare(strict_types=1);
 
-// Register icons
-$iconRegistry = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-    \TYPO3\CMS\Core\Imaging\IconRegistry::class
-);
+use Netresearch\Sync\Scheduler\SyncImportTask\AdditionalFieldsProvider;
+use Netresearch\Sync\Scheduler\SyncImportTask\Task;
+use Netresearch\Sync\Service\ClearCacheService;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-$iconRegistry->registerIcon(
-    'nr_sync_extension_icon',
-    \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
-    ['source' => 'EXT:nr_sync/Resources/Public/Icons/Extension.svg']
-);
+defined('TYPO3') || exit('Access denied.');
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
-    'nr_sync',
-    'nrClearCache',
-    'tx_nrsync_clearcache',
-    [
-        'title'       => 'NrSync Cache Clear Service',
-        'description' => 'Clears the cache of given tables',
-        'subtype'     => '',
-        'available'   => true,
-        'priority'    => 50,
-        'quality'     => 50,
-        'os'          => '',
-        'exec'        => '',
-        'className'   => \Netresearch\Sync\Service\ClearCache::class,
-    ]
-);
+call_user_func(static function (): void {
+    ExtensionManagementUtility::addService(
+        'nr_sync',
+        'nrClearCache',
+        ClearCacheService::class,
+        [
+            'title'       => 'NrSync cache clear service',
+            'description' => 'Clears the cache of given tables',
+            'subtype'     => '',
+            'available'   => true,
+            'priority'    => 50,
+            'quality'     => 50,
+            'os'          => '',
+            'exec'        => '',
+            'className'   => ClearCacheService::class,
+        ]
+    );
+
+    // Add TypoScript automatically (to use it in backend modules)
+    ExtensionManagementUtility::addTypoScript(
+        'nr_sync',
+        'constants',
+        '@import "EXT:nr_sync/Configuration/TypoScript/constants.typoscript"'
+    );
+
+    ExtensionManagementUtility::addTypoScript(
+        'nr_sync',
+        'setup',
+        '@import "EXT:nr_sync/Configuration/TypoScript/setup.typoscript"'
+    );
+
+    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['scheduler']['tasks'][Task::class] = [
+        'extension'        => 'nr_sync',
+        'title'            => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_scheduler.xlf:tx_nrcsync_scheduler_import.name',
+        'description'      => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_scheduler.xlf:tx_nrcsync_scheduler_import.description',
+        'additionalFields' => AdditionalFieldsProvider::class,
+    ];
+});

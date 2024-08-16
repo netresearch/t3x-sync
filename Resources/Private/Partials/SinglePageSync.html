@@ -1,0 +1,72 @@
+<html data-namespace-typo3-fluid="true"
+      xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
+>
+    <f:section name="Main">
+        <div class="form-section">
+            <input type="hidden" name="data[pageID]" value="{pageUid}">
+            <input type="hidden" name="data[count]" value="{arCount.count}">
+            <input type="hidden" name="data[deleted]" value="{arCount.deleted}">
+            <input type="hidden" name="data[noaccess]" value="{arCount.noaccess}">
+            <input type="hidden" name="data[areaID]" value="{area.id}">
+
+            <h4>{title}</h4>
+
+            <div class="form-group">
+                <f:if condition="{pageContainsData}">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="data[type]" value="alone" id="data_type_alone">
+                        <label class="form-check-label" for="data_type_alone">
+                            <nrs:translate id="label.page_only" />
+                        </label>
+                    </div>
+                </f:if>
+
+                <f:if condition="{arCount.count} > 0">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="data[type]" value="tree" id="data_type_tree">
+                        <label class="form-check-label" for="data_type_tree">
+                            <nrs:translate id="label.page_and_subpages" data="{pages: arCount.count}" />
+                            <br>
+                            <small>
+                                <nrs:translate id="label.subpages_including"
+                                               data="{deleted: arCount.count, noaccess: arCount.noaccess, falses: arCount.falses}" />
+                            </small>
+                        </label>
+                    </div>
+
+                    <f:if condition="{arCount.other_area} > 0">
+                        <br>
+                        <b><nrs:translate id="label.excluded_pages" /></b>
+                    </f:if>
+                </f:if>
+            </div>
+
+            <f:if condition="{bShowButton}">
+                <div class="form-group">
+                    <label for="recursion"><nrs:translate id="label.recursion" /></label>
+                    <div class="form-inline">
+                        <div class="input-group">
+                            <input class="form-control" id="recursion" type="number" name="data[levelmax]" value="{recursion}" min="1" max="100">
+                            <div class="input-group-append">
+                                <button class="btn btn-default" type="submit" name="data[recursion]" value="{nrs:translate(id: 'button.recursion_depth')}">
+                                    <core:icon identifier="actions-open" size="small" />
+                                    <nrs:translate id="button.recursion_depth" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button class="btn btn-default" type="submit" name="data[add]" value="{nrs:translate(id: 'button.add_to_list')}">
+                        <core:icon identifier="actions-add" size="small" />
+                        <nrs:translate id="button.add_to_list" />
+                    </button>
+                </div>
+            </f:if>
+        </div>
+    </f:section>
+</html>

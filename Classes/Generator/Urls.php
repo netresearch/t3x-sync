@@ -11,10 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
-use Netresearch\Sync\Controller\SyncModuleController;
+use Netresearch\Sync\Controller\BaseSyncModuleController;
 use Netresearch\Sync\Helper\Area;
-use RuntimeException;
-use TYPO3\CMS\Extbase\Object\Exception;
+use Netresearch\Sync\Service\StorageService;
+use Netresearch\Sync\Traits\TranslationTrait;
+use TYPO3\CMS\Core\Resource\FileInterface;
+
 use function count;
 
 /**
@@ -28,150 +30,189 @@ use function count;
  */
 class Urls
 {
+    use TranslationTrait;
+
     /**
      * @var string Filename-format for once files
      */
-    public const FILE_FORMAT_ONCE = '%s-once.txt';
+    final public const FILE_FORMAT_ONCE = '%s-once.txt';
 
     /**
      * @var string Filename-format for per-machine files
      */
-    public const FILE_FORMAT_PERMACHINE = '%s-per-machine.txt';
+    final public const FILE_FORMAT_PERMACHINE = '%s-per-machine.txt';
+
+    /**
+     * @var StorageService
+     */
+    protected StorageService $storageService;
+
+    /**
+     * Constructor.
+     *
+     * @param StorageService $storageService
+     */
+    public function __construct(StorageService $storageService)
+    {
+        $this->storageService = $storageService;
+    }
 
     /**
      * Called after the sync button has been pressed.
      * We generate the URL files here.
      *
-     * @param array $arParams Information about what to sync.
-     * @param SyncModuleController $sync Main sync module object
+     * @param array<string, string[]|bool> $params information about what to sync
+     * @param BaseSyncModuleController     $sync   Main sync module object
      *
      * @return void
-     *
-     * @throws Exception
      */
-    public function postProcessSync(array $arParams, SyncModuleController $sync): void
+    public function postProcessSync(array $params, BaseSyncModuleController $sync): void
     {
-        if ($arParams['bProcess'] === false || $arParams['bSyncResult'] === false) {
+        if (($params['bProcess'] === false)
+            || ($params['bSyncResult'] === false)) {
             return;
         }
 
-        if (count($arParams['arUrlsOnce']) === 0
-            && count($arParams['arUrlsPerMachine']) === 0
+        if ((count($params['arUrlsOnce']) === 0)
+            && (count($params['arUrlsPerMachine']) === 0)
         ) {
             return;
         }
 
-        $arMatchingAreas = Area::getMatchingAreas(
-            $arParams['arAreas'], $arParams['strTableType']
-        );
-        $arFolders = $this->getFolders($arMatchingAreas, $sync);
+        $matchingAreas = Area::getMatchingAreas($sync->getTarget());
+        $folders       = $this->getFolders($matchingAreas, $sync);
+        $count         = 0;
 
-        $nCount = 0;
-
-        if (isset($arParams['arUrlsOnce'])) {
-            $nCount = $this->generateUrlFile(
-                $arParams['arUrlsOnce'], $arFolders, self::FILE_FORMAT_ONCE
-            );
-        }
-        if (isset($arParams['arUrlsPerMachine'])) {
-            $nCount += $this->generateUrlFile(
-                $arParams['arUrlsPerMachine'], $arFolders, self::FILE_FORMAT_PERMACHINE
+        if (isset($params['arUrlsOnce'])) {
+            $count = $this->generateUrlFile(
+                $params['arUrlsOnce'],
+                $folders,
+                self::FILE_FORMAT_ONCE
             );
         }
 
-        $sync->addSuccess(
-            sprintf('Created %d hook URL files', $nCount)
+        if (isset($params['arUrlsPerMachine'])) {
+            $count += $this->generateUrlFile(
+                $params['arUrlsPerMachine'],
+                $folders,
+                self::FILE_FORMAT_PERMACHINE
+            );
+        }
+
+        $sync->addSuccessMessage(
+            $this->getLabel(
+                'message.hook_files',
+                [
+                    '{number}' => $count,
+                ]
+            )
         );
     }
 
     /**
-     * Generates the url files for a given format
+     * Generates the url files for a given format.
      *
-     * @param array  $urls    Array with urls to write onto file
-     * @param array  $folders Folders in which the files should be stored
-     * @param string $format  Format of filename
+     * @param string[] $urls    Array with urls to write onto file
+     * @param string[] $folders Folders in which the files should be stored
+     * @param string   $format  Format of filename
      *
      * @return int
      */
     private function generateUrlFile(array $urls, array $folders, string $format): int
     {
-        [$strContent, $strPath] = $this->prepareFile($urls, $format);
-        return $this->saveFile($strContent, $strPath, $folders);
+        [$content, $strPath] = $this->prepareFile($urls, $format);
+
+        return $this->saveFile($content, $strPath, $folders);
     }
 
     /**
-     * Prepares file content and file name for an url list file
+     * Prepares file content and file name for an url list file.
      *
-     * @param array  $arUrls              URLs
-     * @param string $strFileNameTemplate Template for file name.
-     *                                    Date will be put into it
+     * @param string[] $arUrls           URLs
+     * @param string   $fileNameTemplate Template for file name. Date will be put into it
      *
-     * @return array First value is the file content, second the file name
+     * @return array<int, string|null> First value is the file content, second the file name
      */
-    protected function prepareFile(array $arUrls, string $strFileNameTemplate): array
+    protected function prepareFile(array $arUrls, string $fileNameTemplate): array
     {
-        if (count($arUrls) === 0) {
+        if ($arUrls === []) {
             return [null, null];
         }
 
         return [
             implode("\n", $arUrls) . "\n",
-            sprintf($strFileNameTemplate, date(SyncModuleController::DATE_FORMAT))
+            sprintf($fileNameTemplate, date(BaseSyncModuleController::DATE_FORMAT)),
         ];
     }
 
     /**
-     * Saves the given file into different folders
+     * Saves the given file into different folders.
      *
-     * @param string $strContent  File content to save
-     * @param string $strFileName File name to use
-     * @param array  $arFolders   Folders to save file into
+     * @param string|null $content  File content to save
+     * @param string|null $fileName File name to use
+     * @param string[]    $folders  Folders to save file into
      *
      * @return int Number of created files
      */
-    protected function saveFile(string $strContent, string $strFileName, array $arFolders): int
+    protected function saveFile(?string $content, ?string $fileName, array $folders): int
     {
-        if ($strContent === null || $strFileName === '' || !count($arFolders)) {
+        if (($content === null)
+            || ($content === '')
+            || ($fileName === null)
+            || ($fileName === '')
+            || ($folders === [])
+        ) {
             return 0;
         }
 
-        foreach ($arFolders as $strFolder) {
-            file_put_contents($strFolder . '/' . $strFileName, $strContent);
+        foreach ($folders as $folder) {
+            $folder = $this->storageService
+                ->getSyncFolder()
+                ->getSubfolder($folder);
+
+            /** @var FileInterface|null $file */
+            $file = $this->storageService
+                ->getDefaultStorage()
+                ->createFile($fileName, $folder);
+
+            $file?->setContents($content);
         }
 
-        return count($arFolders);
+        return count($folders);
     }
 
     /**
      * Returns full folder paths. Creates folders if necessary.
      * The URL files have to be put in each of the folders.
      *
-     * @param Area[]               $arAreas Areas to sync to
-     * @param SyncModuleController $sync    Main sync module object
+     * @param Area[]                   $areas Areas to sync to
+     * @param BaseSyncModuleController $sync  Main sync module object
      *
-     * @return array Array of full paths with trailing slashes
+     * @return string[] Array of full paths with trailing slashes
      */
-    protected function getFolders(array $arAreas, SyncModuleController $sync): array
+    protected function getFolders(array $areas, BaseSyncModuleController $sync): array
     {
-        $arPaths = [];
+        $paths = [];
 
-        foreach ($arAreas as $area) {
-            foreach ($area->getUrlDirectories() as $strDirectory) {
-                $arPaths[] = $sync->dbFolder . $strDirectory . '/';
+        foreach ($areas as $area) {
+            foreach ($area->getSystems() as $system) {
+                if ($sync->isSystemLocked($system['directory'])) {
+                    $sync->addWarningMessage(
+                        $this->getLabel(
+                            'warning.urls_system_locked',
+                            [
+                                '{target}' => $system['directory'],
+                            ]
+                        )
+                    );
+
+                    continue;
+                }
+
+                $paths[] = $system['url-path'];
             }
         }
-        $arPaths = array_unique($arPaths);
 
-        foreach ($arPaths as $strPath) {
-            // https://github.com/kalessil/phpinspectionsea/blob/master/docs/probable-bugs.md#mkdir-race-condition
-            if (!is_dir($strPath)
-                && !mkdir($strPath, $sync->nFolderRights)
-                && !is_dir($strPath)
-            ) {
-                throw new RuntimeException(sprintf('Directory "%s" was not created', $strPath));
-            }
-        }
-
-        return $arPaths;
+        return array_unique($paths);
     }
 }

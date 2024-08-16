@@ -1,0 +1,16 @@
+## Module configuration
+#module.tx_nrsync {
+#    view {
+#        templateRootPaths {
+#            0 = EXT:nr_sync/Resources/Private/Backend/Templates/
+#        }
+#
+#        partialRootPaths {
+#            0 = EXT:nr_sync/Resources/Private/Backend/Partials/
+#        }
+#
+#        layoutRootPaths {
+#            0 = EXT:nr_sync/Resources/Private/Backend/Layouts/
+#        }
+#    }
+#}

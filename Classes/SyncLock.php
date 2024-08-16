@@ -11,15 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
-use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
-use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
+use Exception;
+use Netresearch\Sync\Traits\FlashMessageTrait;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Class SyncLock
+ * Class SyncLock.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -28,44 +25,24 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class SyncLock
 {
+    use FlashMessageTrait;
+
     /**
      * The extension configuration.
      *
      * @var ExtensionConfiguration
      */
-    private $extensionConfiguration;
-
-    /**
-     * @var FlashMessageService
-     */
-    private $flashMessageService;
+    private readonly ExtensionConfiguration $extensionConfiguration;
 
     /**
      * SyncLock constructor.
      *
      * @param ExtensionConfiguration $extensionConfiguration
-     * @param FlashMessageService $flashMessageService
      */
     public function __construct(
-        ExtensionConfiguration $extensionConfiguration,
-        FlashMessageService $flashMessageService
+        ExtensionConfiguration $extensionConfiguration
     ) {
         $this->extensionConfiguration = $extensionConfiguration;
-        $this->flashMessageService = $flashMessageService;
-    }
-
-    /**
-     * Returns message for current lock.
-     *
-     * @return string
-     *
-     * @throws ExtensionConfigurationExtensionNotConfiguredException
-     * @throws ExtensionConfigurationPathDoesNotExistException
-     */
-    public function getLockMessage(): string
-    {
-        $syncConf = $this->extensionConfiguration->get('nr_sync');
-        return $syncConf['syncModuleLockedMessage'];
     }
 
     /**
@@ -73,7 +50,7 @@ class SyncLock
      *
      * @throws Exception
      */
-    public function handleLockRequest(): void
+    public function handleModuleLock(): void
     {
         if (!$this->receivedLockChangeRequest()) {
             return;
@@ -81,31 +58,14 @@ class SyncLock
 
         try {
             $this->storeLockConfiguration();
-            $this->messageOk('Sync module was ' . ($this->isLockRequested() ? 'locked.' : 'unlocked.'));
-        } catch (\Exception $exception) {
+            $this->addInfoMessage('Sync module was ' . ($this->isLockRequested() ? 'locked.' : 'unlocked.'));
+        } catch (Exception $exception) {
             throw new Exception(
                 'Error in nr_sync configuration: '
                 . $exception->getMessage()
-                . ' Please check configuration in the Extension Manager.'
+                . ' Please check configuration in the Extension Manager.', $exception->getCode(), $exception
             );
         }
-    }
-
-    /**
-     * Send OK message to user.
-     *
-     * @param string $message Message to user
-     */
-    private function messageOk(string $message): void
-    {
-        /** @var FlashMessage $flashMessage */
-        $flashMessage = GeneralUtility::makeInstance(
-            FlashMessage::class, $message
-        );
-
-        $this->flashMessageService
-            ->getMessageQueueByIdentifier()
-            ->addMessage($flashMessage);
     }
 
     /**
@@ -129,34 +89,48 @@ class SyncLock
     }
 
     /**
+     * Returns message for current lock.
+     *
+     * @return string
+     */
+    public function getLockMessage(): string
+    {
+        try {
+            return $this->extensionConfiguration->get('nr_sync')['syncModuleLockedMessage'];
+        } catch (Exception) {
+            return '';
+        }
+    }
+
+    /**
      * Returns current lock state.
      *
      * @return bool
-     *
-     * @throws ExtensionConfigurationExtensionNotConfiguredException
-     * @throws ExtensionConfigurationPathDoesNotExistException
      */
     public function isLocked(): bool
     {
-        $syncConf = $this->extensionConfiguration->get('nr_sync');
-        return (bool) $syncConf['syncModuleLocked'];
+        try {
+            return (bool) $this->extensionConfiguration->get('nr_sync')['syncModuleLocked'];
+        } catch (Exception) {
+            return false;
+        }
     }
 
     /**
      * Persist lock state in extension configuration.
-     *
-     * @throws ExtensionConfigurationExtensionNotConfiguredException
-     * @throws ExtensionConfigurationPathDoesNotExistException
      */
     private function storeLockConfiguration(): void
     {
-        $configuration = $this->extensionConfiguration->get('nr_sync');
-        $configuration['syncModuleLocked'] = $this->isLockRequested();
+        try {
+            $configuration                     = $this->extensionConfiguration->get('nr_sync');
+            $configuration['syncModuleLocked'] = $this->isLockRequested();
 
-        // Updated the configuration during run time, so any following check will have new updated values
-        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_sync'] = $configuration;
+            // Updated the configuration during run time, so any following check will have new updated values
+            $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_sync'] = $configuration;
 
-        // Write new/updated configuration
-        $this->extensionConfiguration->set('nr_sync', '', $configuration);
+            // Write new/updated configuration
+            $this->extensionConfiguration->set('nr_sync', $configuration);
+        } catch (Exception) {
+        }
     }
 }

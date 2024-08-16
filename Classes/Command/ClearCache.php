@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Command;
 
-use Netresearch\Sync\Service\ClearCache as ClearCacheService;
+use Netresearch\Sync\Service\ClearCacheService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,13 +49,6 @@ class ClearCache extends Command
     private const CLI_ERROR_FILE = 2;
 
     /**
-     * CLI return code: Error unknown.
-     *
-     * @var int
-     */
-    private const CLI_ERROR_UNKNOWN = 255;
-
-    /**
      * @var SymfonyStyle
      */
     private SymfonyStyle $io;
@@ -65,13 +58,13 @@ class ClearCache extends Command
      *
      * @var ClearCacheService
      */
-    private ClearCacheService $clearCacheService;
+    private readonly ClearCacheService $clearCacheService;
 
     /**
      * ClearCache constructor.
      *
      * @param ClearCacheService $clearCacheService
-     * @param string $name
+     * @param string            $name
      */
     public function __construct(
         ClearCacheService $clearCacheService,
@@ -82,11 +75,15 @@ class ClearCache extends Command
         $this->clearCacheService = $clearCacheService;
     }
 
+    /**
+     * @return void
+     */
     protected function configure(): void
     {
         parent::configure();
 
-        $this->setDescription('Clears the cache for given UIDs in given tables.')
+        $this
+            ->setDescription('Clears the cache for given UIDs in given tables.')
             ->setHelp('Operations for Synchronisation to Live. The script clears the cache for '
                 . 'given UIDs and tables. It calls the typo3 clear cache functionality for the given table');
 
@@ -108,6 +105,12 @@ class ClearCache extends Command
         );
     }
 
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io = new SymfonyStyle($input, $output);
@@ -117,18 +120,15 @@ class ClearCache extends Command
                 $data = $this->getDataFromFile($inputFilename);
             } else {
                 $this->io->error('Cannot read file "' . $inputFilename . '".');
+
                 return self::CLI_ERROR_FILE;
             }
         } elseif ($inputData = $input->getOption('data')) {
             $data = explode(',', $inputData);
         } else {
             $this->io->error('You need to specify either option -f or -d. Type --help for more information.');
-            return self::CLI_ERROR_COMMAND;
-        }
 
-        if (!$this->setupClearCacheService()) {
-            $this->io->error('Something went wrong during init.');
-            return self::CLI_ERROR_UNKNOWN;
+            return self::CLI_ERROR_COMMAND;
         }
 
         $this->runClearCacheService($data);
@@ -157,24 +157,9 @@ class ClearCache extends Command
     }
 
     /**
-     * Setups the needed ClearCacheService with echo output.
+     * CLI runner with echo output.
      *
-     * @return bool True if initialization was ok otherwise false.
-     */
-    private function setupClearCacheService(): bool
-    {
-        if ($this->clearCacheService instanceof ClearCacheService) {
-            return true;
-        }
-
-        $this->io->error('Error: Could not find nrClearCache service.');
-        return false;
-    }
-
-    /**
-     * CLI runner with echo output
-     *
-     * @param string[] $data Array with values in table:uid order.
+     * @param string[] $data array with values in table:uid order
      *
      * @return void
      */

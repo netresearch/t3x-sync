@@ -11,10 +11,11 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
+use Doctrine\DBAL\Exception;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 /**
- * Class SyncStats
+ * Class SyncStats.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
@@ -26,52 +27,62 @@ class SyncStats
     /**
      * @var ConnectionPool
      */
-    private $connectionPool;
+    private readonly ConnectionPool $connectionPool;
 
     /**
      * @var string[]
      */
-    private array $tables;
+    private readonly array $tables;
 
     /**
      * SyncStats constructor.
      *
      * @param ConnectionPool $connectionPool
-     * @param string[] $tables Table names
+     * @param string[]       $tables         Table names
      */
     public function __construct(
         ConnectionPool $connectionPool,
         array $tables
     ) {
         $this->connectionPool = $connectionPool;
-        $this->tables = $tables;
+        $this->tables         = $tables;
     }
 
     /**
      * Returns table sync statistics.
      *
-     * @return array
+     * @return array<string, array<string, int|string>>
+     *
+     * @throws Exception
      */
     public function getSyncStats(): array
     {
         $connection   = $this->connectionPool->getConnectionForTable('tx_nrsync_syncstat');
         $queryBuilder = $connection->createQueryBuilder();
 
+        /** @var array{incr: int, full: int, cruser_id: int} $row */
         $row = $queryBuilder
-            ->select('*')
+            ->select('incr', 'full', 'cruser_id')
             ->from('tx_nrsync_syncstat')
             ->where(
-                $queryBuilder->expr()->eq('tab', $queryBuilder->quote('*'))
+                $queryBuilder->expr()->eq(
+                    'tab',
+                    $queryBuilder->quote('*')
+                )
             )
-            ->execute()
+            ->executeQuery()
             ->fetchAssociative();
 
+        $full          = $row['full'] ?? 0;
+        $incr          = $row['incr'] ?? 0;
+        $backendUserId = $row['cruser_id'] ?? 0;
+
         $default = [
-            'full' => $row['full'],
-            'incr' => $row['incr'],
-            'last_time' => max($row['incr'], $row['full']),
-            'last_type' => ($row['full'] > $row['incr'] ? 'full' : 'incr'),
-            'last_user' => $row['cruser_id'],
+            'full'      => $full,
+            'incr'      => $incr,
+            'last_time' => max($incr, $full),
+            'last_type' => ($full > $incr ? 'full' : 'incr'),
+            'last_user' => $backendUserId,
         ];
 
         $result = [];
@@ -81,21 +92,29 @@ class SyncStats
 
             $queryBuilder = $connection->createQueryBuilder();
 
+            /** @var array{incr: int, full: int, cruser_id: int} $row */
             $row = $queryBuilder
-                ->select('*')
+                ->select('incr', 'full', 'cruser_id')
                 ->from('tx_nrsync_syncstat')
                 ->where(
-                    $queryBuilder->expr()->eq('tab', $queryBuilder->quote($table))
+                    $queryBuilder->expr()->eq(
+                        'tab',
+                        $queryBuilder->quote($table)
+                    )
                 )
-                ->execute()
+                ->executeQuery()
                 ->fetchAssociative();
 
+            $full          = $row['full'] ?? 0;
+            $incr          = $row['incr'] ?? 0;
+            $backendUserId = $row['cruser_id'] ?? 0;
+
             $resultRow = [
-                'full'      => $row['full'],
-                'incr'      => $row['incr'],
-                'last_time' => max($row['incr'], $row['full']),
-                'last_type' => ($row['full'] > $row['incr'] ? 'full' : 'incr'),
-                'last_user' => $row['cruser_id'],
+                'full'      => $full,
+                'incr'      => $incr,
+                'last_time' => max($incr, $full),
+                'last_type' => ($full > $incr ? 'full' : 'incr'),
+                'last_user' => $backendUserId,
             ];
 
             $result[$table] = [

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" date="2024-01-01T00:00:00Z"
+          product-name="nr_sync">
+        <header/>
+        <body>
+            <trans-unit id="mlang_tabs_tab">
+                <source>Sync</source>
+            </trans-unit>
+            <trans-unit id="mlang_labels_tablabel">
+                <source>Sync</source>
+            </trans-unit>
+            <trans-unit id="mlang_labels_tabdescr">
+                <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+            </trans-unit>
+
+            <!-- Labels -->
+            <trans-unit id="headline.create_sync">
+                <source>Create new Sync</source>
+            </trans-unit>
+            <trans-unit id="button.create_sync">
+                <source>Create Sync</source>
+            </trans-unit>
+            <trans-unit id="label.force_full_sync">
+                <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+            </trans-unit>
+            <trans-unit id="label.delete_obsolete_rows">
+                <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+            </trans-unit>
+            <trans-unit id="headline.table_state">
+                <source>Table sync status</source>
+            </trans-unit>
+            <trans-unit id="column.table">
+                <source>Table</source>
+            </trans-unit>
+            <trans-unit id="column.last_sync">
+                <source>Last sync time</source>
+            </trans-unit>
+            <trans-unit id="column.last_type">
+                <source>Last sync type</source>
+            </trans-unit>
+            <trans-unit id="column.last_user">
+                <source>Last sync user</source>
+            </trans-unit>
+            <trans-unit id="sync_type.full">
+                <source>full</source>
+            </trans-unit>
+            <trans-unit id="sync_type.incr">
+                <source>incremental</source>
+            </trans-unit>
+            <trans-unit id="headline.sync_list">
+                <source>Sync List</source>
+            </trans-unit>
+            <trans-unit id="headline.waiting_syncs">
+                <source>Waiting Syncs</source>
+            </trans-unit>
+            <trans-unit id="waitingfiles">
+                <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+            </trans-unit>
+            <trans-unit id="column.file">
+                <source>File</source>
+            </trans-unit>
+            <trans-unit id="column.size">
+                <source>Size</source>
+            </trans-unit>
+            <trans-unit id="column.item">
+                <source>Item</source>
+            </trans-unit>
+            <trans-unit id="column.action">
+                <source>Action</source>
+            </trans-unit>
+            <trans-unit id="label.sync_target">
+                <source>Sync target:</source>
+            </trans-unit>
+            <trans-unit id="message.target_locked">
+                <source>Target '{target}' disabled for sync.</source>
+            </trans-unit>
+            <trans-unit id="message.target_unlocked">
+                <source>Target '{target}' enabled for sync.</source>
+            </trans-unit>
+            <trans-unit id="label.lock_module">
+                <source>Lock sync module</source>
+            </trans-unit>
+            <trans-unit id="label.unlock_module">
+                <source>Unlock sync module</source>
+            </trans-unit>
+            <trans-unit id="label.lock_target">
+                <source>Lock sync target: {system}</source>
+            </trans-unit>
+            <trans-unit id="label.unlock_target">
+                <source>Unlock sync target: {system}</source>
+            </trans-unit>
+            <trans-unit id="label.page_only">
+                <source>Only selected page</source>
+            </trans-unit>
+            <trans-unit id="label.page_and_subpages">
+                <source>Selected page and all {pages} sub pages</source>
+            </trans-unit>
+            <trans-unit id="label.subpages_including">
+                <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+            </trans-unit>
+            <trans-unit id="label.list_with_subs">
+                <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+            </trans-unit>
+            <trans-unit id="label.page">
+                <source>Page: {id}</source>
+            </trans-unit>
+            <trans-unit id="label.excluded_pages">
+                <source>There are restricted subareas which are excluded from sync.</source>
+            </trans-unit>
+            <trans-unit id="label.recursion">
+                <source>Recursion</source>
+            </trans-unit>
+            <trans-unit id="button.add_to_list">
+                <source>Add to sync list</source>
+            </trans-unit>
+            <trans-unit id="button.recursion_depth">
+                <source>Set recursion depth</source>
+            </trans-unit>
+            <trans-unit id="message.notify_success">
+                <source>Signaled '{target}' target for new sync.</source>
+            </trans-unit>
+            <trans-unit id="message.notify_failed">
+                <source>Target '{target}' could not be notified due to an error.</source>
+            </trans-unit>
+            <trans-unit id="message.notify_unknown">
+                <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+            </trans-unit>
+            <trans-unit id="message.notify_disabled">
+                <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+            </trans-unit>
+            <trans-unit id="message.notify_skipped_context">
+                <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+            </trans-unit>
+            <trans-unit id="message.notify_skipped_table">
+                <source>Table '{table}' skipped - no changes since last sync.</source>
+            </trans-unit>
+            <trans-unit id="success.sync_assest_init">
+                <source>Sync assets initiated</source>
+            </trans-unit>
+            <trans-unit id="success.sync_initiated">
+                <source>Sync initiated.</source>
+            </trans-unit>
+            <trans-unit id="success.sync_in_progress">
+                <source>Sync started - should be processed within in next 15 minutes.</source>
+            </trans-unit>
+            <trans-unit id="message.table_state_success">
+                <source>Updated table state.</source>
+            </trans-unit>
+            <trans-unit id="message.hook_files">
+                <source>Created {number} hook URL files</source>
+            </trans-unit>
+            <trans-unit id="info.no_data_dumped">
+                <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+            </trans-unit>
+            <trans-unit id="warning.urls_system_locked">
+                <source>System '{target}' is locked, so no url file is created.</source>
+            </trans-unit>
+            <trans-unit id="warning.table_state">
+                <source>Following tables have changed, please contact your TYPO3 admin:</source>
+            </trans-unit>
+            <trans-unit id="warning.system_locked">
+                <source>System '{system} is locked so no dump-file is created for it.</source>
+            </trans-unit>
+            <trans-unit id="error.no_page">
+                <source>Please select a page from the page tree.</source>
+            </trans-unit>
+            <trans-unit id="error.page_not_load">
+                <source>Could not load record for selected page: {page_selected}</source>
+            </trans-unit>
+            <trans-unit id="error.page_type_not_allowed">
+                <source>The page type must not be synchronized.</source>
+            </trans-unit>
+            <trans-unit id="error.could_not_write_tablestate">
+                <source>Table-state-file is not writable.</source>
+            </trans-unit>
+            <trans-unit id="error.no_pages_marked">
+                <source>There are no pages marked to sync.</source>
+            </trans-unit>
+            <trans-unit id="error.last_sync_not_finished">
+                <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+            </trans-unit>
+            <trans-unit id="error.zip_failure">
+                <source>Zipfile for {file} could not be created.</source>
+            </trans-unit>
+            <trans-unit id="error.cannot_move_file">
+                <source>File {file} could not be moved to {target}.</source>
+            </trans-unit>
+            <trans-unit id="error.select_mark_type">
+                <source>Please select how the page should be marked.</source>
+            </trans-unit>
+            <trans-unit id="error.page_is_marked">
+                <source>The page has been already marked for synchronisation</source>
+            </trans-unit>
+            <trans-unit id="error.mm_tables">
+                <source>MM tables like {tableName} are not supported anymore.</source>
+            </trans-unit>
+
+            <!-- FAL -->
+            <trans-unit id="error.fal_dirty">
+                <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+            </trans-unit>
+            <trans-unit id="label.done">
+                <source>done</source>
+            </trans-unit>
+            <trans-unit id="label.clean_fal">
+                <source>This tasks can take some time, please be patient.</source>
+            </trans-unit>
+
+            <!-- Sync modules -->
+            <trans-unit id="mod_news">
+                <source>News</source>
+            </trans-unit>
+            <trans-unit id="mod_fal">
+                <source>TYPO3: FAL (File Abstraction Layer)</source>
+            </trans-unit>
+            <trans-unit id="mod_asset">
+                <source>Assets</source>
+            </trans-unit>
+            <trans-unit id="mod_be_users">
+                <source>TYPO3: Backend users and groups</source>
+            </trans-unit>
+            <trans-unit id="mod_fe_groups">
+                <source>TYPO3: Frontend groups</source>
+            </trans-unit>
+            <trans-unit id="mod_scheduler">
+                <source>TYPO3: Scheduler tasks</source>
+            </trans-unit>
+            <trans-unit id="mod_redirect">
+                <source>TYPO3: Redirects</source>
+            </trans-unit>
+            <trans-unit id="mod_tableState">
+                <source>Table state</source>
+            </trans-unit>
+            <trans-unit id="mod_singlePage">
+                <source>TYPO3: Single pages with content</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

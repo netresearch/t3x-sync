@@ -1,40 +1,30 @@
 <?php
 
-/***************************************************************
- * Extension Manager/Repository config file for ext "nr_sync".
+/**
+ * This file is part of the package netresearch/nr-sync.
  *
- * Auto generated 13-11-2020 09:00
- *
- * Manual updates:
- * Only the data in the array - everything else is removed by next
- * writing. "version" and "dependencies" must not be touched!
- ***************************************************************/
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
 
-$EM_CONF[$_EXTKEY] = [
-    'title' => 'Netresearch Sync',
-    'description' => 'Sync CMS content',
-    'version' => '0.11.4',
-    'category' => 'module',
-    'constraints' => [
+declare(strict_types=1);
+
+$EM_CONF['nr_scheduler'] = [
+    'title'          => 'Netresearch - TYPO3 scheduler',
+    'description'    => 'A module for synchronizing content from a production system to a single or multiple target systems.',
+    'category'       => 'module',
+    'author'         => 'Sebastian Mendel, Tobias Hein, Rico Sonntag, Thomas Schöne, Axel Seemann',
+    'author_email'   => 'sebastian.mendel@netresearch.de, tobias.hein@netresearch.de, rico.sonntag@netresearch.de, thomas.schoene@netresearch.de, axel.seemann@netresearch.de',
+    'author_company' => 'Netresearch DTT GmbH',
+    'state'          => 'stable',
+    'version'        => '0.11.4',
+    'constraints'    => [
         'depends' => [
-            'typo3' => '10.4.0-',
+            'typo3' => '12.4.0-12.99.99',
         ],
         'conflicts' => [
         ],
         'suggests' => [
         ],
     ],
-    'autoload' => [
-        'psr-4' => [
-            'Netresearch\\Sync\\' => 'Classes'
-        ],
-    ],
-    'state' => 'stable',
-    'uploadfolder' => false,
-    'createDirs' => '',
-    'clearCacheOnLoad' => true,
-    'author' => 'Sebastian Mendel, Tobias Hein, Rico Sonntag, Thomas Schöne, Axel Seemann',
-    'author_email' => 'sebastian.mendel@netresearch.de, tobias.hein@netresearch.de, rico.sonntag@netresearch.de, thomas.schoene@netresearch.de, axel.seemann@netresearch.de',
-    'author_company' => 'Netresearch GmbH & Co. KG',
-    '_md5_values_when_last_written' => '',
 ];

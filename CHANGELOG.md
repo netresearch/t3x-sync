@@ -1,3 +1,30 @@
+# 1.0.0
+
+## MISC
+
+- 6ff986f MFAG-1516: Apply codestyle fixes.
+- 4297c0a MFAG-1516: Overtake encoding header fix from OPSMFAG-676 to prevent problems with encoding in several cases.
+- 453b005 MFAG-1516: Fixed the generation of sql files by consistently quoting all the identifiers. Also fix querys for ddeleting references to not delete references which should not be touched.
+- 95db816 Fix TYPO3-issue #103388, set custom btn class
+- 7acc978 Apply phpstan, rector, cgl rules
+- 9b5c1a2 MFAG-1426: Add SyncImport scheduler task
+- 3e56327 MFAG-1426: Add minor adjustments
+- 990e973 MFAG-1426: Add event/eventlistener to trigger FAL sync
+- c5a38c6 MFAG-1426: Rework extension
+- 6cdcea0 MFAG-1426: Fix deprecated ViewInterface
+- 9132a6d MFAG-1426: Fix backend module registration
+- 85cc125 MFAG-1426: Update modules
+- 20eed6c MFAG-1426: Remove obsolete AbstractService usage
+- 6a9e5f5 MFAG-1426: Remove ObjectManger usage
+- 1e71727 MFAG-1426: Update backend URI viewhelper
+- 7c36359 MFAG-1426: TYPO3 v12 adjustments
+- eaeff27 Require TYPO3 v12
+
+## Contributors
+
+- Axel Seemann
+- Rico Sonntag
+
 # 0.11.4
 
 ## MISC

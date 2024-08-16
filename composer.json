@@ -70,6 +70,9 @@
         "typo3/cms": {
             "extension-key": "nr_sync",
             "web-dir": ".build/public"
+        },
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
         }
     },
     "autoload": {

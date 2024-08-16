@@ -18,5 +18,3 @@ parameters:
         - %currentWorkingDirectory%/ext_emconf.php
 
     treatPhpDocTypesAsCertain: false
-
-    ignoreErrors:

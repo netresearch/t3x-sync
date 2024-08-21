@@ -37,38 +37,26 @@ $backendModulesConfiguration = [
         'inheritNavigationComponentFromMainModule' => false,
         'navigationComponent'                      => '@typo3/backend/page-tree/page-tree-element',
     ],
-    'netresearch_sync_asset' => [
+    'netresearch_sync_singlePage' => [
         'parent'         => 'netresearch_sync',
-        'access'         => 'admin',
-        'path'           => '/module/netresearch/sync/asset',
+        'access'         => 'user',
+        'path'           => '/module/netresearch/sync/single-page',
         'iconIdentifier' => 'extension-netresearch-sync',
         'labels'         => [
-            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_asset',
+            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_singlePage',
         ],
         'routes' => [
             '_default' => [
-                'target' => AssetSyncModuleController::class . '::indexAction',
-            ],
-        ],
-    ],
-    'netresearch_sync_be_users' => [
-        'parent'         => 'netresearch_sync',
-        'access'         => 'admin',
-        'path'           => '/module/netresearch/sync/be_users',
-        'iconIdentifier' => 'extension-netresearch-sync',
-        'labels'         => [
-            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_be_users',
-        ],
-        'routes' => [
-            '_default' => [
-                'target' => BaseSyncModuleController::class . '::indexAction',
+                'target' => SinglePageSyncModuleController::class . '::indexAction',
             ],
         ],
         'moduleData' => [
-            'dumpFile' => 'be_users_groups.sql',
+            'dumpFile' => 'partly-pages.sql',
             'tables'   => [
-                'be_groups',
-                'be_users',
+                'pages',
+                'sys_file_reference',
+                'sys_template',
+                'tt_content',
             ],
         ],
     ],
@@ -117,27 +105,7 @@ $backendModulesConfiguration = [
             ],
         ],
     ],
-    'netresearch_sync_scheduler' => [
-        'parent'         => 'netresearch_sync',
-        'access'         => 'admin',
-        'path'           => '/module/netresearch/sync/scheduler',
-        'iconIdentifier' => 'extension-netresearch-sync',
-        'labels'         => [
-            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_scheduler',
-        ],
-        'routes' => [
-            '_default' => [
-                'target' => BaseSyncModuleController::class . '::indexAction',
-            ],
-        ],
-        'moduleData' => [
-            'dumpFile' => 'scheduler.sql',
-            'tables'   => [
-                'tx_scheduler_task',
-                'tx_scheduler_task_group',
-            ],
-        ],
-    ],
+
     'netresearch_sync_redirect' => [
         'parent'         => 'netresearch_sync',
         'access'         => 'user',
@@ -178,26 +146,59 @@ $backendModulesConfiguration = [
             'target' => 'local',
         ],
     ],
-    'netresearch_sync_singlePage' => [
+    'netresearch_sync_asset' => [
         'parent'         => 'netresearch_sync',
-        'access'         => 'user',
-        'path'           => '/module/netresearch/sync/single-page',
+        'access'         => 'admin',
+        'path'           => '/module/netresearch/sync/asset',
         'iconIdentifier' => 'extension-netresearch-sync',
         'labels'         => [
-            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_singlePage',
+            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_asset',
         ],
         'routes' => [
             '_default' => [
-                'target' => SinglePageSyncModuleController::class . '::indexAction',
+                'target' => AssetSyncModuleController::class . '::indexAction',
+            ],
+        ],
+    ],
+    'netresearch_sync_be_users' => [
+        'parent'         => 'netresearch_sync',
+        'access'         => 'admin',
+        'path'           => '/module/netresearch/sync/be_users',
+        'iconIdentifier' => 'extension-netresearch-sync',
+        'labels'         => [
+            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_be_users',
+        ],
+        'routes' => [
+            '_default' => [
+                'target' => BaseSyncModuleController::class . '::indexAction',
             ],
         ],
         'moduleData' => [
-            'dumpFile' => 'partly-pages.sql',
+            'dumpFile' => 'be_users_groups.sql',
             'tables'   => [
-                'pages',
-                'sys_file_reference',
-                'sys_template',
-                'tt_content',
+                'be_groups',
+                'be_users',
+            ],
+        ],
+    ],
+    'netresearch_sync_scheduler' => [
+        'parent'         => 'netresearch_sync',
+        'access'         => 'admin',
+        'path'           => '/module/netresearch/sync/scheduler',
+        'iconIdentifier' => 'extension-netresearch-sync',
+        'labels'         => [
+            'title' => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf:mod_scheduler',
+        ],
+        'routes' => [
+            '_default' => [
+                'target' => BaseSyncModuleController::class . '::indexAction',
+            ],
+        ],
+        'moduleData' => [
+            'dumpFile' => 'scheduler.sql',
+            'tables'   => [
+                'tx_scheduler_task',
+                'tx_scheduler_task_group',
             ],
         ],
     ],

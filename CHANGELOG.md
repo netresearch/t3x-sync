@@ -1,3 +1,13 @@
+# 1.0.2
+
+## MISC
+
+- 603bb10 OPSMFAG-699: Reorder modules to prevent that the first module loaded is a modules which only admins can access. This will lead to the beaviour that a user which is not an admin cant access the sync module at all even if he has permissons to it.
+
+## Contributors
+
+- Axel Seemann
+
 # 1.0.1
 
 ## MISC

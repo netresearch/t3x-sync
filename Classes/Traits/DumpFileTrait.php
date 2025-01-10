@@ -35,22 +35,6 @@ use function is_array;
 trait DumpFileTrait
 {
     /**
-     * key to use for storing insert statements
-     * in $arGlobalSqlLinesStoarage.
-     *
-     * @var string
-     */
-    final public const STATEMENT_TYPE_INSERT = 'insert';
-
-    /**
-     * key to use for storing delete statements
-     * in $arGlobalSqlLinesStoarage.
-     *
-     * @var string
-     */
-    final public const STATEMENT_TYPE_DELETE = 'delete';
-
-    /**
      * @var int
      */
     public int $dumpTableRecursion = 0;
@@ -220,7 +204,7 @@ trait DumpFileTrait
     }
 
     /**
-     * Writes all SQL Lines from globalSqlLineStorage[self::STATEMENT_TYPE_INSERT]
+     * Writes all SQL Lines from globalSqlLineStorage['insert']
      * to the passed file stream.
      *
      * @param FileInterface $fpDumpFile the file to write the lines to
@@ -229,14 +213,14 @@ trait DumpFileTrait
      */
     private function writeInsertLines(FileInterface $fpDumpFile): void
     {
-        if (!is_array($this->globalSqlLineStorage[self::STATEMENT_TYPE_INSERT])) {
+        if (!is_array($this->globalSqlLineStorage['insert'])) {
             return;
         }
 
         $content = $fpDumpFile->getContents();
 
         // Foreach table in insert array
-        foreach ($this->globalSqlLineStorage[self::STATEMENT_TYPE_INSERT] as $table => $tableInsLines) {
+        foreach ($this->globalSqlLineStorage['insert'] as $table => $tableInsLines) {
             if (count($tableInsLines) > 0) {
                 $insertLines = '-- Insert lines for table: '
                     . $table . "\n"
@@ -731,7 +715,7 @@ trait DumpFileTrait
             }
 
             // TYPO-2215 - Match the column to its update value
-            $updateParts[$key] = \sprintf(
+            $updateParts[$key] = sprintf(
                 '%1$s = VALUES(%1$s)',
                 $connection->quoteIdentifier($key)
             );
@@ -969,13 +953,13 @@ trait DumpFileTrait
 
         // Remove all DELETE Lines that already has been put to file
         $this->clearDuplicateLines(
-            self::STATEMENT_TYPE_DELETE,
+            'delete',
             $deleteLines
         );
 
         // Remove all INSERT Lines that already has been put to file
         $this->clearDuplicateLines(
-            self::STATEMENT_TYPE_INSERT,
+            'insert',
             $insertLines
         );
 
@@ -1193,8 +1177,8 @@ trait DumpFileTrait
         $fileContent = $fpDumpFile->getContents();
 
         // Keep the current lines in mind
-        $this->addLinesToLineStorage(self::STATEMENT_TYPE_DELETE, $deleteLines);
-        $this->addLinesToLineStorage(self::STATEMENT_TYPE_INSERT, $insertLines);
+        $this->addLinesToLineStorage('delete', $deleteLines);
+        $this->addLinesToLineStorage('insert', $insertLines);
 
         // Foreach Table in DeleteArray
         foreach ($deleteLines as $arDelLines) {

@@ -18,7 +18,7 @@ namespace Netresearch\Sync\Event;
  * @license Netresearch https://www.netresearch.de
  * @link    https://www.netresearch.de
  */
-final readonly class FalSyncEvent
+final class FalSyncEvent
 {
     /**
      * Constructor.

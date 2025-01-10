@@ -1,3 +1,13 @@
+# 1.0.5
+
+## MISC
+
+- fe4ae4a Update ext_emconf.php
+
+## Contributors
+
+- Rico Sonntag
+
 # 1.0.4
 
 ## MISC

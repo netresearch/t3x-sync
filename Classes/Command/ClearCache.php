@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
 use function is_string;
 
 /**
@@ -69,7 +70,7 @@ class ClearCache extends Command
      */
     public function __construct(
         ClearCacheService $clearCacheService,
-        string $name = 'sync:cache:clear'
+        string $name = 'sync:cache:clear',
     ) {
         parent::__construct($name);
 

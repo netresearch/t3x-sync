@@ -181,7 +181,7 @@ class BaseSyncModuleController implements ModuleInterface
         SyncListManager $syncListManager,
         SyncLock $syncLock,
         StorageService $storageService,
-        Urls $urlGenerator
+        Urls $urlGenerator,
     ) {
         $this->iconFactory           = $iconFactory;
         $this->uriBuilder            = $uriBuilder;

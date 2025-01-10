@@ -155,7 +155,7 @@ trait DumpFileTrait
         array $pageIDs,
         array $tables,
         string $dumpFile,
-        array $arPath
+        array $arPath,
     ): bool {
         if (count($pageIDs) <= 0) {
             $this->addErrorMessage($this->getLabel('error.no_pages_marked'));
@@ -295,7 +295,7 @@ trait DumpFileTrait
     public function createDumpToAreas(
         array $tables,
         string $filename,
-        ?string $targetName = null
+        ?string $targetName = null,
     ): bool {
         $tempFolder         = $this->storageService->getTempFolder();
         $tempFileIdentifier = $tempFolder->getIdentifier() . $filename;
@@ -450,7 +450,7 @@ trait DumpFileTrait
      */
     private function createClearCacheFile(
         string $table,
-        array $uids
+        array $uids,
     ): bool {
         $arClearCacheData = [];
 
@@ -551,7 +551,7 @@ trait DumpFileTrait
         array $pageIDs,
         string $tableName,
         FileInterface $fpDumpFile,
-        bool $contentIDs = false
+        bool $contentIDs = false,
     ): void {
         if (str_ends_with($tableName, '_mm')) {
             throw new Exception(
@@ -743,7 +743,7 @@ trait DumpFileTrait
     private function writeMMReferences(
         string $refTableName,
         array $row,
-        FileInterface $fpDumpFile
+        FileInterface $fpDumpFile,
     ): void {
         $this->referenceTables = [];
         $this->addMMReferenceTables($refTableName);
@@ -868,7 +868,7 @@ trait DumpFileTrait
         int $uid,
         array $arMMConfig,
         array $columnNames,
-        FileInterface $fpDumpFile
+        FileInterface $fpDumpFile,
     ): void {
         $deleteLines = [];
         $insertLines = [];
@@ -1103,7 +1103,7 @@ trait DumpFileTrait
      */
     private function diffDeleteLinesAgainstInsertLines(
         array &$deleteLines,
-        array $insertLines
+        array $insertLines,
     ): void {
         if ($deleteLines === []) {
             return;
@@ -1175,7 +1175,7 @@ trait DumpFileTrait
         array $deleteLines,
         array $insertLines,
         FileInterface $fpDumpFile,
-        array $deleteObsoleteRows = []
+        array $deleteObsoleteRows = [],
     ): void {
         $fileContent = $fpDumpFile->getContents();
 

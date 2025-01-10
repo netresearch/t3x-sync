@@ -65,7 +65,7 @@ class SyncList
      * @param ConnectionPool $connectionPool
      */
     public function __construct(
-        ConnectionPool $connectionPool
+        ConnectionPool $connectionPool,
     ) {
         $this->connectionPool = $connectionPool;
     }
@@ -292,7 +292,7 @@ class SyncList
         ?array &$arCount = null,
         int $level = 0,
         int $levelMax = 1,
-        ?array $tables = null
+        ?array $tables = null,
     ): array {
         $arCountDefault = [
             'count'      => 0,

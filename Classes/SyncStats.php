@@ -42,7 +42,7 @@ class SyncStats
      */
     public function __construct(
         ConnectionPool $connectionPool,
-        array $tables
+        array $tables,
     ) {
         $this->connectionPool = $connectionPool;
         $this->tables         = $tables;

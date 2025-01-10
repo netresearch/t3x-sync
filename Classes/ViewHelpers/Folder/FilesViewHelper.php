@@ -68,7 +68,7 @@ class FilesViewHelper extends AbstractViewHelper
                     string $itemIdentifier,
                     string $parentIdentifier,
                     array $additionalInformation,
-                    DriverInterface $driver
+                    DriverInterface $driver,
                 ): bool|int => $filter->filterFileList(
                     $itemName,
                     $itemIdentifier,

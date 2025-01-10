@@ -11,15 +11,15 @@ declare(strict_types=1);
 
 /**
  * The default area configuration file. To customize, add a new file named "sync-area-configuration.php"
- * below the system/-folder, e.g., system/sync-area-configuration.php
+ * below the system/-folder, e.g., system/sync-area-configuration.php.
  */
 return [
     // Refers to all pages (and their subpages) starting with page ID 0
     0 => [
-        'name'           => 'Alle',
-        'description'    => 'Sync to all servers',
-        'not_doctype'    => [],
-        'system'         => [
+        'name'        => 'Alle',
+        'description' => 'Sync to all servers',
+        'not_doctype' => [],
+        'system'      => [
             'Production' => [
                 'name'      => 'Production',
                 'directory' => 'production',
@@ -28,14 +28,14 @@ return [
                     'type' => 'none',
                 ],
             ],
-            'archive'    => [
+            'archive' => [
                 'name'      => 'Archive',
                 'directory' => 'archive',
                 'url-path'  => 'archive/url',
                 'notify'    => [
                     'type' => 'none',
                 ],
-                'hide'      => true,
+                'hide' => true,
             ],
         ],
         'sync_fe_groups' => true,

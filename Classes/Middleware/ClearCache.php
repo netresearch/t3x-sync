@@ -91,7 +91,7 @@ class ClearCache implements MiddlewareInterface
      * Run the service.
      *
      * @param ServerRequestInterface $request
-     * @param string[]               $data array with values in table:uid order
+     * @param string[]               $data    array with values in table:uid order
      *
      * @return void
      *

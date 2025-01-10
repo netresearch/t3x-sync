@@ -41,7 +41,7 @@ class SyncLock
      * @param ExtensionConfiguration $extensionConfiguration
      */
     public function __construct(
-        ExtensionConfiguration $extensionConfiguration
+        ExtensionConfiguration $extensionConfiguration,
     ) {
         $this->extensionConfiguration = $extensionConfiguration;
     }

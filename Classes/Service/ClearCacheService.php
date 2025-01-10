@@ -47,7 +47,7 @@ class ClearCacheService implements LoggerAwareInterface
      */
     public function __construct(
         CacheManager $cacheManager,
-        DataHandler $dataHandler
+        DataHandler $dataHandler,
     ) {
         $this->cacheManager = $cacheManager;
         $this->dataHandler  = $dataHandler;

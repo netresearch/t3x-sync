@@ -49,7 +49,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
      * @param BootstrapRenderer $bootstrapRenderer
      */
     public function __construct(
-        BootstrapRenderer $bootstrapRenderer
+        BootstrapRenderer $bootstrapRenderer,
     ) {
         $this->bootstrapRenderer = $bootstrapRenderer;
     }

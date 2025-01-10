@@ -28,7 +28,7 @@ final class FalSyncEvent
      */
     public function __construct(
         private readonly int $areaId,
-        private readonly string $dumpFilePrefix
+        private readonly string $dumpFilePrefix,
     ) {
     }
 

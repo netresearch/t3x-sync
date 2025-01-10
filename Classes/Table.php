@@ -96,7 +96,7 @@ class Table
     public function __construct(
         string $tableName,
         string $dumpFile,
-        array $options = []
+        array $options = [],
     ) {
         $this->tableName   = $tableName;
         $this->strDumpFile = $dumpFile;
@@ -184,7 +184,7 @@ class Table
     public static function writeDumps(
         array $tables,
         string $dumpFile,
-        array $options = []
+        array $options = [],
     ): void {
         /** @var Table[] $instances */
         $instances = [];

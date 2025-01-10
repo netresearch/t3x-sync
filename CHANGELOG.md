@@ -1,3 +1,14 @@
+# 1.0.4
+
+## MISC
+
+- 580d25c Fix extension configuration
+- dcbc477 Update README and CI configuration
+
+## Contributors
+
+- Rico Sonntag
+
 # 1.0.3
 
 ## MISC

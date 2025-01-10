@@ -9,8 +9,8 @@
 
 declare(strict_types=1);
 
-$EM_CONF['nr_scheduler'] = [
-    'title'          => 'Netresearch - TYPO3 scheduler',
+$EM_CONF['nr_sync'] = [
+    'title'          => 'Netresearch - TYPO3 Synchronization',
     'description'    => 'A module for synchronizing content from a production system to a single or multiple target systems.',
     'category'       => 'module',
     'author'         => 'Sebastian Mendel, Tobias Hein, Rico Sonntag, Thomas Schöne, Axel Seemann',

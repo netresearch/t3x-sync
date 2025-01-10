@@ -1,3 +1,20 @@
+# 1.0.3
+
+## MISC
+
+- ab61081 Add CI test for PHP 81
+- d5fe51a Apply php-cs-fixer rules
+- 89d9bd0 Remove usage of vhs viewhelpers, fix various phpstan issues
+- 06d2693 Use fully qualified reference of methods
+- e99a415 Add a default area configuration to prevent exception on freshly installed versions
+- 8305a10 Fix PHP 8.1 issues with already implemented PHP 8.2 features
+- 6790e64 Add missing php ftp-extension dependency
+- 2d56fde Add missing php zlib-extension dependency
+
+## Contributors
+
+- Rico Sonntag
+
 # 1.0.2
 
 ## MISC

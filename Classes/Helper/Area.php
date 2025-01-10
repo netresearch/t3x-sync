@@ -39,7 +39,7 @@ class Area
      *
      * @var string
      */
-    protected $defaultAreaConfigurationFile = __DIR__ . '/../../Configuration/DefaultAreaConfiguration.php';
+    protected string $defaultAreaConfigurationFile = __DIR__ . '/../../Configuration/DefaultAreaConfiguration.php';
 
     /**
      * @var array<int, array<string, int|string|bool|mixed>>
@@ -449,8 +449,6 @@ class Area
 
     /**
      * Load the Area configuration.
-     *
-     * @throws Exception
      */
     protected function loadSyncAreas(): void
     {

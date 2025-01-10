@@ -605,7 +605,6 @@ class BaseSyncModuleController implements ModuleInterface
      *
      * @return bool
      *
-     * @throws ExistingTargetFolderException
      * @throws InsufficientFolderAccessPermissionsException
      * @throws InsufficientFolderWritePermissionsException
      */
@@ -649,6 +648,8 @@ class BaseSyncModuleController implements ModuleInterface
 
     /**
      * Initializes all needed directories.
+     *
+     * @param Area $area
      *
      * @return void
      *

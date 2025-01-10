@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use function is_string;
 
 /**
  * The clear-cache command class.
@@ -115,7 +116,10 @@ class ClearCache extends Command
     {
         $this->io = new SymfonyStyle($input, $output);
 
-        if ($inputFilename = $input->getOption('filename')) {
+        $inputFilename = $input->getOption('filename');
+        $inputData     = $input->getOption('data');
+
+        if (is_string($inputFilename)) {
             if (is_readable($inputFilename)) {
                 $data = $this->getDataFromFile($inputFilename);
             } else {
@@ -123,7 +127,7 @@ class ClearCache extends Command
 
                 return self::CLI_ERROR_FILE;
             }
-        } elseif ($inputData = $input->getOption('data')) {
+        } elseif (is_string($inputData)) {
             $data = explode(',', $inputData);
         } else {
             $this->io->error('You need to specify either option -f or -d. Type --help for more information.');

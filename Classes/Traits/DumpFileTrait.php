@@ -912,7 +912,9 @@ trait DumpFileTrait
                 throw new RuntimeException('Table misses column "uid" or "uid_foreign');
             }
 
-            if (($strRefTableName !== 'sys_file')
+            if (
+                isset($arMMConfig['MM'], $arMMConfig['form_type'])
+                && ($strRefTableName !== 'sys_file')
                 && ($arMMConfig['MM'] === 'sys_file_reference')
                 && ($arMMConfig['form_type'] === 'user')
             ) {
@@ -1002,9 +1004,9 @@ trait DumpFileTrait
     }
 
     /**
-     * Return true if an element, given by table name and uid is syncable.
+     * Returns TRUE if an element, given by table name and UID is syncable.
      *
-     * @param string     $table The table, the elements belongs to
+     * @param string     $table The table, the element belongs to
      * @param string|int $uid   The uid of the element
      *
      * @return bool
@@ -1061,7 +1063,7 @@ trait DumpFileTrait
     }
 
     /**
-     * Returns time stamp of this element.
+     * Returns timestamp of this element.
      *
      * @param string $table The table, the elements belong to
      * @param int    $uid   The uid of the element
@@ -1072,7 +1074,7 @@ trait DumpFileTrait
     {
         $queryBuilder = $this->getQueryBuilderForTable($table);
 
-        return $queryBuilder
+        return (int) $queryBuilder
             ->select('tstamp')
             ->from($table)
             ->where(

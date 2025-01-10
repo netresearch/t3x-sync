@@ -43,7 +43,7 @@ class AdditionalFieldsProvider extends AbstractAdditionalFieldProvider
     /**
      * Saves the data of additional fields.
      *
-     * @param string[]     $submittedData Data submitted by the form
+     * @param array<mixed> $submittedData Data submitted by the form
      * @param AbstractTask $task          TaskObject to save the data to
      *
      * @return void
@@ -60,7 +60,7 @@ class AdditionalFieldsProvider extends AbstractAdditionalFieldProvider
     /**
      * Returns the array with the field configuration.
      *
-     * @return array
+     * @return array<string, array<string, bool|int|string|string[]>>
      */
     public function getFieldConfiguration(): array
     {

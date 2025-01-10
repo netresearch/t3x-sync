@@ -11,11 +11,11 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Scheduler\SyncImportTask;
 
-use Exception;
 use Netresearch\NrScheduler\AbstractTask;
 use Netresearch\Sync\Service\ClearCacheService;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\DatabaseConnectionTrait;
+use RuntimeException;
 use TYPO3\CMS\Core\Resource\Exception\FileOperationErrorException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFileAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
@@ -119,7 +119,7 @@ class Task extends AbstractTask
 
             if ($return > 0) {
                 $this->logger->error(sprintf('Something went wrong on importing %s. Please check further logs and the file.', $name));
-                throw new Exception(implode(PHP_EOL, $output));
+                throw new RuntimeException(implode(PHP_EOL, $output));
             }
 
             $this->logger->info(sprintf('Import %s is finished. Delete File.', $name));

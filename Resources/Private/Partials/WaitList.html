@@ -2,7 +2,6 @@
       xmlns="http://www.w3.org/1999/xhtml" lang="en"
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
-      xmlns:v="http://typo3.org/ns/FluidTYPO3/Vhs/ViewHelpers"
       xmlns:nrs="http://typo3.org/ns/Netresearch/Sync/ViewHelpers"
 >
     <f:section name="Main">
@@ -72,7 +71,7 @@
                         </f:variable>
 
                         <f:variable name="modifiedTime" value="{firstFile.creationTime}" />
-                        <f:variable name="timestamp"    value="{v:system.timestamp()}" />
+                        <f:variable name="timestamp"    value="{f:format.date(date: 'now', format: 'U')}" />
                         <f:variable name="timeDiff"     value="{timestamp - modifiedTime}" />
 
                         <f:if condition="{modifiedTime} < {timestamp - 900}">
@@ -96,7 +95,7 @@
                                            files: fileCount,
                                            size: '{syncSize -> f:format.number()} MiB',
                                            oldestFile: '{f:format.date(date: modifiedTime, format: \'Y-m-d H:i\')}',
-                                           minutes: '{v:math.ceil(a: timeDiff)}'}"
+                                           minutes: '{nrs:math.ceil(value: timeDiff)}'}"
                             />
                         </nrs:flashMessage>
 

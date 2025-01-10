@@ -24,15 +24,6 @@
             "homepage": "https://www.netresearch.de/"
         }
     ],
-    "support": {
-        "issues": "https://git.netresearch.de/aida/typo3-extensions/nr_sync"
-    },
-    "repositories": {
-        "netresearch/nr-scheduler": {
-            "type": "gitlab",
-            "url": "https://git.netresearch.de/typo3-extensions/nr-scheduler.git"
-        }
-    },
     "config": {
         "bin-dir": ".build/bin",
         "vendor-dir": ".build/vendor",

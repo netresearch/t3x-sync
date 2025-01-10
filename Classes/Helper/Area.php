@@ -35,6 +35,13 @@ class Area
     use FlashMessageTrait;
 
     /**
+     * The path to the default area configuration file, relative to the public web folder.
+     *
+     * @var string
+     */
+    protected $defaultAreaConfigurationFile = __DIR__ . '/../../Configuration/DefaultAreaConfiguration.php';
+
+    /**
      * @var array<int, array<string, int|string|bool|mixed>>
      */
     public array $areas = [];
@@ -447,13 +454,47 @@ class Area
      */
     protected function loadSyncAreas(): void
     {
-        if (file_exists(Environment::getPublicPath() . '/typo3conf/SyncAreaConfiguration.php') === false) {
-            throw new Exception(
-                'Area configuration s missing, please provide a Config file in path '
-                . '`public/typo3conf/SyncAreaConfiguration.php`'
-            );
+        $this->areas = $this->getAreaConfiguration();
+    }
+
+    /**
+     * Get the file location of the sync area configuration file, currently the path and filename.
+     *
+     * @return string
+     */
+    public function getAreaConfigurationFileLocation(): string
+    {
+        // For composer-based installations, the file is in config/system/sync-area-configuration.php
+        if (Environment::getProjectPath() !== Environment::getPublicPath()) {
+            return Environment::getConfigPath() . '/system/sync-area-configuration.php';
         }
 
-        $this->areas = include Environment::getPublicPath() . '/typo3conf/SyncAreaConfiguration.php';
+        return Environment::getLegacyConfigPath() . '/system/sync-area-configuration.php';
+    }
+
+    /**
+     * Return default area configuration file location.
+     *
+     * @return string
+     */
+    public function getDefaultConfigurationFileLocation(): string
+    {
+        return $this->defaultAreaConfigurationFile;
+    }
+
+    /**
+     * Returns the area configuration array.
+     *
+     * @return array<int, array<string, int|string|bool|mixed>>
+     */
+    public function getAreaConfiguration(): array
+    {
+        $configurationFile = $this->getAreaConfigurationFileLocation();
+
+        if (is_file($configurationFile)) {
+            return require $configurationFile;
+        }
+
+        return require $this->getDefaultConfigurationFileLocation();
     }
 }

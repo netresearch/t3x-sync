@@ -23,6 +23,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function count;
 use function is_array;
+use function sprintf;
 
 /**
  * DumpFileTrait.

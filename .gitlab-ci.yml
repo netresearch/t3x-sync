@@ -6,7 +6,7 @@ stages:
     parallel:
         matrix:
             -   TYPO3: [ '^12.0' ]
-                PHP: [ '82' ]
+                PHP: [ '81', '82' ]
 
 .php:
     extends: .parallel-hidden-job

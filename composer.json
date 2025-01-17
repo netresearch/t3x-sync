@@ -90,7 +90,7 @@
             "phpstan analyze --configuration Build/phpstan.neon --memory-limit=-1"
         ],
         "ci:test:php:phpstan:baseline": [
-            "phpstan analyze --configuration Build/phpstan.neon --memory-limit=-1--generate-baseline Build/phpstan-baseline.neon --allow-empty-baseline"
+            "phpstan analyze --configuration Build/phpstan.neon --memory-limit=-1 --generate-baseline Build/phpstan-baseline.neon --allow-empty-baseline"
         ],
         "ci:test:php:rector": [
             "@ci:rector --dry-run"

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <xliff version="1.0">
-    <file source-language="en" datatype="plaintext" original="messages" date="2020-11-11T12:00:00Z" product-name="nr-sync">
+    <file target-language="de" datatype="plaintext" original="messages" date="2020-11-11T12:00:00Z" product-name="nr-sync">
         <header/>
         <body>
             <trans-unit id="lock.label">
-                <source>Lock sync module</source>
+                <target>Synchronisierungsmodul sperren</target>
             </trans-unit>
             <trans-unit id="lock.message">
-                <source>Message for users in case of active lock</source>
+                <target>Meldung an Benutzer bei aktiver Sperre</target>
             </trans-unit>
         </body>
     </file>

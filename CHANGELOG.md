@@ -1,3 +1,14 @@
+# 1.0.6
+
+## MISC
+
+- 4e39dac Fix extension configuration settings type
+- fd334ef Fix phpstan-baseline command
+
+## Contributors
+
+- Rico Sonntag
+
 # 1.0.5
 
 ## MISC

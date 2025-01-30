@@ -7,9 +7,6 @@
 
 ## Introduction
 
-| NOTE: Please be aware that this extension is an alpha version. A lot of refactoring and development is still required to make it "production" ready. Contribution appriciated . |
-| --- |
-
 * Prepares your Content for a synchronization wherever you want
 * Easy integration for your own extensions
 * No content editing on live systems anymore

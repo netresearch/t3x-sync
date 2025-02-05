@@ -323,9 +323,14 @@ class BaseSyncModuleController implements ModuleInterface
      */
     private function updateRoutePackageName(ServerRequestInterface $request): void
     {
-        /** @var Route $route */
         $route = $request->getAttribute('route');
-        $route->setOption('packageName', 'netresearch/nr-sync');
+
+        if ($route instanceof Route) {
+            $route->setOption(
+                'packageName',
+                'netresearch/nr-sync'
+            );
+        }
     }
 
     /**

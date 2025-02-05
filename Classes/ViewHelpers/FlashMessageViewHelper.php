@@ -79,7 +79,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
         /** @var FlashMessage $message */
         $message = GeneralUtility::makeInstance(
             FlashMessage::class,
-            trim($this->renderChildren()),
+            trim((string) $this->renderChildren()),
             '',
             constant(ContextualFeedbackSeverity::class . '::' . $this->arguments['type'])
         );

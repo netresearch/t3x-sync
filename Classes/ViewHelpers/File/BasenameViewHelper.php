@@ -44,6 +44,6 @@ class BasenameViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
-        return basename($this->arguments['file']);
+        return basename((string) $this->arguments['file']);
     }
 }

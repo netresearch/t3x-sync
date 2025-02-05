@@ -313,7 +313,7 @@ class Table
         $list   = [];
 
         if (isset($result['0']['uid_list']) && ($result['0']['uid_list'] !== '')) {
-            $list = array_filter(explode(',', $result['0']['uid_list']));
+            $list = array_filter(explode(',', (string) $result['0']['uid_list']));
         }
 
         $data = [];

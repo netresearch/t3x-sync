@@ -72,7 +72,7 @@ class ClearCache implements MiddlewareInterface
             return (new Response())->withStatus(400, 'Data parameter absent');
         }
 
-        $this->runClearCacheService($request, explode(',', $data));
+        $this->runClearCacheService($request, explode(',', (string) $data));
 
         return (new Response())->withStatus(200);
     }

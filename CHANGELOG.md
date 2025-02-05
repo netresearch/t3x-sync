@@ -1,3 +1,15 @@
+# 1.0.7
+
+## MISC
+
+- a121608 Update dev tools
+- e7734b1 DOC: remove hint about alpha state
+
+## Contributors
+
+- Rico Sonntag
+- Sebastian Mendel
+
 # 1.0.6
 
 ## MISC

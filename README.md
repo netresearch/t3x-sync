@@ -78,14 +78,20 @@ Dispatched after a sync dump has been created. Allows you to perform actions aft
 namespace Vendor\MyExtension\EventListener;
 
 use Netresearch\Sync\Event\AfterSyncEvent;
+use Psr\Log\LoggerInterface;
 
 final class LogAfterSync
 {
+    public function __construct(
+        private readonly LoggerInterface $logger
+    ) {
+    }
+
     public function __invoke(AfterSyncEvent $event): void
     {
         if ($event->isSuccess()) {
             // Log successful sync
-            $logger->info('Sync completed successfully', [
+            $this->logger->info('Sync completed successfully', [
                 'dumpFile' => $event->getDumpFile(),
                 'tables' => $event->getTables(),
             ]);

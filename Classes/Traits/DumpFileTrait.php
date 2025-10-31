@@ -12,9 +12,12 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Traits;
 
 use Doctrine\DBAL\Exception;
+use Netresearch\Sync\Event\AfterSyncEvent;
+use Netresearch\Sync\Event\BeforeSyncEvent;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\PageSyncModuleInterface;
 use Netresearch\Sync\Table;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Resource\FileInterface;
@@ -297,6 +300,15 @@ trait DumpFileTrait
         string $filename,
         ?string $targetName = null,
     ): bool {
+        // Dispatch BeforeSyncEvent to allow modifications
+        /** @var EventDispatcherInterface $eventDispatcher */
+        $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
+        $beforeEvent     = new BeforeSyncEvent($tables, $filename, $targetName);
+        $beforeEvent     = $eventDispatcher->dispatch($beforeEvent);
+
+        // Use potentially modified tables from the event
+        $tables = $beforeEvent->getTables();
+
         $tempFolder         = $this->storageService->getTempFolder();
         $tempFileIdentifier = $tempFolder->getIdentifier() . $filename;
         $tempStorage        = $tempFolder->getStorage();
@@ -336,6 +348,10 @@ trait DumpFileTrait
                     $this->getLabel('info.no_data_dumped')
                 );
 
+                // Dispatch AfterSyncEvent with failure
+                $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, false);
+                $eventDispatcher->dispatch($afterEvent);
+
                 return false;
             }
         }
@@ -351,6 +367,10 @@ trait DumpFileTrait
                     ]
                 )
             );
+
+            // Dispatch AfterSyncEvent with failure
+            $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, false);
+            $eventDispatcher->dispatch($afterEvent);
 
             return false;
         }
@@ -384,6 +404,10 @@ trait DumpFileTrait
                         )
                     );
 
+                    // Dispatch AfterSyncEvent with failure
+                    $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, false);
+                    $eventDispatcher->dispatch($afterEvent);
+
                     return false;
                 }
             }
@@ -394,6 +418,10 @@ trait DumpFileTrait
         $tempFolder
             ->getStorage()
             ->deleteFile($compressedDumFile);
+
+        // Dispatch AfterSyncEvent with success
+        $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, true);
+        $eventDispatcher->dispatch($afterEvent);
 
         return true;
     }

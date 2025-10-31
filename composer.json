@@ -57,6 +57,7 @@
         "phpstan/phpstan": "^1.0 || ^2.0",
         "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
         "phpstan/phpstan-deprecation-rules": "^1.0 || ^2.0",
+        "phpunit/phpunit": "^10.0 || ^11.0",
         "ssch/typo3-rector": "^2.0 || ^3.0"
     },
     "extra": {
@@ -71,6 +72,11 @@
     "autoload": {
         "psr-4": {
             "Netresearch\\Sync\\": "Classes"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Netresearch\\Sync\\Tests\\": "Tests"
         }
     },
     "scripts": {
@@ -95,11 +101,15 @@
         "ci:test:php:rector": [
             "@ci:rector --dry-run"
         ],
+        "ci:test:php:unit": [
+            "phpunit --configuration Build/phpunit.xml"
+        ],
         "ci:test": [
             "@ci:test:php:lint",
             "@ci:test:php:phpstan",
             "@ci:test:php:rector",
-            "@ci:test:php:cgl"
+            "@ci:test:php:cgl",
+            "@ci:test:php:unit"
         ]
     }
 }

@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Controller;
 
 use Doctrine\DBAL\Exception;
+use Netresearch\Sync\Event\ModifyMenuItemsEvent;
+use Netresearch\Sync\Event\ModifyTableListEvent;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\ModuleInterface;
@@ -25,6 +27,7 @@ use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\SyncTargetLockTrait;
 use Netresearch\Sync\Traits\TableDifferenceTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Module\ModuleData;
@@ -349,6 +352,15 @@ class BaseSyncModuleController implements ModuleInterface
             ->getMenus()['moduleMenu'];
 
         $menuItems = $moduleMenu->getMenuItems();
+
+        // Dispatch ModifyMenuItemsEvent to allow extensions to add/modify menu items
+        /** @var EventDispatcherInterface $eventDispatcher */
+        $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
+        $menuEvent       = new ModifyMenuItemsEvent($menuItems, $this->getModuleIdentifier());
+        $menuEvent       = $eventDispatcher->dispatch($menuEvent);
+
+        // Use potentially modified menu items from the event
+        $menuItems = $menuEvent->getMenuItems();
 
         usort(
             $menuItems,
@@ -697,7 +709,16 @@ class BaseSyncModuleController implements ModuleInterface
      */
     public function getTables(): array
     {
-        return $this->moduleData->get('tables', []);
+        $tables = $this->moduleData->get('tables', []);
+
+        // Dispatch ModifyTableListEvent to allow extensions to modify the table list
+        /** @var EventDispatcherInterface $eventDispatcher */
+        $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
+        $tableEvent      = new ModifyTableListEvent($tables, $this->getModuleIdentifier());
+        $tableEvent      = $eventDispatcher->dispatch($tableEvent);
+
+        // Return potentially modified tables from the event
+        return $tableEvent->getTables();
     }
 
     /**

@@ -47,7 +47,7 @@
         "typo3/cms-core": "^12.4",
         "typo3/cms-backend": "^12.4",
         "typo3/cms-extbase": "^12.4",
-        "typo3/cms-fluid": "^12.4",
+        "typo3/cms-fluid": "^12.4 || ^14.0",
         "netresearch/nr-scheduler": "*"
     },
     "require-dev": {

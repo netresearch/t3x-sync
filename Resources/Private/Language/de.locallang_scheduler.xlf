@@ -1,21 +1,23 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<xliff version="1.0">
-    <file target-language="de" datatype="plaintext" original="messages" date="2024-01-01T00:00:00Z"
-          product-name="nr_sync">
-        <header/>
-        <body>
-            <trans-unit id="tx_nrcsync_scheduler_import.name">
-                <target>Import Sync</target>
-            </trans-unit>
-            <trans-unit id="tx_nrcsync_scheduler_import.description">
-                <target>Task zum Importieren der Sync-Daten</target>
-            </trans-unit>
-            <trans-unit id="syncStoragePath">
-                <target>Pfad, in dem die Synchronisierungsdateien gespeichert sind.</target>
-            </trans-unit>
-            <trans-unit id="syncUrlsPath">
-                <target>Pfad, in dem die auszuführenden URL-Dateien gespeichert sind.</target>
-            </trans-unit>
-        </body>
-    </file>
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file source-language="en" target-language="de" datatype="plaintext" original="messages" product-name="nr_sync">
+    <body>
+      <trans-unit id="tx_nrcsync_scheduler_import.name">
+        <source>Import Sync</source>
+        <target>Sync-Import</target>
+      </trans-unit>
+      <trans-unit id="tx_nrcsync_scheduler_import.description">
+        <source>Task to import syncs</source>
+        <target>Task zum Importieren der Sync-Daten</target>
+      </trans-unit>
+      <trans-unit id="syncStoragePath">
+        <source>Path where the sync files are stored in.</source>
+        <target>Pfad, in dem die Synchronisierungsdateien gespeichert sind.</target>
+      </trans-unit>
+      <trans-unit id="syncUrlsPath">
+        <source>Path where the urls files to execute are stored in.</source>
+        <target>Pfad, in dem die auszuführenden URL-Dateien gespeichert sind.</target>
+      </trans-unit>
+    </body>
+  </file>
 </xliff>

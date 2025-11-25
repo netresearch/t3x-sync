@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="vi" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>Mô-đun để đồng bộ hóa nội dung từ hệ thống sản xuất sang một hoặc nhiều hệ thống đích.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>Tạo đồng bộ mới</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Tạo đồng bộ</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>Buộc đồng bộ hoàn toàn. Đồng bộ hoàn toàn mục này được bắt đầu ngay cả khi có thể đồng bộ tăng dần. Nên tránh điều này nếu có thể.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>Xóa các bản ghi lỗi thời trên hệ thống đích. Bất kỳ bản ghi nào được đánh dấu là ẩn hoặc đã xóa, hoặc thời gian kết thúc bản ghi là ngày trong quá khứ, sẽ bị xóa trên hệ thống đích.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>Trạng thái đồng bộ bảng</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>Bảng</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>Thời gian đồng bộ cuối</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>Loại đồng bộ cuối</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>Người dùng đồng bộ cuối</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>hoàn toàn</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>tăng dần</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Danh sách đồng bộ</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Đồng bộ đang chờ</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} tệp đang chờ đồng bộ hóa {size}. Tệp cũ nhất từ {oldestFile} và do đó {minutes} phút tuổi.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>Tệp</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>Kích thước</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>Mục</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>Hành động</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Đích đồng bộ:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>Đích '{target}' đã bị vô hiệu hóa cho đồng bộ.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>Đích '{target}' đã được kích hoạt cho đồng bộ.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>Khóa mô-đun đồng bộ</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>Mở khóa mô-đun đồng bộ</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>Khóa đích đồng bộ: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>Mở khóa đích đồng bộ: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>Chỉ trang đã chọn</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>Trang đã chọn và tất cả {pages} trang con</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(trong đó {deleted} bị xóa, {noaccess} bị chặn, và {falses} có loại trang sai)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} trang con với {deleted} bị xóa và {noaccess} không thể truy cập)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>Trang: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>Có các khu vực con bị hạn chế được loại trừ khỏi đồng bộ.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>Đệ quy</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>Thêm vào danh sách đồng bộ</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>Đặt độ sâu đệ quy</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>Đã báo hiệu đích '{target}' cho đồng bộ mới.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>Không thể thông báo cho đích '{target}' do lỗi.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>Đã bỏ qua báo hiệu đích '{target}'. Loại thông báo không xác định: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>Đã bỏ qua báo hiệu đích '{target}' do báo hiệu bị vô hiệu hóa.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>Đã bỏ qua báo hiệu đích '{target}' do ngữ cảnh không hợp lệ. Ngữ cảnh được phép: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>Đã bỏ qua bảng '{table}' - không có thay đổi kể từ lần đồng bộ cuối.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Đã khởi tạo đồng bộ Assets</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Đã khởi tạo đồng bộ.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Đã bắt đầu đồng bộ - sẽ được xử lý trong vòng 15 phút tiếp theo.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>Đã cập nhật trạng thái bảng.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>Đã tạo {number} tệp hook URL</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>Không có dữ liệu được xuất cho xử lý tiếp theo. Quá trình đồng bộ đã chọn không tạo ra dữ liệu nào để đồng bộ với hệ thống đích.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>Hệ thống '{target}' bị khóa, vì vậy không có tệp URL được tạo.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>Các bảng sau đã thay đổi, vui lòng liên hệ quản trị viên TYPO3 của bạn:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>Hệ thống '{system} bị khóa nên không có tệp dump được tạo cho nó.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>Vui lòng chọn một trang từ cây trang.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>Không thể tải bản ghi cho trang đã chọn: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>Loại trang này không được phép đồng bộ.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>Tệp trạng thái bảng không thể ghi.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>Không có trang nào được đánh dấu để đồng bộ.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>Đã có một quá trình chuẩn bị đồng bộ đang diễn ra. Vui lòng thử lại sau khoảng 5 phút.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>Không thể tạo tệp Zip cho {file}.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>Không thể di chuyển tệp {file} đến {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>Vui lòng chọn cách trang nên được đánh dấu.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>Trang đã được đánh dấu để đồng bộ</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>Các bảng MM như {tableName} không còn được hỗ trợ nữa.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL có các mục bị hỏng. (Các mục với uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>hoàn thành</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>Các tác vụ này có thể mất một chút thời gian, vui lòng kiên nhẫn.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>Tin tức</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Người dùng và nhóm backend</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Nhóm frontend</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Tác vụ lập lịch</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Chuyển hướng</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>Trạng thái bảng</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: Trang đơn có nội dung</target>
       </trans-unit>
     </body>
   </file>

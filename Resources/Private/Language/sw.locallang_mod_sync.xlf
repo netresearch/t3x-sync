@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="sw" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>Moduli ya kusawazisha maudhui kutoka mfumo wa uzalishaji hadi mfumo mmoja au mifumo mingi lengwa.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>Unda Sync mpya</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Unda Sync</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>Lazimisha usawazishaji kamili. Usawazishaji kamili wa kipengee hiki unaanzishwa hata kama usawazishaji wa nyongeza unawezekana. Hii inapaswa kuepukwa ikiwezekana.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>Inafuta rekodi zilizopitwa na wakati kwenye mfumo lengwa. Rekodi zozote zilizoashiriwa kuwa zimefichwa au zimefutwa, au ambapo muda wa mwisho wa rekodi ni tarehe ya zamani, zitafutwa kwenye mfumo lengwa.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>Hali ya usawazishaji wa jedwali</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>Jedwali</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>Muda wa usawazishaji wa mwisho</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>Aina ya usawazishaji wa mwisho</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>Mtumiaji wa usawazishaji wa mwisho</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>kamili</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>ya nyongeza</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Orodha ya Sync</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Sync Zinazosubiri</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>Faili {files} zinasubiri usawazishaji {size}. Faili ya zamani zaidi kutoka {oldestFile} na kwa hiyo ina umri wa dakika {minutes}.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>Faili</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>Ukubwa</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>Kipengee</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>Kitendo</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Lengo la sync:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>Lengo '{target}' limezimwa kwa sync.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>Lengo '{target}' limewashwa kwa sync.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>Funga moduli ya sync</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>Fungua moduli ya sync</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>Funga lengo la sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>Fungua lengo la sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>Ukurasa uliochaguliwa tu</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>Ukurasa uliochaguliwa na kurasa za ndani {pages} zote</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(ambapo {deleted} zimefutwa, {noaccess} zimezuiwa, na {falses} zina aina ya ukurasa isiyo sahihi)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>(kurasa za ndani {pages} na {deleted} zimefutwa na {noaccess} hazipatikani)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>Ukurasa: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>Kuna maeneo madogo yaliyozuiliwa ambayo hayajumuishwi katika sync.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>Urudishaji</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>Ongeza kwenye orodha ya sync</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>Weka kina cha urudishaji</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>Lengo '{target}' limearifu kwa sync mpya.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>Lengo '{target}' halikuweza kuarifishwa kwa sababu ya kosa.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>Kuarifu lengo '{target}' kumerukwa. Aina ya arifa isiyojulikana: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>Kuarifu lengo '{target}' kumerukwa kwa sababu arifa zimezimwa.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>Kuarifu lengo '{target}' kumerukwa kwa sababu ya muktadha batili. Muktadha unaoruhusuliwa: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>Jedwali '{table}' limerukwa - hakuna mabadiliko tangu usawazishaji wa mwisho.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Usawazishaji wa Assets umeanzishwa</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Sync imeanzishwa.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Sync imeanza - inapaswa kuchakatwa ndani ya dakika 15 zijazo.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>Hali ya jedwali imesasishwa.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>Faili {number} za URL za hook zimeundwa</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>Hakuna data iliyotupwa kwa usindikaji zaidi. Mchakato wa sync uliochaguliwa haukuzalisha data yoyote ya kusawazishwa kwenye mfumo lengwa.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>Mfumo '{target}' umefungwa, kwa hiyo hakuna faili ya url iliyoundwa.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>Majedwali yafuatayo yamebadilika, tafadhali wasiliana na msimamizi wako wa TYPO3:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>Mfumo '{system} umefungwa kwa hiyo hakuna faili ya dump iliyoundwa kwa ajili yake.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>Tafadhali chagua ukurasa kutoka kwenye mti wa kurasa.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>Haikuweza kupakia rekodi kwa ukurasa uliochaguliwa: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>Aina ya ukurasa haipaswi kusawazishwa.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>Faili ya hali ya jedwali haiwezi kuandikwa.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>Hakuna kurasa zilizowekwa alama kwa sync.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>Tayari kuna maandalizi ya sync yanayoendelea. Tafadhali jaribu tena baada ya dakika 5.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>Faili ya Zip kwa ajili ya {file} haikuweza kuundwa.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>Faili {file} haikuweza kuhamishiwa {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>Tafadhali chagua jinsi ukurasa unavyopaswa kuwekwa alama.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>Ukurasa tayari umewekwa alama kwa usawazishaji</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>Majedwali ya MM kama {tableName} hayatumiwi tena.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL ina maingizo yaliyoharibika. (Maingizo yenye uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>imekamilika</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>Kazi hii inaweza kuchukua muda, tafadhali kuwa na uvumilivu.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>Habari</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Watumiaji na vikundi vya backend</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Vikundi vya frontend</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Kazi za ratiba</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Redirects</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>Hali ya jedwali</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: Kurasa za moja na maudhui</target>
       </trans-unit>
     </body>
   </file>

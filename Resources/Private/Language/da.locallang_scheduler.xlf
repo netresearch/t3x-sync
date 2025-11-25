@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="da" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="tx_nrcsync_scheduler_import.name">
         <source>Import Sync</source>
+        <target>Sync-import</target>
       </trans-unit>
       <trans-unit id="tx_nrcsync_scheduler_import.description">
         <source>Task to import syncs</source>
+        <target>Opgave til import af synkroniseringer</target>
       </trans-unit>
       <trans-unit id="syncStoragePath">
         <source>Path where the sync files are stored in.</source>
+        <target>Sti hvor synkroniseringsfilerne er gemt.</target>
       </trans-unit>
       <trans-unit id="syncUrlsPath">
         <source>Path where the urls files to execute are stored in.</source>
+        <target>Sti hvor URL-filerne til udførelse er gemt.</target>
       </trans-unit>
     </body>
   </file>

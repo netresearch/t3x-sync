@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="ko" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>프로덕션 시스템에서 하나 또는 여러 대상 시스템으로 콘텐츠를 동기화하는 모듈입니다.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>새 Sync 생성</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Sync 생성</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>전체 동기화를 강제합니다. 증분 동기화가 가능한 경우에도 이 항목의 전체 동기화가 시작됩니다. 가능하면 피해야 합니다.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>대상 시스템에서 오래된 레코드를 삭제합니다. 숨김 또는 삭제로 표시된 레코드나 종료 시간이 과거인 레코드는 대상 시스템에서 삭제됩니다.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>테이블 동기화 상태</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>테이블</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>마지막 동기화 시간</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>마지막 동기화 유형</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>마지막 동기화 사용자</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>전체</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>증분</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Sync 목록</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>대기 중인 Sync</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files}개 파일이 동기화를 기다리고 있습니다 {size}. 가장 오래된 파일은 {oldestFile}이며 {minutes}분 경과했습니다.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>파일</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>크기</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>항목</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>작업</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Sync 대상:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>대상 '{target}'의 동기화가 비활성화되었습니다.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>대상 '{target}'의 동기화가 활성화되었습니다.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>동기화 모듈 잠금</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>동기화 모듈 잠금 해제</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>동기화 대상 잠금: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>동기화 대상 잠금 해제: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>선택한 페이지만</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>선택한 페이지 및 모든 {pages}개 하위 페이지</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(그 중 {deleted}개 삭제됨, {noaccess}개 차단됨, {falses}개 잘못된 페이지 유형)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages}개 하위 페이지, {deleted}개 삭제됨, {noaccess}개 접근 불가)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>페이지: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>동기화에서 제외된 제한 영역이 있습니다.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>재귀</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>동기화 목록에 추가</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>재귀 깊이 설정</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>새 동기화를 위해 '{target}' 대상에 신호를 보냈습니다.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>오류로 인해 대상 '{target}'에 알림을 보낼 수 없습니다.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>'{target}' 대상 신호 전송을 건너뛰었습니다. 알 수 없는 알림 유형: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>신호 전송이 비활성화되어 '{target}' 대상 신호 전송을 건너뛰었습니다.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>잘못된 컨텍스트로 인해 '{target}' 대상 신호 전송을 건너뛰었습니다. 허용된 컨텍스트: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>테이블 '{table}' 건너뜀 - 마지막 동기화 이후 변경 사항 없음.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Assets 동기화 시작됨</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>동기화가 시작되었습니다.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>동기화가 시작되었습니다 - 다음 15분 내에 처리될 예정입니다.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>테이블 상태가 업데이트되었습니다.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>{number}개의 훅 URL 파일이 생성되었습니다</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>추가 처리를 위해 덤프된 데이터가 없습니다. 선택한 동기화 프로세스는 대상 시스템과 동기화할 데이터를 생성하지 않았습니다.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>시스템 '{target}'이 잠겨 있어 URL 파일이 생성되지 않습니다.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>다음 테이블이 변경되었습니다. TYPO3 관리자에게 문의하세요:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>시스템 '{system}'이 잠겨 있어 덤프 파일이 생성되지 않습니다.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>페이지 트리에서 페이지를 선택하세요.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>선택한 페이지의 레코드를 로드할 수 없습니다: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>이 페이지 유형은 동기화할 수 없습니다.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>테이블 상태 파일을 쓸 수 없습니다.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>동기화할 페이지가 표시되지 않았습니다.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>이미 동기화 준비가 진행 중입니다. 약 5분 후에 다시 시도하세요.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>{file}에 대한 압축 파일을 생성할 수 없습니다.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>파일 {file}을(를) {target}(으)로 이동할 수 없습니다.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>페이지를 표시할 방법을 선택하세요.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>페이지가 이미 동기화용으로 표시되었습니다</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>{tableName}과(와) 같은 MM 테이블은 더 이상 지원되지 않습니다.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL에 손상된 항목이 있습니다. (uid_foreign = 0인 항목)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>완료</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>이 작업은 시간이 걸릴 수 있습니다. 잠시 기다려 주세요.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>뉴스</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: 백엔드 사용자 및 그룹</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: 프론트엔드 그룹</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: 스케줄러 작업</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: 리다이렉트</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>테이블 상태</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: 콘텐츠가 있는 단일 페이지</target>
       </trans-unit>
     </body>
   </file>

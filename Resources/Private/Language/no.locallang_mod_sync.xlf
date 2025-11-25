@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="no" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>En modul for synkronisering av innhold fra et produksjonssystem til ett eller flere målsystemer.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>Opprett ny Sync</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Opprett Sync</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>Tving full synkronisering. En full synkronisering av dette elementet starter selv om en inkrementell synkronisering er mulig. Dette bør unngås hvis mulig.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>Sletter utdaterte poster på målsystemet. Alle poster som er merket som skjult eller slettet, eller der sluttidspunktet er en dato i fortiden, vil bli slettet på målsystemet.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>Tabellsynkroniseringsstatus</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>Tabell</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>Siste synkroniseringstid</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>Siste synkroniseringstype</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>Siste synkroniseringsbruker</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>full</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>inkrementell</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Synkroniseringsliste</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Ventende synkroniseringer</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} fil(er) venter på synkronisering {size}. Eldste fil fra {oldestFile} og derfor {minutes} minutter gammel.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>Fil</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>Størrelse</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>Element</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>Handling</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Synkroniseringsmål:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>Mål '{target}' deaktivert for synkronisering.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>Mål '{target}' aktivert for synkronisering.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>Lås synkroniseringsmodul</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>Lås opp synkroniseringsmodul</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>Lås synkroniseringsmål: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>Lås opp synkroniseringsmål: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>Kun valgt side</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>Valgt side og alle {pages} undersider</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(hvorav {deleted} er slettet, {noaccess} er blokkert, og {falses} har feil sidetype)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} undersider med {deleted} slettet og {noaccess} utilgjengelig)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>Side: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>Det finnes begrensede underområder som er ekskludert fra synkronisering.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>Rekursjon</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>Legg til i synkroniseringsliste</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>Angi rekursjonsdybde</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>Signaliserte mål '{target}' for ny synkronisering.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>Mål '{target}' kunne ikke varsles på grunn av en feil.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>Hoppet over signalisering av mål '{target}'. Ukjent varslingstype: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>Hoppet over signalisering av mål '{target}' på grunn av deaktivert signalisering.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>Hoppet over signalisering av mål '{target}' på grunn av ugyldig kontekst. Tillatte kontekster: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>Tabell '{table}' hoppet over - ingen endringer siden siste synkronisering.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Assets-synkronisering startet</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Synkronisering startet.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Synkronisering startet - skal behandles innen neste 15 minutter.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>Oppdatert tabellstatus.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>Opprettet {number} hook-URL-filer</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>Ingen data dumpet for videre behandling. Den valgte synkroniseringsprosessen produserte ikke noen data som skal synkroniseres til målsystemet.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>System '{target}' er låst, så ingen URL-fil opprettes.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>Følgende tabeller er endret, vennligst kontakt TYPO3-administratoren din:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>System '{system}' er låst, så ingen dump-fil opprettes for det.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>Vennligst velg en side fra sidetreet.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>Kunne ikke laste post for valgt side: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>Sidetypen må ikke synkroniseres.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>Tabellstatusfil er ikke skrivbar.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>Det er ingen sider merket for synkronisering.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>Det er allerede en synkroniseringsforberedelse i gang. Vennligst prøv igjen om ca. 5 minutter.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>Zip-fil for {file} kunne ikke opprettes.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>Fil {file} kunne ikke flyttes til {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>Vennligst velg hvordan siden skal merkes.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>Siden er allerede merket for synkronisering</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>MM-tabeller som {tableName} støttes ikke lenger.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL har ødelagte oppføringer. (Oppføringer med uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>ferdig</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>Denne oppgaven kan ta litt tid, vennligst vær tålmodig.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>Nyheter</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Backend-brukere og grupper</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Frontend-grupper</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Planleggeroppgaver</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Omdirigeringer</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>Tabellstatus</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: Enkeltsider med innhold</target>
       </trans-unit>
     </body>
   </file>

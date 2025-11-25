@@ -1,14 +1,13 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<xliff version="1.0">
-    <file source-language="en" datatype="plaintext" original="messages" date="2020-11-11T12:00:00Z" product-name="nr-sync">
-        <header/>
-        <body>
-            <trans-unit id="lock.label">
-                <source>Lock sync module</source>
-            </trans-unit>
-            <trans-unit id="lock.message">
-                <source>Message for users in case of active lock</source>
-            </trans-unit>
-        </body>
-    </file>
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+    <body>
+      <trans-unit id="lock.label">
+        <source>Lock sync module</source>
+      </trans-unit>
+      <trans-unit id="lock.message">
+        <source>Message for users in case of active lock</source>
+      </trans-unit>
+    </body>
+  </file>
 </xliff>

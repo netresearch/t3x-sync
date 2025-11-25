@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" target-language="de" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="ar" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Netresearch</source>

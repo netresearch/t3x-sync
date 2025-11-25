@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="hi" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>उत्पादन प्रणाली से एकल या एकाधिक लक्ष्य प्रणालियों में सामग्री को समन्वयित करने के लिए एक मॉड्यूल।</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>नया Sync बनाएँ</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Sync बनाएँ</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>पूर्ण sync को बाध्य करें। इस आइटम का पूर्ण sync शुरू किया जाता है, भले ही एक क्रमिक sync संभव हो। यदि संभव हो तो इससे बचना चाहिए।</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>लक्ष्य प्रणाली पर अप्रचलित रिकॉर्ड हटाता है। कोई भी रिकॉर्ड जो छिपे हुए या हटाए गए के रूप में चिह्नित हैं, या जहाँ रिकॉर्ड समाप्ति समय भूतकाल की तारीख है, लक्ष्य प्रणाली पर हटा दिए जाएंगे।</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>तालिका sync स्थिति</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>तालिका</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>अंतिम sync समय</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>अंतिम sync प्रकार</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>अंतिम sync उपयोगकर्ता</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>पूर्ण</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>क्रमिक</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Sync सूची</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>प्रतीक्षारत Syncs</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} फाइल(ें) समन्वयन के लिए प्रतीक्षारत {size}। {oldestFile} से सबसे पुरानी फाइल और इसलिए {minutes} मिनट पुरानी।</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>फाइल</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>आकार</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>आइटम</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>कार्रवाई</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Sync लक्ष्य:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>लक्ष्य '{target}' sync के लिए अक्षम किया गया।</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>लक्ष्य '{target}' sync के लिए सक्षम किया गया।</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>sync मॉड्यूल को लॉक करें</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>sync मॉड्यूल को अनलॉक करें</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>sync लक्ष्य को लॉक करें: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>sync लक्ष्य को अनलॉक करें: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>केवल चयनित पृष्ठ</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>चयनित पृष्ठ और सभी {pages} उप-पृष्ठ</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(जिनमें से {deleted} हटाए गए हैं, {noaccess} अवरुद्ध हैं, और {falses} में गलत पृष्ठ प्रकार है)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} उप-पृष्ठ जिनमें से {deleted} हटाए गए और {noaccess} अप्राप्य हैं)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>पृष्ठ: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>प्रतिबंधित उप-क्षेत्र हैं जो sync से बाहर रखे गए हैं।</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>पुनरावर्तन</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>sync सूची में जोड़ें</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>पुनरावर्तन गहराई सेट करें</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>नए sync के लिए '{target}' लक्ष्य को संकेत दिया गया।</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>त्रुटि के कारण लक्ष्य '{target}' को सूचित नहीं किया जा सका।</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>'{target}' लक्ष्य को संकेत देना छोड़ा गया। अज्ञात सूचना प्रकार: '{notify_type}'।</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>संकेत अक्षम होने के कारण '{target}' लक्ष्य को संकेत देना छोड़ा गया।</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>अमान्य संदर्भ के कारण '{target}' लक्ष्य को संकेत देना छोड़ा गया। अनुमत संदर्भ: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>तालिका '{table}' छोड़ी गई - अंतिम sync के बाद से कोई परिवर्तन नहीं।</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Assets का Sync शुरू किया गया</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Sync शुरू किया गया।</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Sync शुरू हो गया - अगले 15 मिनट में संसाधित किया जाना चाहिए।</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>तालिका स्थिति अपडेट की गई।</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>{number} hook URL फाइलें बनाई गईं</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>आगे की प्रक्रिया के लिए कोई डेटा डंप नहीं किया गया। चयनित sync प्रक्रिया ने लक्ष्य प्रणाली में sync करने के लिए कोई डेटा उत्पन्न नहीं किया।</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>प्रणाली '{target}' लॉक है, इसलिए कोई url फाइल नहीं बनाई गई।</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>निम्नलिखित तालिकाएँ बदल गई हैं, कृपया अपने TYPO3 व्यवस्थापक से संपर्क करें:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>प्रणाली '{system} लॉक है इसलिए इसके लिए कोई dump-file नहीं बनाई गई।</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>कृपया पृष्ठ ट्री से एक पृष्ठ चुनें।</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>चयनित पृष्ठ के लिए रिकॉर्ड लोड नहीं किया जा सका: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>पृष्ठ प्रकार को समन्वयित नहीं किया जा सकता।</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>तालिका-स्थिति-फाइल लिखने योग्य नहीं है।</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>sync करने के लिए कोई पृष्ठ चिह्नित नहीं हैं।</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>पहले से ही एक sync-तैयारी प्रगति में है। कृपया लगभग 5 मिनट में पुनः प्रयास करें।</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>{file} के लिए Zipfile नहीं बनाई जा सकी।</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>फाइल {file} को {target} में नहीं ले जाया जा सका।</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>कृपया चुनें कि पृष्ठ को कैसे चिह्नित किया जाना चाहिए।</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>पृष्ठ को पहले से ही समन्वयन के लिए चिह्नित किया गया है</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>{tableName} जैसी MM तालिकाएँ अब समर्थित नहीं हैं।</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL में दूषित प्रविष्टियाँ हैं। (uid_foreign = 0 वाली प्रविष्टियाँ)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>पूर्ण</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>इन कार्यों में कुछ समय लग सकता है, कृपया धैर्य रखें।</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>समाचार</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Backend उपयोगकर्ता और समूह</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Frontend समूह</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Scheduler कार्य</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: रीडायरेक्ट्स</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>तालिका स्थिति</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: सामग्री वाले एकल पृष्ठ</target>
       </trans-unit>
     </body>
   </file>

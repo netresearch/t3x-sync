@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="nl" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>Een module voor het synchroniseren van inhoud van een productiesysteem naar één of meerdere doelsystemen.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>Nieuwe Sync aanmaken</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Sync aanmaken</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>Forceer een volledige synchronisatie. Een volledige synchronisatie van dit item wordt gestart, zelfs als een incrementele synchronisatie mogelijk is. Dit moet indien mogelijk worden vermeden.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>Verwijdert verouderde records op het doelsysteem. Alle records die zijn gemarkeerd als verborgen of verwijderd, of waarvan de eindtijd een datum in het verleden is, worden verwijderd op het doelsysteem.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>Tabelsynchronisatiestatus</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>Tabel</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>Laatste synchronisatietijd</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>Laatste synchronisatietype</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>Laatste synchronisatiegebruiker</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>volledig</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>incrementeel</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Synclijst</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Wachtende Syncs</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} bestand(en) wachten op synchronisatie {size}. Oudste bestand van {oldestFile} en daarom {minutes} minuten oud.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>Bestand</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>Grootte</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>Item</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>Actie</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Syncdoel:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>Doel '{target}' uitgeschakeld voor synchronisatie.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>Doel '{target}' ingeschakeld voor synchronisatie.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>Syncmodule vergrendelen</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>Syncmodule ontgrendelen</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>Syncdoel vergrendelen: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>Syncdoel ontgrendelen: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>Alleen geselecteerde pagina</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>Geselecteerde pagina en alle {pages} subpagina's</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(waarvan {deleted} verwijderd, {noaccess} geblokkeerd en {falses} verkeerd paginatype hebben)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} subpagina's met {deleted} verwijderd en {noaccess} ontoegankelijk)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>Pagina: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>Er zijn beperkte subgebieden die zijn uitgesloten van synchronisatie.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>Recursie</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>Toevoegen aan synclijst</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>Recursiediepte instellen</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>Doel '{target}' gesignaleerd voor nieuwe synchronisatie.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>Doel '{target}' kon niet worden geïnformeerd vanwege een fout.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>Signaleren van doel '{target}' overgeslagen. Onbekend notificatietype: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>Signaleren van doel '{target}' overgeslagen omdat signalering is uitgeschakeld.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>Signaleren van doel '{target}' overgeslagen vanwege ongeldige context. Toegestane contexten: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>Tabel '{table}' overgeslagen - geen wijzigingen sinds laatste synchronisatie.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Assets-synchronisatie gestart</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Synchronisatie gestart.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Synchronisatie gestart - moet binnen 15 minuten worden verwerkt.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>Tabelstatus bijgewerkt.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>{number} hook-URL-bestanden aangemaakt</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>Geen gegevens gedumpt voor verdere verwerking. Het geselecteerde synchronisatieproces heeft geen gegevens geproduceerd om te synchroniseren met het doelsysteem.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>Systeem '{target}' is vergrendeld, dus er wordt geen URL-bestand aangemaakt.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>Volgende tabellen zijn gewijzigd, neem contact op met uw TYPO3-beheerder:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>Systeem '{system}' is vergrendeld, dus er wordt geen dump-bestand voor aangemaakt.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>Selecteer een pagina uit de paginaboom.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>Kan record voor geselecteerde pagina niet laden: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>Het paginatype mag niet worden gesynchroniseerd.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>Tabelstatusbestand is niet beschrijfbaar.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>Er zijn geen pagina's gemarkeerd om te synchroniseren.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>Er is al een synchronisatievoorbereiding aan de gang. Probeer het over ongeveer 5 minuten opnieuw.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>Zipbestand voor {file} kon niet worden aangemaakt.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>Bestand {file} kon niet worden verplaatst naar {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>Selecteer hoe de pagina moet worden gemarkeerd.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>De pagina is al gemarkeerd voor synchronisatie</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>MM-tabellen zoals {tableName} worden niet meer ondersteund.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL heeft beschadigde items. (Items met uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>klaar</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>Deze taak kan enige tijd duren, wees geduldig.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>Nieuws</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Backend-gebruikers en groepen</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Frontend-groepen</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Scheduler-taken</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Omleidingen</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>Tabelstatus</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: Enkele pagina's met inhoud</target>
       </trans-unit>
     </body>
   </file>

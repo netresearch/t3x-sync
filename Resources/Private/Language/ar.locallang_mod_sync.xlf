@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="ar" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>وحدة لمزامنة المحتوى من نظام الإنتاج إلى نظام واحد أو أنظمة متعددة مستهدفة.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>إنشاء Sync جديد</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>إنشاء Sync</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>فرض مزامنة كاملة. يتم بدء مزامنة كاملة لهذا العنصر حتى لو كانت المزامنة التدريجية ممكنة. يجب تجنب ذلك إن أمكن.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>حذف السجلات القديمة على النظام المستهدف. سيتم حذف أي سجلات محددة كمخفية أو محذوفة، أو حيث يكون وقت انتهاء السجل تاريخًا في الماضي، على النظام المستهدف.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>حالة مزامنة الجدول</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>الجدول</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>وقت آخر مزامنة</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>نوع آخر مزامنة</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>مستخدم آخر مزامنة</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>كاملة</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>تدريجية</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>قائمة Sync</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Sync في الانتظار</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} ملف (ملفات) في انتظار المزامنة {size}. أقدم ملف من {oldestFile} وبالتالي عمره {minutes} دقيقة.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>الملف</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>الحجم</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>العنصر</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>الإجراء</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>هدف Sync:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>تم تعطيل الهدف '{target}' للمزامنة.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>تم تفعيل الهدف '{target}' للمزامنة.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>قفل وحدة sync</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>فتح وحدة sync</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>قفل هدف sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>فتح هدف sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>الصفحة المحددة فقط</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>الصفحة المحددة وجميع {pages} صفحة فرعية</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(منها {deleted} محذوفة، و {noaccess} محظورة، و {falses} لها نوع صفحة خاطئ)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} صفحة فرعية مع {deleted} محذوفة و {noaccess} غير قابلة للوصول)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>الصفحة: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>توجد مناطق فرعية مقيدة مستبعدة من المزامنة.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>التكرار</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>إضافة إلى قائمة sync</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>تعيين عمق التكرار</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>تم إشعار الهدف '{target}' بمزامنة جديدة.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>تعذر إشعار الهدف '{target}' بسبب خطأ.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>تم تخطي إشعار الهدف '{target}'. نوع الإشعار غير معروف: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>تم تخطي إشعار الهدف '{target}' بسبب تعطيل الإشعار.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>تم تخطي إشعار الهدف '{target}' بسبب سياق غير صالح. السياقات المسموحة: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>تم تخطي الجدول '{table}' - لا توجد تغييرات منذ آخر مزامنة.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>تم بدء مزامنة Assets</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>تم بدء المزامنة.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>بدأت المزامنة - يجب معالجتها خلال الـ 15 دقيقة القادمة.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>تم تحديث حالة الجدول.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>تم إنشاء {number} ملف URL لـ hook</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>لم يتم تفريغ بيانات لمزيد من المعالجة. لم تنتج عملية المزامنة المحددة أي بيانات لمزامنتها مع النظام المستهدف.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>النظام '{target}' مقفل، لذا لن يتم إنشاء ملف url.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>تم تغيير الجداول التالية، يرجى الاتصال بمسؤول TYPO3:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>النظام '{system} مقفل لذا لن يتم إنشاء ملف تفريغ له.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>يرجى تحديد صفحة من شجرة الصفحات.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>تعذر تحميل سجل الصفحة المحددة: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>يجب عدم مزامنة نوع الصفحة.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>ملف حالة الجدول غير قابل للكتابة.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>لا توجد صفحات محددة للمزامنة.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>يوجد بالفعل إعداد مزامنة قيد التقدم. يرجى المحاولة مرة أخرى خلال حوالي 5 دقائق.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>تعذر إنشاء ملف Zip لـ {file}.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>تعذر نقل الملف {file} إلى {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>يرجى تحديد كيفية تحديد الصفحة.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>تم تحديد الصفحة بالفعل للمزامنة</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>جداول MM مثل {tableName} لم تعد مدعومة.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>FAL يحتوي على إدخالات تالفة. (إدخالات مع uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>تم</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>قد تستغرق هذه المهمة بعض الوقت، يرجى التحلي بالصبر.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>الأخبار</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: مستخدمو ومجموعات Backend</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: مجموعات Frontend</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: مهام Scheduler</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Redirects</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>حالة الجدول</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: صفحات مفردة مع محتوى</target>
       </trans-unit>
     </body>
   </file>

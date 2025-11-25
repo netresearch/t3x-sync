@@ -1,231 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="el" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="mlang_tabs_tab">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tablabel">
         <source>Sync</source>
+        <target>Sync</target>
       </trans-unit>
       <trans-unit id="mlang_labels_tabdescr">
         <source>A module for synchronizing content from a production system to a single or multiple target systems.</source>
+        <target>Ένα module για συγχρονισμό περιεχομένου από ένα σύστημα παραγωγής σε ένα ή περισσότερα συστήματα προορισμού.</target>
       </trans-unit>
       <trans-unit id="headline.create_sync">
         <source>Create new Sync</source>
+        <target>Δημιουργία νέου Sync</target>
       </trans-unit>
       <trans-unit id="button.create_sync">
         <source>Create Sync</source>
+        <target>Δημιουργία Sync</target>
       </trans-unit>
       <trans-unit id="label.force_full_sync">
         <source>Force a full sync. A full sync of this item is initiated even if an incremental sync is possible. This should be avoided if possible.</source>
+        <target>Εξαναγκασμός πλήρους sync. Ένας πλήρης sync αυτού του στοιχείου ξεκινά ακόμα κι αν είναι δυνατός ένας σταδιακός sync. Αυτό θα πρέπει να αποφεύγεται εάν είναι δυνατόν.</target>
       </trans-unit>
       <trans-unit id="label.delete_obsolete_rows">
         <source>Deletes obsolete records on the target system. Any records that are marked as hidden or deleted, or where the record end time is a date in the past, will be deleted on the target system.</source>
+        <target>Διαγράφει παρωχημένες εγγραφές στο σύστημα προορισμού. Όλες οι εγγραφές που είναι σημειωμένες ως κρυφές ή διαγραμμένες, ή όπου ο χρόνος λήξης της εγγραφής είναι μια ημερομηνία στο παρελθόν, θα διαγραφούν στο σύστημα προορισμού.</target>
       </trans-unit>
       <trans-unit id="headline.table_state">
         <source>Table sync status</source>
+        <target>Κατάσταση sync πίνακα</target>
       </trans-unit>
       <trans-unit id="column.table">
         <source>Table</source>
+        <target>Πίνακας</target>
       </trans-unit>
       <trans-unit id="column.last_sync">
         <source>Last sync time</source>
+        <target>Χρόνος τελευταίου sync</target>
       </trans-unit>
       <trans-unit id="column.last_type">
         <source>Last sync type</source>
+        <target>Τύπος τελευταίου sync</target>
       </trans-unit>
       <trans-unit id="column.last_user">
         <source>Last sync user</source>
+        <target>Χρήστης τελευταίου sync</target>
       </trans-unit>
       <trans-unit id="sync_type.full">
         <source>full</source>
+        <target>πλήρης</target>
       </trans-unit>
       <trans-unit id="sync_type.incr">
         <source>incremental</source>
+        <target>σταδιακός</target>
       </trans-unit>
       <trans-unit id="headline.sync_list">
         <source>Sync List</source>
+        <target>Λίστα Sync</target>
       </trans-unit>
       <trans-unit id="headline.waiting_syncs">
         <source>Waiting Syncs</source>
+        <target>Syncs σε αναμονή</target>
       </trans-unit>
       <trans-unit id="waitingfiles">
         <source>{files} file(s) waiting for synchronisation {size}. Oldest file from {oldestFile} and therefore {minutes} minutes old.</source>
+        <target>{files} αρχείο/α σε αναμονή για συγχρονισμό {size}. Το παλαιότερο αρχείο από {oldestFile} και επομένως {minutes} λεπτών.</target>
       </trans-unit>
       <trans-unit id="column.file">
         <source>File</source>
+        <target>Αρχείο</target>
       </trans-unit>
       <trans-unit id="column.size">
         <source>Size</source>
+        <target>Μέγεθος</target>
       </trans-unit>
       <trans-unit id="column.item">
         <source>Item</source>
+        <target>Στοιχείο</target>
       </trans-unit>
       <trans-unit id="column.action">
         <source>Action</source>
+        <target>Ενέργεια</target>
       </trans-unit>
       <trans-unit id="label.sync_target">
         <source>Sync target:</source>
+        <target>Προορισμός Sync:</target>
       </trans-unit>
       <trans-unit id="message.target_locked">
         <source>Target '{target}' disabled for sync.</source>
+        <target>Ο προορισμός '{target}' απενεργοποιήθηκε για sync.</target>
       </trans-unit>
       <trans-unit id="message.target_unlocked">
         <source>Target '{target}' enabled for sync.</source>
+        <target>Ο προορισμός '{target}' ενεργοποιήθηκε για sync.</target>
       </trans-unit>
       <trans-unit id="label.lock_module">
         <source>Lock sync module</source>
+        <target>Κλείδωμα module sync</target>
       </trans-unit>
       <trans-unit id="label.unlock_module">
         <source>Unlock sync module</source>
+        <target>Ξεκλείδωμα module sync</target>
       </trans-unit>
       <trans-unit id="label.lock_target">
         <source>Lock sync target: {system}</source>
+        <target>Κλείδωμα προορισμού sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.unlock_target">
         <source>Unlock sync target: {system}</source>
+        <target>Ξεκλείδωμα προορισμού sync: {system}</target>
       </trans-unit>
       <trans-unit id="label.page_only">
         <source>Only selected page</source>
+        <target>Μόνο η επιλεγμένη σελίδα</target>
       </trans-unit>
       <trans-unit id="label.page_and_subpages">
         <source>Selected page and all {pages} sub pages</source>
+        <target>Επιλεγμένη σελίδα και όλες οι {pages} υποσελίδες</target>
       </trans-unit>
       <trans-unit id="label.subpages_including">
         <source>(of which {deleted} are deleted, {noaccess} are blocked, and {falses} have the wrong page type)</source>
+        <target>(από τις οποίες {deleted} είναι διαγραμμένες, {noaccess} είναι αποκλεισμένες και {falses} έχουν λάθος τύπο σελίδας)</target>
       </trans-unit>
       <trans-unit id="label.list_with_subs">
         <source>({pages} subpages with {deleted} deleted and {noaccess} inaccessible)</source>
+        <target>({pages} υποσελίδες με {deleted} διαγραμμένες και {noaccess} απρόσιτες)</target>
       </trans-unit>
       <trans-unit id="label.page">
         <source>Page: {id}</source>
+        <target>Σελίδα: {id}</target>
       </trans-unit>
       <trans-unit id="label.excluded_pages">
         <source>There are restricted subareas which are excluded from sync.</source>
+        <target>Υπάρχουν περιορισμένες υποπεριοχές που εξαιρούνται από το sync.</target>
       </trans-unit>
       <trans-unit id="label.recursion">
         <source>Recursion</source>
+        <target>Αναδρομή</target>
       </trans-unit>
       <trans-unit id="button.add_to_list">
         <source>Add to sync list</source>
+        <target>Προσθήκη στη λίστα sync</target>
       </trans-unit>
       <trans-unit id="button.recursion_depth">
         <source>Set recursion depth</source>
+        <target>Ορισμός βάθους αναδρομής</target>
       </trans-unit>
       <trans-unit id="message.notify_success">
         <source>Signaled '{target}' target for new sync.</source>
+        <target>Σηματοδοτήθηκε ο προορισμός '{target}' για νέο sync.</target>
       </trans-unit>
       <trans-unit id="message.notify_failed">
         <source>Target '{target}' could not be notified due to an error.</source>
+        <target>Ο προορισμός '{target}' δεν μπόρεσε να ειδοποιηθεί λόγω σφάλματος.</target>
       </trans-unit>
       <trans-unit id="message.notify_unknown">
         <source>Skipped signaling '{target}' target. Unknown notify type: '{notify_type}'.</source>
+        <target>Παραλείφθηκε η σηματοδότηση του προορισμού '{target}'. Άγνωστος τύπος ειδοποίησης: '{notify_type}'.</target>
       </trans-unit>
       <trans-unit id="message.notify_disabled">
         <source>Skipped signaling '{target}' target due to signaling disabled.</source>
+        <target>Παραλείφθηκε η σηματοδότηση του προορισμού '{target}' λόγω απενεργοποιημένης σηματοδότησης.</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_context">
         <source>Skipped signaling '{target}' target due to invalid context. Allowed contexts: {allowed_contexts}</source>
+        <target>Παραλείφθηκε η σηματοδότηση του προορισμού '{target}' λόγω μη έγκυρου πλαισίου. Επιτρεπόμενα πλαίσια: {allowed_contexts}</target>
       </trans-unit>
       <trans-unit id="message.notify_skipped_table">
         <source>Table '{table}' skipped - no changes since last sync.</source>
+        <target>Ο πίνακας '{table}' παραλείφθηκε - καμία αλλαγή από το τελευταίο sync.</target>
       </trans-unit>
       <trans-unit id="success.sync_assest_init">
         <source>Sync assets initiated</source>
+        <target>Το Sync assets ξεκίνησε</target>
       </trans-unit>
       <trans-unit id="success.sync_initiated">
         <source>Sync initiated.</source>
+        <target>Το Sync ξεκίνησε.</target>
       </trans-unit>
       <trans-unit id="success.sync_in_progress">
         <source>Sync started - should be processed within in next 15 minutes.</source>
+        <target>Το Sync ξεκίνησε - θα πρέπει να επεξεργαστεί εντός των επόμενων 15 λεπτών.</target>
       </trans-unit>
       <trans-unit id="message.table_state_success">
         <source>Updated table state.</source>
+        <target>Η κατάσταση του πίνακα ενημερώθηκε.</target>
       </trans-unit>
       <trans-unit id="message.hook_files">
         <source>Created {number} hook URL files</source>
+        <target>Δημιουργήθηκαν {number} αρχεία hook URL</target>
       </trans-unit>
       <trans-unit id="info.no_data_dumped">
         <source>No data dumped for further processing. The selected sync process did not produce any data to be synced to the target system.</source>
+        <target>Δεν αποθηκεύτηκαν δεδομένα για περαιτέρω επεξεργασία. Η επιλεγμένη διαδικασία sync δεν παρήγαγε δεδομένα για συγχρονισμό στο σύστημα προορισμού.</target>
       </trans-unit>
       <trans-unit id="warning.urls_system_locked">
         <source>System '{target}' is locked, so no url file is created.</source>
+        <target>Το σύστημα '{target}' είναι κλειδωμένο, επομένως δεν δημιουργείται αρχείο url.</target>
       </trans-unit>
       <trans-unit id="warning.table_state">
         <source>Following tables have changed, please contact your TYPO3 admin:</source>
+        <target>Οι ακόλουθοι πίνακες έχουν αλλάξει, παρακαλώ επικοινωνήστε με τον διαχειριστή TYPO3:</target>
       </trans-unit>
       <trans-unit id="warning.system_locked">
         <source>System '{system} is locked so no dump-file is created for it.</source>
+        <target>Το σύστημα '{system} είναι κλειδωμένο, επομένως δεν δημιουργείται αρχείο dump γι' αυτό.</target>
       </trans-unit>
       <trans-unit id="error.no_page">
         <source>Please select a page from the page tree.</source>
+        <target>Παρακαλώ επιλέξτε μια σελίδα από το δέντρο σελίδων.</target>
       </trans-unit>
       <trans-unit id="error.page_not_load">
         <source>Could not load record for selected page: {page_selected}</source>
+        <target>Δεν ήταν δυνατή η φόρτωση της εγγραφής για την επιλεγμένη σελίδα: {page_selected}</target>
       </trans-unit>
       <trans-unit id="error.page_type_not_allowed">
         <source>The page type must not be synchronized.</source>
+        <target>Ο τύπος σελίδας δεν πρέπει να συγχρονιστεί.</target>
       </trans-unit>
       <trans-unit id="error.could_not_write_tablestate">
         <source>Table-state-file is not writable.</source>
+        <target>Το αρχείο table-state δεν είναι εγγράψιμο.</target>
       </trans-unit>
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
+        <target>Δεν υπάρχουν σελίδες σημειωμένες για sync.</target>
       </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
+        <target>Υπάρχει ήδη προετοιμασία sync σε εξέλιξη. Παρακαλώ δοκιμάστε ξανά σε περίπου 5 λεπτά.</target>
       </trans-unit>
       <trans-unit id="error.zip_failure">
         <source>Zipfile for {file} could not be created.</source>
+        <target>Το αρχείο zip για {file} δεν μπόρεσε να δημιουργηθεί.</target>
       </trans-unit>
       <trans-unit id="error.cannot_move_file">
         <source>File {file} could not be moved to {target}.</source>
+        <target>Το αρχείο {file} δεν μπόρεσε να μετακινηθεί στο {target}.</target>
       </trans-unit>
       <trans-unit id="error.select_mark_type">
         <source>Please select how the page should be marked.</source>
+        <target>Παρακαλώ επιλέξτε πώς θα πρέπει να σημειωθεί η σελίδα.</target>
       </trans-unit>
       <trans-unit id="error.page_is_marked">
         <source>The page has been already marked for synchronisation</source>
+        <target>Η σελίδα έχει ήδη σημειωθεί για συγχρονισμό</target>
       </trans-unit>
       <trans-unit id="error.mm_tables">
         <source>MM tables like {tableName} are not supported anymore.</source>
+        <target>Οι πίνακες MM όπως ο {tableName} δεν υποστηρίζονται πλέον.</target>
       </trans-unit>
       <trans-unit id="error.fal_dirty">
         <source>FAL has corrupted entries. (Entries with uid_foreign = 0)</source>
+        <target>Το FAL έχει κατεστραμμένες εγγραφές. (Εγγραφές με uid_foreign = 0)</target>
       </trans-unit>
       <trans-unit id="label.done">
         <source>done</source>
+        <target>έτοιμο</target>
       </trans-unit>
       <trans-unit id="label.clean_fal">
         <source>This tasks can take some time, please be patient.</source>
+        <target>Αυτή η εργασία μπορεί να διαρκέσει λίγο, παρακαλώ να είστε υπομονετικοί.</target>
       </trans-unit>
       <trans-unit id="mod_news">
         <source>News</source>
+        <target>Νέα</target>
       </trans-unit>
       <trans-unit id="mod_fal">
         <source>TYPO3: FAL (File Abstraction Layer)</source>
+        <target>TYPO3: FAL (File Abstraction Layer)</target>
       </trans-unit>
       <trans-unit id="mod_asset">
         <source>Assets</source>
+        <target>Assets</target>
       </trans-unit>
       <trans-unit id="mod_be_users">
         <source>TYPO3: Backend users and groups</source>
+        <target>TYPO3: Χρήστες και ομάδες Backend</target>
       </trans-unit>
       <trans-unit id="mod_fe_groups">
         <source>TYPO3: Frontend groups</source>
+        <target>TYPO3: Ομάδες Frontend</target>
       </trans-unit>
       <trans-unit id="mod_scheduler">
         <source>TYPO3: Scheduler tasks</source>
+        <target>TYPO3: Εργασίες Scheduler</target>
       </trans-unit>
       <trans-unit id="mod_redirect">
         <source>TYPO3: Redirects</source>
+        <target>TYPO3: Ανακατευθύνσεις</target>
       </trans-unit>
       <trans-unit id="mod_tableState">
         <source>Table state</source>
+        <target>Κατάσταση πίνακα</target>
       </trans-unit>
       <trans-unit id="mod_singlePage">
         <source>TYPO3: Single pages with content</source>
+        <target>TYPO3: Μεμονωμένες σελίδες με περιεχόμενο</target>
       </trans-unit>
     </body>
   </file>

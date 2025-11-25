@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" target-language="de" datatype="plaintext" original="messages" product-name="nr_sync">
+  <file source-language="en" target-language="ko" datatype="plaintext" original="messages" product-name="nr_sync">
     <body>
       <trans-unit id="lock.label">
         <source>Lock sync module</source>
-        <target>Synchronisierungsmodul sperren</target>
+        <target>동기화 모듈 잠금</target>
       </trans-unit>
       <trans-unit id="lock.message">
         <source>Message for users in case of active lock</source>
-        <target>Meldung an Benutzer bei aktiver Sperre</target>
+        <target>활성 잠금 시 사용자를 위한 메시지</target>
       </trans-unit>
     </body>
   </file>

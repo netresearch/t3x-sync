@@ -1,0 +1,29 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Documentation/**'
+          - '*.md'
+
+configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Configuration/**'
+          - 'ext_emconf.php'
+          - 'composer.json'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Tests/**'
+          - 'phpunit*.xml'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'composer.json'
+          - 'composer.lock'

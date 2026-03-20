@@ -52,14 +52,13 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.65",
-        "saschaegerer/phpstan-typo3": "^1.0 || v2.x-dev",
         "overtrue/phplint": "^9.5",
         "phpstan/phpstan": "^1.0 || ^2.0",
-        "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
         "phpstan/phpstan-deprecation-rules": "^1.0 || ^2.0",
+        "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
         "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0 || ^13.0",
-        "ssch/typo3-rector": "^2.0 || ^3.0",
-        "netresearch/typo3-ci-workflows": "^1.0"
+        "saschaegerer/phpstan-typo3": "^1.0",
+        "ssch/typo3-rector": "^2.0 || ^3.0"
     },
     "extra": {
         "typo3/cms": {

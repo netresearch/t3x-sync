@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Command;
 
+use function is_string;
+
 use Netresearch\Sync\Service\ClearCacheService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,14 +20,13 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use function is_string;
-
 /**
  * The clear-cache command class.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch http://www.netresearch.de/
- * @link    http://www.netresearch.de/
+ *
+ * @see    http://www.netresearch.de/
  */
 class ClearCache extends Command
 {
@@ -96,14 +97,14 @@ class ClearCache extends Command
             'filename',
             'f',
             InputOption::VALUE_REQUIRED,
-            'A file containing a list of table names, each line could be a comma separated list of "table:uid" entries.'
+            'A file containing a list of table names, each line could be a comma separated list of "table:uid" entries.',
         );
 
         $this->addOption(
             'data',
             'd',
             InputOption::VALUE_REQUIRED,
-            'A comma separated line of "table:uid" entries.'
+            'A comma separated line of "table:uid" entries.',
         );
     }
 

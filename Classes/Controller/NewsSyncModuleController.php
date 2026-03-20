@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -21,7 +21,8 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class NewsSyncModuleController extends BaseSyncModuleController implements PageSyncModuleInterface
 {
@@ -70,13 +71,13 @@ class NewsSyncModuleController extends BaseSyncModuleController implements PageS
             ->orWhere(
                 $queryBuilder->expr()->like(
                     'list_type',
-                    $queryBuilder->createNamedParameter('%news%')
+                    $queryBuilder->createNamedParameter('%news%'),
                 ),
                 // Starting with version 11 of the news extension, the plugins are of type "CType"
                 $queryBuilder->expr()->like(
                     'CType',
-                    $queryBuilder->createNamedParameter('%news%')
-                )
+                    $queryBuilder->createNamedParameter('%news%'),
+                ),
             )
             ->groupBy('pid');
 

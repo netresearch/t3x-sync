@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -20,7 +20,8 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class AreaViewHelper extends AbstractViewHelper
 {
@@ -35,7 +36,7 @@ class AreaViewHelper extends AbstractViewHelper
             'id',
             'int',
             'The area id',
-            true
+            true,
         );
     }
 

@@ -7,7 +7,6 @@
  * LICENSE file that was distributed with this source code.
  */
 
-declare(strict_types=1);
 
 $EM_CONF['nr_sync'] = [
     'title'          => 'Netresearch - TYPO3 synchronization',

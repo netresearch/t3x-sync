@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -11,7 +11,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Traits;
 
+use function count;
+
 use Doctrine\DBAL\Exception;
+
+use function is_array;
+
 use Netresearch\Sync\Event\AfterSyncEvent;
 use Netresearch\Sync\Event\BeforeSyncEvent;
 use Netresearch\Sync\Helper\Area;
@@ -19,14 +24,13 @@ use Netresearch\Sync\PageSyncModuleInterface;
 use Netresearch\Sync\Table;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
+
+use function sprintf;
+
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-
-use function count;
-use function is_array;
-use function sprintf;
 
 /**
  * DumpFileTrait.
@@ -34,7 +38,8 @@ use function sprintf;
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 trait DumpFileTrait
 {
@@ -86,7 +91,7 @@ trait DumpFileTrait
                     $area = GeneralUtility::makeInstance(
                         Area::class,
                         $areaId,
-                        $this->target
+                        $this->target,
                     );
 
                     $pageIds = $syncList->getAllPageIDs($areaId);
@@ -95,14 +100,14 @@ trait DumpFileTrait
                         $pageIds,
                         $this->getTables(),
                         $dumpFileArea,
-                        $area->getDirectories()
+                        $area->getDirectories(),
                     );
 
                     if ($ret && $this->createClearCacheFile('pages', $pageIds)) {
                         $area->notifyMaster();
 
                         $this->addSuccessMessage(
-                            $this->getLabel('success.sync_in_progress')
+                            $this->getLabel('success.sync_in_progress'),
                         );
 
                         $syncList->emptyArea($areaId);
@@ -113,7 +118,7 @@ trait DumpFileTrait
         } else {
             $syncResult = $this->createDumpToAreas(
                 $this->getTables(),
-                $dumpFile
+                $dumpFile,
             );
 
             // Create page sync files for pages which have related pages.
@@ -122,7 +127,7 @@ trait DumpFileTrait
             ) {
                 $this->createClearCacheFile(
                     'pages',
-                    $this->getPagesToSync()
+                    $this->getPagesToSync(),
                 );
             }
 
@@ -137,7 +142,7 @@ trait DumpFileTrait
 
             if ($syncResult) {
                 $this->addSuccessMessage(
-                    $this->getLabel('success.sync_initiated')
+                    $this->getLabel('success.sync_initiated'),
                 );
             }
         }
@@ -183,7 +188,7 @@ trait DumpFileTrait
             [],
             [],
             $fpDumpFile,
-            $this->getDeleteRowStatements()
+            $this->getDeleteRowStatements(),
         );
 
         $this->writeInsertLines($fpDumpFile);
@@ -267,8 +272,8 @@ trait DumpFileTrait
                         'warning.system_locked',
                         [
                             '{system}' => $path,
-                        ]
-                    )
+                        ],
+                    ),
                 );
 
                 continue;
@@ -317,7 +322,7 @@ trait DumpFileTrait
             || $tempStorage->hasFile($tempFileIdentifier . '.gz')
         ) {
             $this->addErrorMessage(
-                $this->getLabel('error.last_sync_not_finished')
+                $this->getLabel('error.last_sync_not_finished'),
             );
 
             return false;
@@ -331,7 +336,7 @@ trait DumpFileTrait
             [
                 'forceFullSync'      => isset($_POST['data']['force_full_sync']) && ($_POST['data']['force_full_sync'] === '1'),
                 'deleteObsoleteRows' => isset($_POST['data']['delete_obsolete_rows']) && ($_POST['data']['delete_obsolete_rows'] === '1'),
-            ]
+            ],
         );
 
         $dumpFile = null;
@@ -340,12 +345,12 @@ trait DumpFileTrait
             $dumpFile = $tempStorage->getFile($tempFileIdentifier);
         } catch (\Exception) {
             $this->addInfoMessage(
-                $this->getLabel('info.no_data_dumped')
+                $this->getLabel('info.no_data_dumped'),
             );
         } finally {
             if ($dumpFile === null) {
                 $this->addInfoMessage(
-                    $this->getLabel('info.no_data_dumped')
+                    $this->getLabel('info.no_data_dumped'),
                 );
 
                 // Dispatch AfterSyncEvent with failure
@@ -364,8 +369,8 @@ trait DumpFileTrait
                     'error.zip_failure',
                     [
                         '{file}' => $dumpFile->getIdentifier(),
-                    ]
-                )
+                    ],
+                ),
             );
 
             // Dispatch AfterSyncEvent with failure
@@ -400,8 +405,8 @@ trait DumpFileTrait
                             [
                                 '{file}'   => $compressedDumFile->getIdentifier(),
                                 '{target}' => $targetFolder->getIdentifier() . $targetFilename . '.gz',
-                            ]
-                        )
+                            ],
+                        ),
                     );
 
                     // Dispatch AfterSyncEvent with failure
@@ -447,8 +452,8 @@ trait DumpFileTrait
             $compressedDumpFile?->setContents(
                 gzencode(
                     $dumpFile instanceof FileInterface ? $dumpFile->getContents() : '',
-                    9
-                )
+                    9,
+                ),
             );
 
             $tempStorage->deleteFile($dumpFile);
@@ -458,8 +463,8 @@ trait DumpFileTrait
                     'error.zip_failure',
                     [
                         '{file}' => isset($dumpFile) ? $dumpFile->getIdentifier() : '',
-                    ]
-                )
+                    ],
+                ),
             );
 
             return null;
@@ -498,7 +503,7 @@ trait DumpFileTrait
                 'bProcess'    => true,
                 'bSyncResult' => true,
             ],
-            $this
+            $this,
         );
 
         return true;
@@ -526,7 +531,7 @@ trait DumpFileTrait
             throw new Exception(
                 $this->getLabel('error.last_sync_not_finished')
                 . "<br/>\n"
-                . $tempFileIdentifier . '(.gz)'
+                . $tempFileIdentifier . '(.gz)',
             );
         }
 
@@ -539,7 +544,7 @@ trait DumpFileTrait
                 || $defaultStorage->hasFile($fileIdentifier . '.gz')
             ) {
                 throw new Exception(
-                    $this->getLabel('error.last_sync_not_finished')
+                    $this->getLabel('error.last_sync_not_finished'),
                 );
             }
         }
@@ -587,8 +592,8 @@ trait DumpFileTrait
                     'error.mm_tables',
                     [
                         '{tableName}' => $tableName,
-                    ]
-                )
+                    ],
+                ),
             );
         }
 
@@ -720,7 +725,7 @@ trait DumpFileTrait
         return sprintf(
             'DELETE FROM %s WHERE uid = %d;',
             $connection->quoteIdentifier($tableName),
-            $uid
+            $uid,
         );
     }
 
@@ -746,7 +751,7 @@ trait DumpFileTrait
             // TYPO-2215 - Match the column to its update value
             $updateParts[$key] = sprintf(
                 '%1$s = VALUES(%1$s)',
-                $connection->quoteIdentifier($key)
+                $connection->quoteIdentifier($key),
             );
         }
 
@@ -755,7 +760,7 @@ trait DumpFileTrait
             $connection->quoteIdentifier($tableName),
             implode(', ', $connection->quoteIdentifiers($columnNames)),
             implode(', ', $row),
-            implode(', ', $updateParts)
+            implode(', ', $updateParts),
         );
     }
 
@@ -794,7 +799,7 @@ trait DumpFileTrait
                     $row['uid'],
                     $arMMConfig,
                     $columnNames,
-                    $fpDumpFile
+                    $fpDumpFile,
                 );
             }
         }
@@ -925,7 +930,7 @@ trait DumpFileTrait
             $deleteLines[$tableName][$uid] = sprintf(
                 'DELETE FROM %s WHERE %s;',
                 $connection->quoteIdentifier($tableName),
-                $strWhere
+                $strWhere,
             );
         }
 
@@ -952,7 +957,7 @@ trait DumpFileTrait
                     ],
                     'sys_file',
                     $fpDumpFile,
-                    true
+                    true,
                 );
             }
         }
@@ -979,19 +984,19 @@ trait DumpFileTrait
         // Remove Deletes which has a corresponding Insert statement
         $this->diffDeleteLinesAgainstInsertLines(
             $deleteLines,
-            $insertLines
+            $insertLines,
         );
 
         // Remove all DELETE Lines that already has been put to file
         $this->clearDuplicateLines(
             'delete',
-            $deleteLines
+            $deleteLines,
         );
 
         // Remove all INSERT Lines that already has been put to file
         $this->clearDuplicateLines(
             'insert',
-            $insertLines
+            $insertLines,
         );
 
         $this->writeToDumpFile($deleteLines, $insertLines, $fpDumpFile);
@@ -1084,7 +1089,7 @@ trait DumpFileTrait
             ->from('tx_nrsync_syncstat')
             ->where(
                 $queryBuilder->expr()->eq('tab', $queryBuilder->quote($table)),
-                $queryBuilder->expr()->eq('uid_foreign', $uid)
+                $queryBuilder->expr()->eq('uid_foreign', $uid),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -1106,7 +1111,7 @@ trait DumpFileTrait
             ->select('tstamp')
             ->from($table)
             ->where(
-                $queryBuilder->expr()->eq('uid', $uid)
+                $queryBuilder->expr()->eq('uid', $uid),
             )
             ->executeQuery()
             ->fetchOne();
@@ -1305,8 +1310,8 @@ trait DumpFileTrait
                 $connection->quote($uid),
                 $connection->quote($userId),
                 $updateField,
-                $connection->quote($time)
-            )
+                $connection->quote($time),
+            ),
         );
     }
 }

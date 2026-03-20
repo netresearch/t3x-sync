@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -20,7 +20,8 @@ use Netresearch\Sync\Traits\TranslationTrait;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class FalSyncModuleController extends BaseSyncModuleController
 {
@@ -65,7 +66,7 @@ class FalSyncModuleController extends BaseSyncModuleController
                 'sys_file_reference',
                 [
                     'uid_foreign' => 0,
-                ]
+                ],
             );
 
         $this->addMessage($this->getLabel('label.done'));
@@ -89,8 +90,8 @@ class FalSyncModuleController extends BaseSyncModuleController
             ->where(
                 $queryBuilder->expr()->eq(
                     'uid_foreign',
-                    0
-                )
+                    0,
+                ),
             )
             ->executeQuery()
             ->fetchOne();

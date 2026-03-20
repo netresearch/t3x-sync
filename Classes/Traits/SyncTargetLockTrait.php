@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -17,7 +17,8 @@ namespace Netresearch\Sync\Traits;
  * @author  Axel Seemann <axel.seemann@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 trait SyncTargetLockTrait
 {
@@ -51,14 +52,14 @@ trait SyncTargetLockTrait
                         'message.target_locked',
                         [
                             '{target}' => $systemName,
-                        ]
-                    )
+                        ],
+                    ),
                 );
             } elseif ($defaultStorage->hasFile($systemDirectory->getIdentifier() . '.lock')) {
                 $defaultStorage
                     ->deleteFile(
                         $defaultStorage
-                            ->getFile($systemDirectory->getIdentifier() . '.lock')
+                            ->getFile($systemDirectory->getIdentifier() . '.lock'),
                     );
 
                 $this->addInfoMessage(
@@ -66,8 +67,8 @@ trait SyncTargetLockTrait
                         'message.target_unlocked',
                         [
                             '{target}' => $systemName,
-                        ]
-                    )
+                        ],
+                    ),
                 );
             }
         }

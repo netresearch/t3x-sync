@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -12,6 +12,9 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use Doctrine\DBAL\Exception;
+
+use function in_array;
+
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -21,15 +24,14 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-use function in_array;
-
 /**
  * Controls table sync/dump generation.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class Table
 {
@@ -142,8 +144,8 @@ class Table
     private function appendToDumpFile(string $content): void
     {
         $this->getDumpFile()->setContents(
-            $this->getDumpFile()->getContents() .
-            PHP_EOL . $content . PHP_EOL
+            $this->getDumpFile()->getContents()
+            . PHP_EOL . $content . PHP_EOL,
         );
     }
 
@@ -162,7 +164,7 @@ class Table
         return in_array(
             $this->tableName,
             $this->arTablesUsingReplacetatement,
-            true
+            true,
         );
     }
 
@@ -235,8 +237,8 @@ class Table
                 'message.notify_skipped_table',
                 [
                     '{table}' => $this->tableName,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -258,7 +260,7 @@ class Table
         if ($strWhere === '' || $strWhere === false) {
             throw new Exception(
                 'Could not get WHERE condition for tstamp field for table "'
-                . $this->tableName . '".'
+                . $this->tableName . '".',
             );
         }
 
@@ -386,7 +388,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         if ($strWhere === '' || $strWhere === false) {
             throw new Exception(
                 'Could not get WHERE condition for tstamp field for table "'
-                . $this->tableName . '".'
+                . $this->tableName . '".',
             );
         }
 
@@ -494,11 +496,11 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         $arRow = $queryBuilder
             ->selectLiteral(
                 'max(' . $queryBuilder->quoteIdentifier('incr') . ') AS ' . $queryBuilder->quoteIdentifier('incr'),
-                'max(' . $queryBuilder->quoteIdentifier('full') . ') AS ' . $queryBuilder->quoteIdentifier('full')
+                'max(' . $queryBuilder->quoteIdentifier('full') . ') AS ' . $queryBuilder->quoteIdentifier('full'),
             )
             ->from('tx_nrsync_syncstat')
             ->where(
-                $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->tableName)])
+                $queryBuilder->expr()->in('tab', [$queryBuilder->quote('*'), $queryBuilder->quote($this->tableName)]),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -559,8 +561,8 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
                 $connection->quote($nUserId),
                 $connection->quote($nUserId),
                 $strUpdateField,
-                $connection->quote($nTime)
-            )
+                $connection->quote($nTime),
+            ),
         );
     }
 
@@ -583,7 +585,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
         // date to compare end timestamp with
         $nToday = strtotime(
-            date('Y-m-d')
+            date('Y-m-d'),
         );
 
         $strStatement = 'DELETE FROM '

@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -19,7 +19,8 @@ use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 final class ModifyMenuItemsEvent
 {
@@ -32,8 +33,7 @@ final class ModifyMenuItemsEvent
     public function __construct(
         private array $menuItems,
         private readonly string $currentModuleIdentifier,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, MenuItem>

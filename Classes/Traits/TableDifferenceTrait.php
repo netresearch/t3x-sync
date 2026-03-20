@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -19,7 +19,8 @@ use Doctrine\DBAL\Exception;
  * @author  Alexander Opitz <alexander.opitz@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 trait TableDifferenceTrait
 {
@@ -59,7 +60,7 @@ trait TableDifferenceTrait
         if ($errorTables !== []) {
             $this->addWarningMessage(
                 $this->getLabel('warning.table_state')
-                . "\n\n" . implode(', ', $errorTables)
+                . "\n\n" . implode(', ', $errorTables),
             );
         }
     }

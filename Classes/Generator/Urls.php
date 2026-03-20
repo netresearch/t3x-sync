@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -11,13 +11,13 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
+use function count;
+
 use Netresearch\Sync\Controller\BaseSyncModuleController;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\TranslationTrait;
 use TYPO3\CMS\Core\Resource\FileInterface;
-
-use function count;
 
 /**
  * Generate files with the list of URLs that have to be called
@@ -26,7 +26,8 @@ use function count;
  * @author  Christian Weiske <christian.weiske@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class Urls
 {
@@ -87,7 +88,7 @@ class Urls
             $count = $this->generateUrlFile(
                 $params['arUrlsOnce'],
                 $folders,
-                self::FILE_FORMAT_ONCE
+                self::FILE_FORMAT_ONCE,
             );
         }
 
@@ -95,7 +96,7 @@ class Urls
             $count += $this->generateUrlFile(
                 $params['arUrlsPerMachine'],
                 $folders,
-                self::FILE_FORMAT_PERMACHINE
+                self::FILE_FORMAT_PERMACHINE,
             );
         }
 
@@ -104,8 +105,8 @@ class Urls
                 'message.hook_files',
                 [
                     '{number}' => $count,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -202,8 +203,8 @@ class Urls
                             'warning.urls_system_locked',
                             [
                                 '{target}' => $system['directory'],
-                            ]
-                        )
+                            ],
+                        ),
                     );
 
                     continue;

@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -22,7 +22,8 @@ use TYPO3\CMS\Core\Domain\Repository\PageRepository;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class SinglePageSyncModuleController extends BaseSyncModuleController implements SinglePageSyncModuleInterface
 {
@@ -69,8 +70,8 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
                     'error.page_not_load',
                     [
                         '{page_selected}' => $this->pageUid,
-                    ]
-                )
+                    ],
+                ),
             );
 
             return;
@@ -86,7 +87,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
         $recursion   = (int) $this
             ->getBackendUserAuthentication()
             ->getSessionData(
-                'nr_sync_synclist_levelmax' . $this->getSyncList()->getId()
+                'nr_sync_synclist_levelmax' . $this->getSyncList()->getId(),
             );
 
         if (isset($_POST['data']['recursion'])) {
@@ -109,7 +110,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
                 $arCount,
                 0,
                 $recursion,
-                $tables
+                $tables,
             );
 
         $strTitle = $this->getArea()->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
@@ -138,7 +139,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
             $this->moduleTemplate->assign('recursion', $recursion);
         } else {
             $this->addErrorMessage(
-                $this->getLabel('error.select_mark_type')
+                $this->getLabel('error.select_mark_type'),
             );
         }
     }
@@ -155,7 +156,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
             if (isset($_POST['data']['type'])) {
                 $this->getSyncList()
                     ->addToSyncList(
-                        $_POST['data']
+                        $_POST['data'],
                     );
             } else {
                 $this->addErrorMessage($this->getLabel('error.select_mark_type'));

@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -11,20 +11,21 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers;
 
+use function constant;
+
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
-use function constant;
-
 /**
  * A ViewHelper to print return an area by a given areaId.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class FlashMessageViewHelper extends AbstractViewHelper
 {
@@ -65,7 +66,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
             'type',
             'int',
             'The flash message type (either NOTICE, INFO, OK, WARNING or ERROR)',
-            true
+            true,
         );
     }
 
@@ -81,7 +82,7 @@ class FlashMessageViewHelper extends AbstractViewHelper
             FlashMessage::class,
             trim((string) $this->renderChildren()),
             '',
-            constant(ContextualFeedbackSeverity::class . '::' . $this->arguments['type'])
+            constant(ContextualFeedbackSeverity::class . '::' . $this->arguments['type']),
         );
 
         return $this->bootstrapRenderer->render([$message]);

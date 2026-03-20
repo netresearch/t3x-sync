@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -12,6 +12,10 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use Doctrine\DBAL\Exception;
+
+use function in_array;
+use function is_array;
+
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -23,16 +27,14 @@ use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-use function in_array;
-use function is_array;
-
 /**
  * Class SyncList.
  *
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class SyncList
 {
@@ -114,7 +116,7 @@ class SyncList
         ) {
             $this->addMessage(
                 $this->getLabel('error.page_is_marked'),
-                ContextualFeedbackSeverity::ERROR
+                ContextualFeedbackSeverity::ERROR,
             );
         } else {
             $this->syncList[(int) $data['areaID']][] = $data;
@@ -229,7 +231,7 @@ class SyncList
                 /** @var Area $area */
                 $area = GeneralUtility::makeInstance(
                     Area::class,
-                    (int) $syncPage['areaID']
+                    (int) $syncPage['areaID'],
                 );
 
                 $arCount = $this->getSubpagesAndCount(
@@ -237,7 +239,7 @@ class SyncList
                     $area,
                     $dummy,
                     0,
-                    (int) $syncPage['levelmax']
+                    (int) $syncPage['levelmax'],
                 );
 
                 $pageIds[] = $this->getPageIDsFromTree($arCount);
@@ -318,7 +320,7 @@ class SyncList
             ->select('*')
             ->from('pages')
             ->where(
-                $queryBuilder->expr()->eq('pid', $pid)
+                $queryBuilder->expr()->eq('pid', $pid),
             )
             ->executeQuery();
 
@@ -345,7 +347,7 @@ class SyncList
                 $arCount,
                 $level + 1,
                 $levelMax,
-                $tables
+                $tables,
             );
 
             if ($this->getBackendUserAuthentication()->doesUserHaveAccess($pageRow, Permission::PAGE_EDIT)) {

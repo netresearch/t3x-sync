@@ -91,5 +91,6 @@ return (new PhpCsFixer\Config())
             ->exclude('config')
             ->exclude('node_modules')
             ->exclude('var')
+            ->notPath('ext_emconf.php')
             ->in(__DIR__ . '/../')
     );

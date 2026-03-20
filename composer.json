@@ -58,7 +58,8 @@
         "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
         "phpstan/phpstan-deprecation-rules": "^1.0 || ^2.0",
         "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0 || ^13.0",
-        "ssch/typo3-rector": "^2.0 || ^3.0"
+        "ssch/typo3-rector": "^2.0 || ^3.0",
+        "netresearch/typo3-ci-workflows": "^1.0"
     },
     "extra": {
         "typo3/cms": {

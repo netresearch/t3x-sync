@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -24,7 +24,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class FalSyncEventListener
 {
@@ -51,8 +52,8 @@ class FalSyncEventListener
         $syncModule->setModuleData(
             ModuleData::createFromModule(
                 $module,
-                $module->getDefaultModuleData()
-            )
+                $module->getDefaultModuleData(),
+            ),
         );
         $syncModule->initFolders($area);
 
@@ -74,7 +75,7 @@ class FalSyncEventListener
             $syncModule->createDumpToAreas(
                 $syncModule->getTables(),
                 $event->getDumpFilePrefix() . '-' . $dumpFile,
-                $key
+                $key,
             );
         }
     }

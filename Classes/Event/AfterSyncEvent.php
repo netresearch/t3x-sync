@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -17,7 +17,8 @@ namespace Netresearch\Sync\Event;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 final class AfterSyncEvent
 {
@@ -34,8 +35,7 @@ final class AfterSyncEvent
         private readonly string $dumpFile,
         private readonly ?string $targetName,
         private readonly bool $success,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>

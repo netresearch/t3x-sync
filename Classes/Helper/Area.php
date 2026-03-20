@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Helper;
 
+use function in_array;
+
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -19,15 +21,14 @@ use TYPO3\CMS\Core\Core\ApplicationContext;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-use function in_array;
-
 /**
  * Methods to work with synchronization areas.
  *
  * @author  Christian Weiske <christian.weiske@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class Area
 {
@@ -322,8 +323,8 @@ class Area
                             'message.notify_success',
                             [
                                 '{target}' => $system['name'],
-                            ]
-                        )
+                            ],
+                        ),
                     );
                 } catch (\Exception) {
                     $this->addErrorMessage(
@@ -331,8 +332,8 @@ class Area
                             'message.notify_failed',
                             [
                                 '{target}' => $system['name'],
-                            ]
-                        )
+                            ],
+                        ),
                     );
                 }
             } else {
@@ -342,8 +343,8 @@ class Area
                         [
                             '{target}'      => $system['name'],
                             '{notify_type}' => $system['notify']['type'],
-                        ]
-                    )
+                        ],
+                    ),
                 );
             }
         }
@@ -378,8 +379,8 @@ class Area
                     'message.notify_disabled',
                     [
                         '{target}' => $system['name'],
-                    ]
-                )
+                    ],
+                ),
             );
 
             return false;
@@ -399,8 +400,8 @@ class Area
                 [
                     '{target}'           => $system['name'],
                     '{allowed_contexts}' => implode(', ', $system['notify']['contexts']),
-                ]
-            )
+                ],
+            ),
         );
 
         return false;

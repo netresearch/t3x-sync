@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -31,20 +31,20 @@ call_user_func(static function (): void {
             'os'          => '',
             'exec'        => '',
             'className'   => ClearCacheService::class,
-        ]
+        ],
     );
 
     // Add TypoScript automatically (to use it in backend modules)
     ExtensionManagementUtility::addTypoScript(
         'nr_sync',
         'constants',
-        '@import "EXT:nr_sync/Configuration/TypoScript/constants.typoscript"'
+        '@import "EXT:nr_sync/Configuration/TypoScript/constants.typoscript"',
     );
 
     ExtensionManagementUtility::addTypoScript(
         'nr_sync',
         'setup',
-        '@import "EXT:nr_sync/Configuration/TypoScript/setup.typoscript"'
+        '@import "EXT:nr_sync/Configuration/TypoScript/setup.typoscript"',
     );
 
     $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['scheduler']['tasks'][Task::class] = [

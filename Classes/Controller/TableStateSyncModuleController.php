@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -22,7 +22,8 @@ use Netresearch\Sync\Traits\TranslationTrait;
  * @author  Sebastian Mendel <sebastian.mendel@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class TableStateSyncModuleController extends BaseSyncModuleController
 {
@@ -42,7 +43,7 @@ class TableStateSyncModuleController extends BaseSyncModuleController
         if (isset($_POST['data']['submit'])) {
             if ($this->createNewDefinitions()) {
                 $this->addSuccessMessage(
-                    $this->getLabel('message.table_state_success')
+                    $this->getLabel('message.table_state_success'),
                 );
             }
         } else {
@@ -89,8 +90,8 @@ class TableStateSyncModuleController extends BaseSyncModuleController
             $defaultFolder->createFile(
                 $this->tableSerializedFile,
                 $defaultFolder->getFolder(
-                    $this->storageService->getBaseFolderIdentifier()
-                )
+                    $this->storageService->getBaseFolderIdentifier(),
+                ),
             );
         }
 

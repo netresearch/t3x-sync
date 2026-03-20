@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -10,6 +10,8 @@
 declare(strict_types=1);
 
 namespace Netresearch\Sync\Scheduler\SyncImportTask;
+
+use function is_array;
 
 use Netresearch\NrScheduler\AbstractTask;
 use Netresearch\Sync\Service\ClearCacheService;
@@ -22,15 +24,14 @@ use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsExcepti
 use TYPO3\CMS\Core\Resource\File;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-use function is_array;
-
 /**
  * Scheduler task to import the sync MyQSL files.
  *
  * @author  Axel Seemann <axel.seemann@netresearch.de>
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class Task extends AbstractTask
 {
@@ -109,7 +110,7 @@ class Task extends AbstractTask
                 $databaseConnection->getParams()['user'],
                 $databaseConnection->getParams()['password'],
                 $databaseConnection->getParams()['dbname'],
-                $tmpFile
+                $tmpFile,
             );
 
             $output = [];

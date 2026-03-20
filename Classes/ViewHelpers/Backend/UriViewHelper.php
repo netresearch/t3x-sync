@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -21,7 +21,8 @@ use TYPO3\CMS\Fluid\ViewHelpers\Be\AbstractBackendViewHelper;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class UriViewHelper extends AbstractBackendViewHelper
 {
@@ -36,28 +37,28 @@ class UriViewHelper extends AbstractBackendViewHelper
             'route',
             'string',
             'The name of the route',
-            true
+            true,
         );
 
         $this->registerArgument(
             'pid',
             'int',
             'The page UID',
-            true
+            true,
         );
 
         $this->registerArgument(
             'area',
             'string',
             'The area name to lock/unlock',
-            true
+            true,
         );
 
         $this->registerArgument(
             'lock',
             'int',
             '1 or 0 to lock/unlock the area',
-            true
+            true,
         );
     }
 
@@ -78,7 +79,7 @@ class UriViewHelper extends AbstractBackendViewHelper
                     'lock' => [
                         $this->arguments['area'] => $this->arguments['lock'],
                     ],
-                ]
+                ],
             );
     }
 }

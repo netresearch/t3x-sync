@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -56,7 +56,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class BaseSyncModuleController implements ModuleInterface
 {
@@ -331,7 +332,7 @@ class BaseSyncModuleController implements ModuleInterface
         if ($route instanceof Route) {
             $route->setOption(
                 'packageName',
-                'netresearch/nr-sync'
+                'netresearch/nr-sync',
             );
         }
     }
@@ -364,7 +365,7 @@ class BaseSyncModuleController implements ModuleInterface
 
         usort(
             $menuItems,
-            static fn (MenuItem $a, MenuItem $b): int => strtolower($a->getTitle()) <=> strtolower($b->getTitle())
+            static fn (MenuItem $a, MenuItem $b): int => strtolower($a->getTitle()) <=> strtolower($b->getTitle()),
         );
 
         $moduleMenu = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
@@ -440,14 +441,14 @@ class BaseSyncModuleController implements ModuleInterface
                             'data' => [
                                 'lock' => '0',
                             ],
-                        ]
-                    )
+                        ],
+                    ),
                 )
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-lock',
-                        Icon::SIZE_SMALL
-                    )
+                        Icon::SIZE_SMALL,
+                    ),
                 )
                 ->setClasses('custom-btn-danger');
         } else {
@@ -460,14 +461,14 @@ class BaseSyncModuleController implements ModuleInterface
                             'data' => [
                                 'lock' => '1',
                             ],
-                        ]
-                    )
+                        ],
+                    ),
                 )
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-unlock',
-                        Icon::SIZE_SMALL
-                    )
+                        Icon::SIZE_SMALL,
+                    ),
                 );
         }
 
@@ -513,14 +514,14 @@ class BaseSyncModuleController implements ModuleInterface
                             'lock' => [
                                 $systemName => '0',
                             ],
-                        ]
-                    )
+                        ],
+                    ),
                 )
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-lock',
-                        Icon::SIZE_SMALL
-                    )
+                        Icon::SIZE_SMALL,
+                    ),
                 )
                 ->setClasses('custom-btn-danger');
         } else {
@@ -533,14 +534,14 @@ class BaseSyncModuleController implements ModuleInterface
                             'lock' => [
                                 $systemName => '1',
                             ],
-                        ]
-                    )
+                        ],
+                    ),
                 )
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-unlock',
-                        Icon::SIZE_SMALL
-                    )
+                        Icon::SIZE_SMALL,
+                    ),
                 );
         }
 
@@ -595,7 +596,7 @@ class BaseSyncModuleController implements ModuleInterface
             $syncStats = GeneralUtility::makeInstance(
                 SyncStats::class,
                 GeneralUtility::makeInstance(ConnectionPool::class),
-                $this->getTables()
+                $this->getTables(),
             );
 
             $moduleTemplate->assign('tableSyncStats', $syncStats);
@@ -754,7 +755,7 @@ class BaseSyncModuleController implements ModuleInterface
             $this->area = GeneralUtility::makeInstance(
                 Area::class,
                 $this->pageUid,
-                $this->target
+                $this->target,
             );
         }
 

@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of the package netresearch/nr-sync.
  *
  * For the full copyright and license information, please read the
@@ -20,7 +20,8 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
  * @license Netresearch https://www.netresearch.de
- * @link    https://www.netresearch.de
+ *
+ * @see    https://www.netresearch.de
  */
 class TranslateViewHelper extends AbstractViewHelper
 {
@@ -36,13 +37,13 @@ class TranslateViewHelper extends AbstractViewHelper
         $this->registerArgument(
             'key',
             'string',
-            'The Translation key'
+            'The Translation key',
         );
 
         $this->registerArgument(
             'id',
             'string',
-            'The Translation ID. Same as key.'
+            'The Translation ID. Same as key.',
         );
 
         $this->registerArgument(
@@ -69,7 +70,7 @@ class TranslateViewHelper extends AbstractViewHelper
 
         return $this->getLabel(
             $id,
-            $this->arguments['data'] ?? []
+            $this->arguments['data'] ?? [],
         );
     }
 }

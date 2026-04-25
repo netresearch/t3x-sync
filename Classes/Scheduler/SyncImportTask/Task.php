@@ -108,6 +108,7 @@ class Task extends AbstractTask
             if ($tmpFile === false) {
                 throw new RuntimeException('Failed to create temporary file for SQL import');
             }
+
             file_put_contents($tmpFile, gzdecode($file->getContents()));
             $this->deleteFile($file);
 
@@ -123,6 +124,7 @@ class Task extends AbstractTask
             $output = [];
             $return = '';
             exec($command, $output, $return);
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is the return value of tempnam() above; the path is system-generated and cannot be influenced by request data. The rule pattern cannot observe the source.
             unlink($tmpFile);
 
             if ($return > 0) {

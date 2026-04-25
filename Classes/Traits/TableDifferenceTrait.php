@@ -132,14 +132,15 @@ trait TableDifferenceTrait
         // injection cannot be triggered even if the sync folder is somehow
         // attacker-writable. Writers (TableStateSyncModuleController) emit
         // JSON exclusively from this PR onward.
-        $decoded = json_decode($stateFileContent, true);
+        $decoded = json_decode((string) $stateFileContent, true);
         if (is_array($decoded)) {
             $this->tableDefinition = $decoded;
 
             return;
         }
 
-        $legacy = @unserialize($stateFileContent, ['allowed_classes' => false]);
+        // nosemgrep: php.lang.security.unserialize-use.unserialize-use -- backward-compat fallback for state files written by pre-JSON-migration versions; allowed_classes=false makes PHP refuse to instantiate any class, so PHP object injection is impossible regardless of the file contents. Writers from this PR onward use json_encode().
+        $legacy                = @unserialize($stateFileContent, ['allowed_classes' => false]);
         $this->tableDefinition = is_array($legacy) ? $legacy : [];
     }
 

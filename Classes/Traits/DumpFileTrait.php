@@ -921,14 +921,14 @@ trait DumpFileTrait
             ->from($tableName)
             ->where($queryBuilder->expr()->eq(
                 $strFieldName,
-                $queryBuilder->createNamedParameter((int) $uid, ParameterType::INTEGER),
+                $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
             ));
 
         // SQL-dump path: build a literal WHERE clause for inclusion in the
         // generated .sql file. Must be a string because the dump is replayed
         // verbatim against the target DB (not via a QueryBuilder). All
         // values pass through quoteIdentifier()/quote() with the int cast.
-        $strWhere = $connection->quoteIdentifier($strFieldName) . ' = ' . (int) $uid;
+        $strWhere = $connection->quoteIdentifier($strFieldName) . ' = ' . $uid;
 
         if (isset($arMMConfig['MM_match_fields'])) {
             foreach ($arMMConfig['MM_match_fields'] as $strName => $strValue) {

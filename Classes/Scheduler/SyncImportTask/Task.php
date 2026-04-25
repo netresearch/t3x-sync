@@ -100,7 +100,15 @@ class Task extends AbstractTask
         foreach ($sqlFiles as $name => $file) {
             $this->logger->info('Start import of file ' . $name);
 
-            $tmpFile = '/tmp/' . $name;
+            // Use tempnam() so the path is system-generated and cannot be
+            // influenced by $name. Defense in depth even though $name comes
+            // from internal sync storage today — closes #40 (SAST
+            // unlink-use finding) at the source instead of suppressing.
+            $tmpFile = tempnam(sys_get_temp_dir(), 'nrsync_');
+            if ($tmpFile === false) {
+                throw new RuntimeException('Failed to create temporary file for SQL import');
+            }
+
             file_put_contents($tmpFile, gzdecode($file->getContents()));
             $this->deleteFile($file);
 
@@ -116,7 +124,7 @@ class Task extends AbstractTask
             $output = [];
             $return = '';
             exec($command, $output, $return);
-            // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is built from "/tmp/" plus the iterator key over internal sync-storage SQL files; not HTTP/user input. See triage issue #40.
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is the return value of tempnam() above; the path is system-generated and cannot be influenced by request data. The rule pattern cannot observe the source.
             unlink($tmpFile);
 
             if ($return > 0) {

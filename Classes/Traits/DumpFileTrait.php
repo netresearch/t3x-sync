@@ -14,6 +14,7 @@ namespace Netresearch\Sync\Traits;
 use function count;
 
 use Doctrine\DBAL\Exception;
+use Doctrine\DBAL\ParameterType;
 
 use function is_array;
 
@@ -909,23 +910,37 @@ trait DumpFileTrait
         $strFieldName = $arMMConfig['foreign_field'] ?? 'uid_foreign';
         $connection   = $this->connectionPool->getConnectionForTable($tableName);
 
+        $queryBuilder = $connection->createQueryBuilder();
+        $queryBuilder->getRestrictions()->removeAll();
+
+        // SELECT path: parameterized expressions (closes #41 — Opengrep
+        // doctrine-dangerous-query). The integer cast on $uid is
+        // belt-and-braces — the function signature already enforces int.
+        $queryBuilder
+            ->select('*')
+            ->from($tableName)
+            ->where($queryBuilder->expr()->eq(
+                $strFieldName,
+                $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
+            ));
+
+        // SQL-dump path: build a literal WHERE clause for inclusion in the
+        // generated .sql file. Must be a string because the dump is replayed
+        // verbatim against the target DB (not via a QueryBuilder). All
+        // values pass through quoteIdentifier()/quote() with the int cast.
         $strWhere = $connection->quoteIdentifier($strFieldName) . ' = ' . $uid;
 
         if (isset($arMMConfig['MM_match_fields'])) {
             foreach ($arMMConfig['MM_match_fields'] as $strName => $strValue) {
+                $queryBuilder->andWhere($queryBuilder->expr()->eq(
+                    $strName,
+                    $queryBuilder->createNamedParameter($strValue),
+                ));
                 $strWhere .= ' AND ' . $connection->quoteIdentifier($strName) . ' = ' . $connection->quote($strValue);
             }
         }
 
-        $queryBuilder = $connection->createQueryBuilder();
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $statement = $queryBuilder
-            ->select('*')
-            ->from($tableName)
-            // nosemgrep: php.doctrine.security.audit.doctrine-orm-dangerous-query.doctrine-orm-dangerous-query -- $strWhere is composed of $connection->quoteIdentifier() and $connection->quote()-escaped values plus an integer $uid; no untrusted concatenation. See triage issue #41 for migration to parameterized queries.
-            ->where($strWhere)
-            ->executeQuery();
+        $statement = $queryBuilder->executeQuery();
 
         if ($tableName !== 'sys_file_reference') {
             $deleteLines[$tableName][$uid] = sprintf(

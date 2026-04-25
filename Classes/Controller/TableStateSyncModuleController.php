@@ -107,7 +107,13 @@ class TableStateSyncModuleController extends BaseSyncModuleController
             return false;
         }
 
-        $tableStateFile->setContents(serialize($tables));
+        // JSON instead of serialize() so the on-disk state file cannot
+        // be a vector for PHP object injection (#42). $tables is
+        // array<string, string[]> — pure data, no objects.
+        // TableDifferenceTrait::loadTableDefinition() falls back to
+        // unserialize-with-allowed_classes-false for state files written
+        // by pre-migration versions, so this change is backward-compatible.
+        $tableStateFile->setContents(json_encode($tables, JSON_THROW_ON_ERROR));
 
         return true;
     }

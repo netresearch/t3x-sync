@@ -123,6 +123,7 @@ trait TableDifferenceTrait
             ->getFile($this->getStateFile())
             ->getContents();
 
+        // nosemgrep: php.lang.security.unserialize-use.unserialize-use -- $stateFileContent is read from a TYPO3 FAL state file written exclusively by this extension; not HTTP/user input. See triage issue #42 for migration to JSON / allowed_classes=false.
         $this->tableDefinition = unserialize($stateFileContent) ?? [];
     }
 

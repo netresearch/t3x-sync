@@ -100,8 +100,10 @@ trait TableDifferenceTrait
             return true;
         }
 
-        // Differ the table definition?
-        return serialize($this->tableDefinition[$tableName]) !== serialize($columnNames);
+        // Differ the table definition? Compare via JSON encoding rather
+        // than serialize() so the comparison stays consistent with the
+        // on-disk format (#42).
+        return json_encode($this->tableDefinition[$tableName]) !== json_encode($columnNames);
     }
 
     /**
@@ -123,8 +125,22 @@ trait TableDifferenceTrait
             ->getFile($this->getStateFile())
             ->getContents();
 
-        // nosemgrep: php.lang.security.unserialize-use.unserialize-use -- $stateFileContent is read from a TYPO3 FAL state file written exclusively by this extension; not HTTP/user input. See triage issue #42 for migration to JSON / allowed_classes=false.
-        $this->tableDefinition = unserialize($stateFileContent) ?? [];
+        // Defense in depth (#42): tableDefinition is array<string, string[]>
+        // pure data — no objects to deserialize. Try JSON first; on JSON
+        // failure (state file written by a pre-migration version), fall
+        // back to unserialize() with allowed_classes=false so PHP object
+        // injection cannot be triggered even if the sync folder is somehow
+        // attacker-writable. Writers (TableStateSyncModuleController) emit
+        // JSON exclusively from this PR onward.
+        $decoded = json_decode($stateFileContent, true);
+        if (is_array($decoded)) {
+            $this->tableDefinition = $decoded;
+
+            return;
+        }
+
+        $legacy = @unserialize($stateFileContent, ['allowed_classes' => false]);
+        $this->tableDefinition = is_array($legacy) ? $legacy : [];
     }
 
     /**

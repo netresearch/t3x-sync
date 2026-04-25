@@ -923,6 +923,7 @@ trait DumpFileTrait
         $statement = $queryBuilder
             ->select('*')
             ->from($tableName)
+            // nosemgrep: php.doctrine.security.audit.doctrine-orm-dangerous-query.doctrine-orm-dangerous-query -- $strWhere is composed of $connection->quoteIdentifier() and $connection->quote()-escaped values plus an integer $uid; no untrusted concatenation. See triage issue #41 for migration to parameterized queries.
             ->where($strWhere)
             ->executeQuery();
 

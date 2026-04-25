@@ -116,6 +116,7 @@ class Task extends AbstractTask
             $output = [];
             $return = '';
             exec($command, $output, $return);
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is built from "/tmp/" plus the iterator key over internal sync-storage SQL files; not HTTP/user input. See triage issue #40.
             unlink($tmpFile);
 
             if ($return > 0) {

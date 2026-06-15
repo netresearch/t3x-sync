@@ -25,6 +25,12 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    with:
+      # TYPO3 v12.4 is in ELTS; the SA-2026 fixes (12.4.46) ship only via
+      # the paid ELTS repository and are absent from public Packagist, so
+      # `composer audit` can never pass on the free v12 line this extension
+      # targets. Skip it until the extension moves to a maintained branch.
+      skip-composer-audit: true
 
   fuzz:
     uses: netresearch/typo3-ci-workflows/.github/workflows/fuzz.yml@main

@@ -1,0 +1,134 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions: {}
+
+# Security + quality jobs with their explicit per-call-site permissions. This
+# file is byte-identical and drift-enforced across every typo3-extension — the
+# extension-specific test matrix lives in ci.yml (intentional-drift). Every
+# `uses:` job grants exactly the reusable's caller contract; no reliance on
+# default_workflow_permissions.
+jobs:
+  security:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/security.yml@main
+    permissions:
+      contents: read
+      security-events: write
+
+  gitleaks:
+    uses: netresearch/.github/.github/workflows/gitleaks.yml@main
+    permissions:
+      contents: read
+      security-events: write
+
+  zizmor:
+    uses: netresearch/.github/.github/workflows/zizmor.yml@main
+    permissions:
+      contents: read
+      security-events: write
+
+  fuzz:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/fuzz.yml@main
+    permissions:
+      contents: read
+
+  license-check:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/license-check.yml@main
+    permissions:
+      contents: read
+
+  codeql:
+    uses: netresearch/.github/.github/workflows/codeql.yml@main
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+  scorecard:
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
+    uses: netresearch/.github/.github/workflows/scorecard.yml@main
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+      actions: read
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    uses: netresearch/.github/.github/workflows/dependency-review.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+
+  pr-quality:
+    if: github.event_name == 'pull_request'
+    uses: netresearch/.github/.github/workflows/pr-quality.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+
+  # One stable check name for this workflow, so a branch ruleset has something
+  # it can require on EVERY event.
+  #
+  # Requiring the individual job checks breaks a merge queue. Two of the jobs
+  # above are pull-request-only by nature — `dependency-review` compares the
+  # dependency delta of a pull request, `pr-quality` inspects its title, body
+  # and author — and a `uses:` job whose `if:` is false is skipped WITHOUT
+  # materialising the called workflow's job names, so `dependency-review /
+  # Dependency Review` and `pr-quality / Quality Gate` simply never appear on a
+  # merge_group ref. A ruleset requiring them holds every queue entry until
+  # `check_response_timeout_minutes` expires and then dequeues it. Measured
+  # 2026-08-05 on netresearch/t3x-nr-llm: a pull request sat in the queue past
+  # the 60-minute timeout waiting for contexts that cannot arrive.
+  #
+  # The same is true of the code-scanning checks (`CodeQL`, `betterleaks`,
+  # `zizmor`, `Opengrep OSS`): those are posted by the github-advanced-security
+  # app against the pull request, not by these jobs, so they are not requirable
+  # for a queue either. Require `All security checks` instead — it depends on
+  # every job here and its name does not change with the event.
+  gate:
+    name: All security checks
+    needs:
+      - security
+      - gitleaks
+      - zizmor
+      - fuzz
+      - license-check
+      - codeql
+      - scorecard
+      - dependency-review
+      - pr-quality
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      # `skipped` passes: a job that does not apply to this event has nothing
+      # to say about the commit. Only `failure` and `cancelled` fail the gate.
+      - name: Fail unless every job succeeded or was skipped
+        shell: bash
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          bad=$(jq -r '
+            to_entries[]
+            | select(.value.result != "success" and .value.result != "skipped")
+            | "\(.key)=\(.value.result)"' <<<"$RESULTS")
+          if [ -n "$bad" ]; then
+            echo "::error::Security checks gate failed — $(tr "\n" " " <<<"$bad")"
+            exit 1
+          fi
+          jq -r 'to_entries[] | "  \(.key): \(.value.result)"' <<<"$RESULTS"
+          echo "All jobs succeeded or were skipped."

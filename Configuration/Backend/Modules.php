@@ -35,7 +35,7 @@ $backendModulesConfiguration = [
         'labels'                                   => 'LLL:EXT:nr_sync/Resources/Private/Language/locallang_mod_sync.xlf',
         'extensionName'                            => 'NrSync',
         'inheritNavigationComponentFromMainModule' => false,
-        'navigationComponent'                      => '@typo3/backend/page-tree/page-tree-element',
+        'navigationComponent'                      => '@typo3/backend/tree/page-tree-element',
     ],
     'netresearch_sync_singlePage' => [
         'parent'         => 'netresearch_sync',

@@ -42,8 +42,8 @@ use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
@@ -132,7 +132,7 @@ class BaseSyncModuleController implements ModuleInterface
     protected ?Area $area = null;
 
     /**
-     * @var Urls;
+     * @var Urls
      */
     private Urls $urlGenerator;
 
@@ -447,7 +447,7 @@ class BaseSyncModuleController implements ModuleInterface
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-lock',
-                        Icon::SIZE_SMALL,
+                        IconSize::SMALL,
                     ),
                 )
                 ->setClasses('custom-btn-danger');
@@ -467,7 +467,7 @@ class BaseSyncModuleController implements ModuleInterface
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-unlock',
-                        Icon::SIZE_SMALL,
+                        IconSize::SMALL,
                     ),
                 );
         }
@@ -492,9 +492,9 @@ class BaseSyncModuleController implements ModuleInterface
     }
 
     /**
-     * @param ModuleTemplate $moduleTemplate
-     * @param string         $systemName
-     * @param string[]       $system
+     * @param ModuleTemplate                                                                                               $moduleTemplate
+     * @param string                                                                                                       $systemName
+     * @param array{name: string, directory: string, url-path: string, notify: array<string, string|string[]>, hide: bool} $system
      *
      * @throws RouteNotFoundException
      */
@@ -520,7 +520,7 @@ class BaseSyncModuleController implements ModuleInterface
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-lock',
-                        Icon::SIZE_SMALL,
+                        IconSize::SMALL,
                     ),
                 )
                 ->setClasses('custom-btn-danger');
@@ -540,7 +540,7 @@ class BaseSyncModuleController implements ModuleInterface
                 ->setIcon(
                     $this->iconFactory->getIcon(
                         'actions-unlock',
-                        Icon::SIZE_SMALL,
+                        IconSize::SMALL,
                     ),
                 );
         }
@@ -722,9 +722,6 @@ class BaseSyncModuleController implements ModuleInterface
         return $tableEvent->getTables();
     }
 
-    /**
-     * @return string|null
-     */
     public function getDumpFile(): ?string
     {
         return $this->moduleData->get('dumpFile');
@@ -779,7 +776,7 @@ class BaseSyncModuleController implements ModuleInterface
     }
 
     /**
-     * @param array<string, array<string, string>> $parameters An array of parameters
+     * @param array<string, int|string|array<string, string>> $parameters An array of parameters
      *
      * @return string
      *

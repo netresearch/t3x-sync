@@ -39,8 +39,6 @@ interface ModuleInterface
 
     /**
      * Returns the name of the synchronization file containing the SQL statements to update the database records.
-     *
-     * @return string|null
      */
     public function getDumpFile(): ?string;
 

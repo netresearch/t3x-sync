@@ -88,11 +88,11 @@ trait TableDifferenceTrait
         $columns = $this->connectionPool
             ->getConnectionForTable($tableName)
             ->createSchemaManager()
-            ->listTableColumns($tableName);
+            ->introspectTableColumnsByUnquotedName($tableName);
 
         $columnNames = [];
         foreach ($columns as $column) {
-            $columnNames[] = $column->getName();
+            $columnNames[] = $column->getObjectName()->toString();
         }
 
         // Table still doesn't exist

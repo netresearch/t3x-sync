@@ -41,7 +41,7 @@ trait SyncTargetLockTrait
                 ->getSyncFolder()
                 ->getSubfolder($system['directory']);
 
-            if ($lockState) {
+            if ((bool) $lockState) {
                 $systemDirectory
                     ->getStorage()
                     ->createFile('.lock', $systemDirectory)

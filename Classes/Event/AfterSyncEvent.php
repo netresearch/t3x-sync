@@ -53,9 +53,6 @@ final class AfterSyncEvent
         return $this->dumpFile;
     }
 
-    /**
-     * @return string|null
-     */
     public function getTargetName(): ?string
     {
         return $this->targetName;

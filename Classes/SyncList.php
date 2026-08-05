@@ -246,7 +246,10 @@ class SyncList
             }
         }
 
-        $pageIds = array_filter(array_merge(...$pageIds));
+        $pageIds = array_filter(
+            array_merge(...$pageIds),
+            static fn (int $pageId): bool => $pageId !== 0,
+        );
         $pageIds = array_merge($pageIds, $this->getPageTranslations($pageIds));
 
         return array_unique($pageIds);
@@ -432,7 +435,7 @@ class SyncList
             // See if there is a page on the branch (may be missing due to editing rights)
             if (isset($value['page'])) {
                 $pageIds[] = [
-                    $value['page']['uid'],
+                    (int) $value['page']['uid'],
                 ];
             }
 
@@ -442,7 +445,10 @@ class SyncList
             }
         }
 
-        return array_filter(array_merge(...$pageIds));
+        return array_filter(
+            array_merge(...$pageIds),
+            static fn (int $pageId): bool => $pageId !== 0,
+        );
     }
 
     /**

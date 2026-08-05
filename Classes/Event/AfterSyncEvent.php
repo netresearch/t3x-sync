@@ -20,7 +20,7 @@ namespace Netresearch\Sync\Event;
  *
  * @see    https://www.netresearch.de
  */
-final class AfterSyncEvent
+final readonly class AfterSyncEvent
 {
     /**
      * Constructor.
@@ -31,10 +31,10 @@ final class AfterSyncEvent
      * @param bool               $success
      */
     public function __construct(
-        private readonly array $tables,
-        private readonly string $dumpFile,
-        private readonly ?string $targetName,
-        private readonly bool $success,
+        private array $tables,
+        private string $dumpFile,
+        private ?string $targetName,
+        private bool $success,
     ) {}
 
     /**

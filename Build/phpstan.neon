@@ -1,7 +1,4 @@
 includes:
-    - %currentWorkingDirectory%/.build/vendor/phpstan/phpstan-strict-rules/rules.neon
-    - %currentWorkingDirectory%/.build/vendor/phpstan/phpstan-deprecation-rules/rules.neon
-    - %currentWorkingDirectory%/.build/vendor/saschaegerer/phpstan-typo3/extension.neon
     - %currentWorkingDirectory%/Build/phpstan-baseline.neon
 
 parameters:
@@ -18,3 +15,12 @@ parameters:
         - %currentWorkingDirectory%/ext_emconf.php
 
     treatPhpDocTypesAsCertain: false
+
+    # ergebnis/phpstan-rules is auto-registered by phpstan/extension-installer
+    # (transitively required via netresearch/typo3-ci-workflows). Its default
+    # ruleset (allRules: true) enforces opinionated redesigns (no isset(),
+    # final everywhere, no extends, no nullable/default parameters) that this
+    # extension does not follow yet. Adopting them is a separate hardening
+    # pass; disabled here so the shared-config adoption stays behaviour-neutral.
+    ergebnis:
+        allRules: false

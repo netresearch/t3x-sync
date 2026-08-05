@@ -35,8 +35,13 @@
             "git.netresearch.de"
         ],
         "allow-plugins": {
-            "typo3/cms-composer-installers": true,
-            "typo3/class-alias-loader": true
+            "a9f/fractor-extension-installer": true,
+            "captainhook/hook-installer": true,
+            "dg/bypass-finals": true,
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true,
+            "typo3/class-alias-loader": true,
+            "typo3/cms-composer-installers": true
         }
     },
     "minimum-stability": "dev",
@@ -51,14 +56,7 @@
         "netresearch/nr-scheduler": "*"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.65",
-        "overtrue/phplint": "^9.5",
-        "phpstan/phpstan": "^1.0 || ^2.0",
-        "phpstan/phpstan-deprecation-rules": "^1.0 || ^2.0",
-        "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
-        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0 || ^13.0",
-        "saschaegerer/phpstan-typo3": "^1.0 || ^3.0",
-        "ssch/typo3-rector": "^2.0 || ^3.0"
+        "netresearch/typo3-ci-workflows": "^1.1"
     },
     "extra": {
         "typo3/cms": {

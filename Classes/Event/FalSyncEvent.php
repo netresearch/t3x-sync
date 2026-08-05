@@ -19,7 +19,7 @@ namespace Netresearch\Sync\Event;
  *
  * @see    https://www.netresearch.de
  */
-final class FalSyncEvent
+final readonly class FalSyncEvent
 {
     /**
      * Constructor.
@@ -28,8 +28,8 @@ final class FalSyncEvent
      * @param string $dumpFilePrefix
      */
     public function __construct(
-        private readonly int $areaId,
-        private readonly string $dumpFilePrefix,
+        private int $areaId,
+        private string $dumpFilePrefix,
     ) {}
 
     /**

@@ -25,20 +25,6 @@
         }
     ],
     "config": {
-        "audit": {
-            "ignore": {
-                "CVE-2026-47343": "TYPO3-CORE-SA-2026-007; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-47346": "TYPO3-CORE-SA-2026-008; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-47347": "TYPO3-CORE-SA-2026-009; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-47349": "TYPO3-CORE-SA-2026-011; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-49742": "TYPO3-CORE-SA-2026-013; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-47351": "TYPO3-CORE-SA-2026-014 and GHSA-q93m-25xv-94hh (typo3/cms-backend); fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-47352": "TYPO3-CORE-SA-2026-015 and GHSA-2j54-93q2-3hjq (typo3/cms-backend); fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-49738": "TYPO3-CORE-SA-2026-016; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-49740": "TYPO3-CORE-SA-2026-018; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45.",
-                "CVE-2026-11607": "TYPO3-CORE-SA-2026-019; fixed in 12.4.46, which ships only via the paid ELTS repository. The public v12.4 line ends at 12.4.45."
-            }
-        },
         "bin-dir": ".build/bin",
         "vendor-dir": ".build/vendor",
         "discard-changes": true,
@@ -49,8 +35,13 @@
             "git.netresearch.de"
         ],
         "allow-plugins": {
-            "typo3/cms-composer-installers": true,
-            "typo3/class-alias-loader": true
+            "a9f/fractor-extension-installer": true,
+            "captainhook/hook-installer": true,
+            "dg/bypass-finals": true,
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true,
+            "typo3/class-alias-loader": true,
+            "typo3/cms-composer-installers": true
         }
     },
     "minimum-stability": "dev",
@@ -58,21 +49,14 @@
     "require": {
         "ext-ftp": "*",
         "ext-zlib": "*",
-        "typo3/cms-core": "^12.4",
-        "typo3/cms-backend": "^12.4",
-        "typo3/cms-extbase": "^12.4",
-        "typo3/cms-fluid": "^12.4",
+        "typo3/cms-core": "^13.4",
+        "typo3/cms-backend": "^13.4",
+        "typo3/cms-extbase": "^13.4",
+        "typo3/cms-fluid": "^13.4",
         "netresearch/nr-scheduler": "*"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.65",
-        "overtrue/phplint": "^9.5",
-        "phpstan/phpstan": "^1.0 || ^2.0",
-        "phpstan/phpstan-deprecation-rules": "^1.0 || ^2.0",
-        "phpstan/phpstan-strict-rules": "^1.0 || ^2.0",
-        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0 || ^13.0",
-        "saschaegerer/phpstan-typo3": "^1.0 || ^3.0",
-        "ssch/typo3-rector": "^2.0 || ^3.0"
+        "netresearch/typo3-ci-workflows": "^1.1"
     },
     "extra": {
         "typo3/cms": {

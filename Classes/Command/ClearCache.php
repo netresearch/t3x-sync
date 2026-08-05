@@ -159,7 +159,10 @@ class ClearCache extends Command
             $result[] = explode(',', trim($fileLine));
         }
 
-        return array_filter(array_merge(...$result));
+        return array_filter(
+            array_merge(...$result),
+            static fn (string $entry): bool => $entry !== '',
+        );
     }
 
     /**

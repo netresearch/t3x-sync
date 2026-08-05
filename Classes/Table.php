@@ -18,6 +18,7 @@ use function in_array;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
+use RuntimeException;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -248,6 +249,7 @@ class Table
      * @return bool
      *
      * @throws Exception
+     * @throws RuntimeException
      */
     protected function hasUpdatedRows(): bool
     {
@@ -258,7 +260,7 @@ class Table
         $strWhere = $this->getDumpWhereCondition();
 
         if ($strWhere === '' || $strWhere === false) {
-            throw new Exception(
+            throw new RuntimeException(
                 'Could not get WHERE condition for tstamp field for table "'
                 . $this->tableName . '".',
             );
@@ -315,7 +317,10 @@ class Table
         $list   = [];
 
         if (isset($result['0']['uid_list']) && ($result['0']['uid_list'] !== '')) {
-            $list = array_filter(explode(',', (string) $result['0']['uid_list']));
+            $list = array_filter(
+                explode(',', (string) $result['0']['uid_list']),
+                static fn (string $uid): bool => $uid !== '',
+            );
         }
 
         $data = [];
@@ -376,6 +381,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
      * Uses REPLACE instead of INSERT.
      *
      * @throws Exception
+     * @throws RuntimeException
      */
     protected function appendUpdateToFile(): void
     {
@@ -386,7 +392,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         $strWhere = $this->getDumpWhereCondition();
 
         if ($strWhere === '' || $strWhere === false) {
-            throw new Exception(
+            throw new RuntimeException(
                 'Could not get WHERE condition for tstamp field for table "'
                 . $this->tableName . '".',
             );
@@ -453,8 +459,6 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
     /**
      * Returns table tstamp field - if defined, otherwise false.
-     *
-     * @return string|false
      */
     protected function getTstampField(): false|string
     {
@@ -557,11 +561,11 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
                 . ' ON DUPLICATE KEY UPDATE cruser_id = %s, %s = %s',
                 $strUpdateField,
                 $connection->quote($this->tableName),
-                $connection->quote($nTime),
-                $connection->quote($nUserId),
-                $connection->quote($nUserId),
+                $connection->quote((string) $nTime),
+                $connection->quote((string) $nUserId),
+                $connection->quote((string) $nUserId),
                 $strUpdateField,
-                $connection->quote($nTime),
+                $connection->quote((string) $nTime),
             ),
         );
     }
@@ -569,8 +573,6 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
     /**
      * Return a sql statement to drop rows from the table which are useless
      * in context of there control fields (hidden,deleted,endtime).
-     *
-     * @return string|null
      */
     public function getSqlDroppingObsoleteRows(): ?string
     {
@@ -589,7 +591,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         );
 
         $strStatement = 'DELETE FROM '
-            . $connection->quoteIdentifier($this->tableName);
+            . $connection->quoteSingleIdentifier($this->tableName);
         $arWhereClauseParts = [];
         if (isset($arControlFields['delete'])) {
             $arWhereClauseParts[] = $arControlFields['delete'] . ' = 1';

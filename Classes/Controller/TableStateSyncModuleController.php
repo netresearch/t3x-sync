@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Controller;
 
+use Doctrine\DBAL\Schema\Name\OptionallyQualifiedName;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TableDifferenceTrait;
@@ -56,10 +57,15 @@ class TableStateSyncModuleController extends BaseSyncModuleController
      */
     private function getAllTables(): array
     {
-        return $this->connectionPool
+        $tableNames = $this->connectionPool
             ->getConnectionForTable('pages')
             ->createSchemaManager()
-            ->listTableNames();
+            ->introspectTableNames();
+
+        return array_map(
+            static fn (OptionallyQualifiedName $tableName): string => $tableName->toString(),
+            $tableNames,
+        );
     }
 
     /**
@@ -74,11 +80,11 @@ class TableStateSyncModuleController extends BaseSyncModuleController
             $columns = $this->connectionPool
                 ->getConnectionForTable($tableName)
                 ->createSchemaManager()
-                ->listTableColumns($tableName);
+                ->introspectTableColumnsByUnquotedName($tableName);
 
             $columnNames = [];
             foreach ($columns as $column) {
-                $columnNames[] = $column->getName();
+                $columnNames[] = $column->getObjectName()->toString();
             }
 
             $tables[$tableName] = $columnNames;

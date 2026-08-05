@@ -1,6 +1,31 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^There is no request attribute \"route\" configured so we can't figure out the exact type to return when calling Psr\\\\Http\\\\Message\\\\ServerRequestInterface\\:\\:getAttribute$#"
+			message: '#^There is no request attribute "route" configured so we can''t figure out the exact type to return when calling Psr\\Http\\Message\\ServerRequestInterface\:\:getAttribute$#'
+			identifier: phpstanTypo3.requestAttributeValidation
 			count: 1
 			path: ../Classes/Controller/BaseSyncModuleController.php
+
+		-
+			message: '''
+				#^Call to method saveAdditionalFields\(\) of deprecated class Netresearch\\NrScheduler\\AbstractAdditionalFieldProvider\:
+				since 2\.0\.0, will be removed together with TYPO3 v14 support\. This class
+				            wraps \\TYPO3\\CMS\\Scheduler\\AbstractAdditionalFieldProvider, which TYPO3
+				            deprecated in v14 and removes in v15\.0\. Migrate consuming tasks to native
+				            task types with additional fields declared via TCA\.$#
+			'''
+			identifier: method.deprecatedClass
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php
+
+		-
+			message: '''
+				#^Class Netresearch\\Sync\\Scheduler\\SyncImportTask\\AdditionalFieldsProvider extends deprecated class Netresearch\\NrScheduler\\AbstractAdditionalFieldProvider\:
+				since 2\.0\.0, will be removed together with TYPO3 v14 support\. This class
+				            wraps \\TYPO3\\CMS\\Scheduler\\AbstractAdditionalFieldProvider, which TYPO3
+				            deprecated in v14 and removes in v15\.0\. Migrate consuming tasks to native
+				            task types with additional fields declared via TCA\.$#
+			'''
+			identifier: class.extendsDeprecatedClass
+			count: 1
+			path: ../Classes/Scheduler/SyncImportTask/AdditionalFieldsProvider.php

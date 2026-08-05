@@ -251,7 +251,7 @@ trait DumpFileTrait
      *
      * @return void
      *
-     * @throws Exception If file can't be zipped
+     * @throws RuntimeException If file can't be zipped
      */
     private function finalizeDumpFile(string $dumpFileName, array $directories): void
     {
@@ -262,7 +262,7 @@ trait DumpFileTrait
         $dumpFile = $this->createGZipFile($tempFolder, $dumpFileName);
 
         if ($dumpFile === null) {
-            throw new Exception('Could not create ZIP file.');
+            throw new RuntimeException('Could not create ZIP file.');
         }
 
         // Copy files to correct location
@@ -437,8 +437,6 @@ trait DumpFileTrait
      *
      * @param Folder $folder   Folder where the file si stored
      * @param string $filename Name of File
-     *
-     * @return FileInterface|null
      */
     protected function createGZipFile(Folder $folder, string $filename): ?FileInterface
     {
@@ -448,7 +446,6 @@ trait DumpFileTrait
             $tempFileIdentifier = $folder->getIdentifier() . $filename;
             $dumpFile           = $tempStorage->getFile($tempFileIdentifier);
 
-            /** @var FileInterface|null $compressedDumpFile */
             $compressedDumpFile = $tempStorage->createFile($filename . '.gz', $folder);
             $compressedDumpFile?->setContents(
                 gzencode(
@@ -518,7 +515,7 @@ trait DumpFileTrait
      *
      * @return FileInterface
      *
-     * @throws Exception
+     * @throws RuntimeException
      */
     private function openTempDumpFile(string $filename, array $directories): FileInterface
     {
@@ -529,7 +526,7 @@ trait DumpFileTrait
         if ($tempStorage->hasFile($tempFileIdentifier)
             || $tempStorage->hasFile($tempFileIdentifier . '.gz')
         ) {
-            throw new Exception(
+            throw new RuntimeException(
                 $this->getLabel('error.last_sync_not_finished')
                 . "<br/>\n"
                 . $tempFileIdentifier . '(.gz)',
@@ -544,7 +541,7 @@ trait DumpFileTrait
             if ($defaultStorage->hasFile($fileIdentifier)
                 || $defaultStorage->hasFile($fileIdentifier . '.gz')
             ) {
-                throw new Exception(
+                throw new RuntimeException(
                     $this->getLabel('error.last_sync_not_finished'),
                 );
             }
@@ -580,6 +577,7 @@ trait DumpFileTrait
      * @return void
      *
      * @throws Exception
+     * @throws RuntimeException
      */
     protected function dumpTableByPageIDs(
         array $pageIDs,
@@ -588,7 +586,7 @@ trait DumpFileTrait
         bool $contentIDs = false,
     ): void {
         if (str_ends_with($tableName, '_mm')) {
-            throw new Exception(
+            throw new RuntimeException(
                 $this->getLabel(
                     'error.mm_tables',
                     [
@@ -608,11 +606,11 @@ trait DumpFileTrait
 
         $columns = $connection
             ->createSchemaManager()
-            ->listTableColumns($tableName);
+            ->introspectTableColumnsByUnquotedName($tableName);
 
         $columnNames = [];
         foreach ($columns as $column) {
-            $columnNames[] = $column->getName();
+            $columnNames[] = $column->getObjectName()->toString();
         }
 
         $queryBuilder = $this->getQueryBuilderForTable($tableName);
@@ -725,7 +723,7 @@ trait DumpFileTrait
 
         return sprintf(
             'DELETE FROM %s WHERE uid = %d;',
-            $connection->quoteIdentifier($tableName),
+            $connection->quoteSingleIdentifier($tableName),
             $uid,
         );
     }
@@ -752,14 +750,14 @@ trait DumpFileTrait
             // TYPO-2215 - Match the column to its update value
             $updateParts[$key] = sprintf(
                 '%1$s = VALUES(%1$s)',
-                $connection->quoteIdentifier($key),
+                $connection->quoteSingleIdentifier($key),
             );
         }
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
-            $connection->quoteIdentifier($tableName),
-            implode(', ', $connection->quoteIdentifiers($columnNames)),
+            $connection->quoteSingleIdentifier($tableName),
+            implode(', ', array_map($connection->quoteSingleIdentifier(...), $columnNames)),
             implode(', ', $row),
             implode(', ', $updateParts),
         );
@@ -786,11 +784,11 @@ trait DumpFileTrait
             $columns = $this->connectionPool
                 ->getConnectionForTable($mmTableName)
                 ->createSchemaManager()
-                ->listTableColumns($mmTableName);
+                ->introspectTableColumnsByUnquotedName($mmTableName);
 
             $columnNames = [];
             foreach ($columns as $column) {
-                $columnNames[] = $column->getName();
+                $columnNames[] = $column->getObjectName()->toString();
             }
 
             foreach ($arTableFields as $arMMConfig) {
@@ -927,8 +925,8 @@ trait DumpFileTrait
         // SQL-dump path: build a literal WHERE clause for inclusion in the
         // generated .sql file. Must be a string because the dump is replayed
         // verbatim against the target DB (not via a QueryBuilder). All
-        // values pass through quoteIdentifier()/quote() with the int cast.
-        $strWhere = $connection->quoteIdentifier($strFieldName) . ' = ' . $uid;
+        // values pass through quoteSingleIdentifier()/quote() with the int cast.
+        $strWhere = $connection->quoteSingleIdentifier($strFieldName) . ' = ' . $uid;
 
         if (isset($arMMConfig['MM_match_fields'])) {
             foreach ($arMMConfig['MM_match_fields'] as $strName => $strValue) {
@@ -936,7 +934,7 @@ trait DumpFileTrait
                     $strName,
                     $queryBuilder->createNamedParameter($strValue),
                 ));
-                $strWhere .= ' AND ' . $connection->quoteIdentifier($strName) . ' = ' . $connection->quote($strValue);
+                $strWhere .= ' AND ' . $connection->quoteSingleIdentifier($strName) . ' = ' . $connection->quote($strValue);
             }
         }
 
@@ -945,7 +943,7 @@ trait DumpFileTrait
         if ($tableName !== 'sys_file_reference') {
             $deleteLines[$tableName][$uid] = sprintf(
                 'DELETE FROM %s WHERE %s;',
-                $connection->quoteIdentifier($tableName),
+                $connection->quoteSingleIdentifier($tableName),
                 $strWhere,
             );
         }
@@ -1321,12 +1319,12 @@ trait DumpFileTrait
                 . ' ON DUPLICATE KEY UPDATE cruser_id = %s, %s = %s',
                 $updateField,
                 $connection->quote($table),
-                $connection->quote($time),
-                $connection->quote($userId),
-                $connection->quote($uid),
-                $connection->quote($userId),
+                $connection->quote((string) $time),
+                $connection->quote((string) $userId),
+                $connection->quote((string) $uid),
+                $connection->quote((string) $userId),
                 $updateField,
-                $connection->quote($time),
+                $connection->quote((string) $time),
             ),
         );
     }

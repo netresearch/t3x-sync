@@ -17,7 +17,6 @@ use Netresearch\Sync\Controller\BaseSyncModuleController;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\TranslationTrait;
-use TYPO3\CMS\Core\Resource\FileInterface;
 
 /**
  * Generate files with the list of URLs that have to be called
@@ -171,12 +170,11 @@ class Urls
                 ->getSyncFolder()
                 ->getSubfolder($folder);
 
-            /** @var FileInterface|null $file */
             $file = $this->storageService
                 ->getDefaultStorage()
                 ->createFile($fileName, $folder);
 
-            $file?->setContents($content);
+            $file->setContents($content);
         }
 
         return count($folders);

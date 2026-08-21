@@ -18,5 +18,10 @@ jobs:
     with:
         php-versions: '["8.2","8.3","8.4","8.5"]'
         typo3-versions: '["^13.4"]'
+        # This extension has no functional tests. Without this the shared
+        # workflow runs its functional job, finds no test script, and reports
+        # success — coverage that does not exist. See
+        # netresearch/typo3-ci-workflows#188.
+        run-functional-tests: false
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -20,6 +20,9 @@ netresearch/nr-sync — TYPO3 v13.4 backend extension (key `nr_sync`) that synch
 | Rector dry-run | `composer ci:test:php:rector` (= `make rector`) |
 | Unit tests | `composer ci:test:php:unit` (= `make test-unit`) |
 | All checks | `composer ci:test` |
+| Any suite in Docker (verified 2026-08-24) | `./Build/Scripts/runTests.sh -s unit\|lint\|phpstan\|rector\|cgl` |
+
+`Build/Scripts/runTests.sh` is the bootstrap stub of `netresearch/typo3-ci-workflows`; the runner comes from the package and is linked into `.build/bin`. It runs the suites in Docker against a chosen PHP version (`-p 8.2`). **Do not run `-s functional` here:** this extension has no functional tests and no functional config, and the runner silently falls back to `Build/phpunit.xml`, so the suite re-runs the 21 unit tests and reports them as functional (netresearch/typo3-ci-workflows#212). `-s lint` uses `php -l` over `Classes Configuration Tests`, not `phplint` with `Build/.phplint.yml` (netresearch/typo3-ci-workflows#217).
 | Harness check | `bash scripts/verify-harness.sh` |
 <!-- AGENTS-GENERATED:END commands -->
 

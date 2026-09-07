@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync\ViewHelpers\Folder;
 
 use Netresearch\Sync\Service\StorageService;
-use TYPO3\CMS\Core\Resource\Driver\DriverInterface;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
 use TYPO3\CMS\Core\Resource\File;
@@ -64,19 +63,7 @@ class FilesViewHelper extends AbstractViewHelper
         // .sql.gz
         $subFolder->setFileAndFolderNameFilters(
             [
-                static fn (
-                    string $itemName,
-                    string $itemIdentifier,
-                    string $parentIdentifier,
-                    array $additionalInformation,
-                    DriverInterface $driver,
-                ): bool|int => $filter->filterFileList(
-                    $itemName,
-                    $itemIdentifier,
-                    $parentIdentifier,
-                    $additionalInformation,
-                    $driver,
-                ),
+                $filter->filterFileList(...),
             ],
         );
 

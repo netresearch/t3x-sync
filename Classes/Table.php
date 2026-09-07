@@ -543,10 +543,8 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
         global $BE_USER;
 
-        if ($nTime === null) {
-            $nTime = (int) GeneralUtility::makeInstance(Context::class)
-                ->getPropertyFromAspect('date', 'timestamp');
-        }
+        $nTime ??= (int) GeneralUtility::makeInstance(Context::class)
+            ->getPropertyFromAspect('date', 'timestamp');
 
         if ($nTime === 0) {
             $nTime = time();

@@ -674,9 +674,7 @@ trait DumpFileTrait
         /** @var Table $table */
         $table = GeneralUtility::makeInstance(Table::class, $tableName, 'dummy');
 
-        if (!isset($this->obsoleteRows[0])) {
-            $this->obsoleteRows[0] = '-- Delete obsolete rows on target';
-        }
+        $this->obsoleteRows[0] ??= '-- Delete obsolete rows on target';
 
         $strSql = $table->getSqlDroppingObsoleteRows();
         unset($table);

@@ -24,7 +24,7 @@ Resources/
     Templates/   → Fluid templates (Backend/)
   Public/
     Css/         → Administration.css (backend module styling)
-    Icons/       → Extension.svg, Module.svg
+    Icons/       → Extension.svg, ModuleGroup.svg (shared Netresearch group icon, byte-identical in nr_textdb and universal_messenger)
 ```
 <!-- AGENTS-GENERATED:END structure -->
 

@@ -36,6 +36,7 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 ```
 Tests/
 └── Unit/          # Fast, isolated unit tests (autoload-dev: Netresearch\Sync\Tests\)
+    ├── Configuration/ # Icon registration and shared icon bytes
     └── Event/     # PSR-14 event tests
 ```
 <!-- AGENTS-GENERATED:END structure -->

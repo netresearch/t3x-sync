@@ -18,19 +18,23 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
+use TYPO3\CMS\Core\Package\PackageManager;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
  * The module group icon "extension-netresearch-module" is registered by
- * nr_sync, nr_textdb and universal_messenger. The last extension loaded wins,
- * so all three must ship the same bytes: the Netresearch [n] logo with the
- * frame in the brand teal and the letter in currentColor, which the module
- * menu renders inline so the letter follows the backend colour scheme.
+ * nr_sync and, on 13.4, by nr_textdb 3.x and universal_messenger 2.x, which
+ * Composer loads after nr_sync. The last extension loaded wins, so nr_sync and
+ * nr_textdb ship the same bytes: the Netresearch [n] logo with the frame in
+ * the brand teal and the letter in currentColor, which the module menu
+ * renders inline so the letter follows the backend colour scheme.
  */
 #[CoversNothing]
 final class ModuleGroupIconTest extends TestCase
 {
     /**
-     * The same hash is pinned in nr_textdb and universal_messenger.
+     * The same hash is pinned in nr_textdb (main and TYPO3_13) and
+     * universal_messenger 3.x.
      */
     private const MODULE_GROUP_SVG_SHA256 = 'f61031fd7d3f9b73f28bd4e05b5b398dca87e92a645dc03ad1daa3ccf54524c5';
 
@@ -59,6 +63,22 @@ final class ModuleGroupIconTest extends TestCase
             ],
             $icons['extension-netresearch-module'] ?? null,
         );
+    }
+
+    #[Test]
+    public function groupModuleUsesTheSharedGroupIcon(): void
+    {
+        // Modules.php asks whether georgringer/news is loaded; answer no.
+        $packageManager = self::createStub(PackageManager::class);
+        $packageManager->method('isPackageActive')->willReturn(false);
+        ExtensionManagementUtility::setPackageManager($packageManager);
+
+        // Only this test includes Modules.php; a second include would make
+        // require_once return true and fail the next assertion.
+        $modules = require_once self::EXTENSION_ROOT . '/Configuration/Backend/Modules.php';
+
+        self::assertTrue(is_array($modules));
+        self::assertSame('extension-netresearch-module', $modules['netresearch_module']['iconIdentifier'] ?? null);
     }
 
     #[Test]

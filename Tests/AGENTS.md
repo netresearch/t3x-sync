@@ -15,7 +15,7 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 | `Unit/Event/AfterSyncEventTest.php` | Tests for the AfterSync PSR-14 event |
 | `Unit/Event/ModifyMenuItemsEventTest.php` | Tests for the ModifyMenuItems event |
 | `Unit/Event/ModifyTableListEventTest.php` | Tests for the ModifyTableList event |
-| `Unit/Configuration/ModuleGroupIconTest.php` | Pins the shared module group icon: its registration and its bytes (identical in nr_textdb and universal_messenger) |
+| `Unit/Configuration/ModuleGroupIconTest.php` | Pins the shared module group icon: the group module's icon identifier, the registration and the bytes (identical in nr_textdb and universal_messenger) |
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START golden-samples -->

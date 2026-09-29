@@ -15,6 +15,7 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 | `Unit/Event/AfterSyncEventTest.php` | Tests for the AfterSync PSR-14 event |
 | `Unit/Event/ModifyMenuItemsEventTest.php` | Tests for the ModifyMenuItems event |
 | `Unit/Event/ModifyTableListEventTest.php` | Tests for the ModifyTableList event |
+| `Unit/Configuration/ModuleGroupIconTest.php` | Pins the shared module group icon: the group module's icon identifier, the registration and the bytes (identical in nr_textdb and universal_messenger) |
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START golden-samples -->
@@ -35,6 +36,7 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 ```
 Tests/
 └── Unit/          # Fast, isolated unit tests (autoload-dev: Netresearch\Sync\Tests\)
+    ├── Configuration/ # Icon registration and shared icon bytes
     └── Event/     # PSR-14 event tests
 ```
 <!-- AGENTS-GENERATED:END structure -->

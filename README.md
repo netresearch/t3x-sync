@@ -226,3 +226,20 @@ composer ci:test:php:phplint
 composer ci:test:php:phpstan
 composer ci:test:php:rector
 ```
+
+
+## Governance and policies
+
+This extension follows the organisation-wide Netresearch policies:
+
+- [Governance](https://github.com/netresearch/.github/blob/main/GOVERNANCE.md): ownership, roles, how decisions are made and conflicts resolved.
+- [Roadmap](https://github.com/netresearch/.github/blob/main/ROADMAP.md): planned and excluded work for the next twelve months.
+- [Handling of dependency and code analysis findings](https://github.com/netresearch/.github/blob/main/SECURITY.md#handling-of-dependency-and-code-analysis-findings): which vulnerability, licence and static-analysis findings must be fixed, by when, and how exceptions are recorded.
+- [Secret management](https://github.com/netresearch/.github/blob/main/SECURITY.md#secret-management): where CI and release credentials are stored, who may use them, how committed secrets are detected, and when secrets are rotated.
+- [Access roster](https://github.com/netresearch/.github/blob/main/docs/access-roster.md): the people and teams with administrative or write access to this repository.
+
+Checks that run on every pull request in this repository:
+
+- `.github/workflows/checks.yml`: Composer Audit (fails on any advisory for an installed package; `composer.json` lists no `config.audit.ignore` exceptions) and Opengrep SAST (fails on findings of severity WARNING or higher), both through `typo3-ci-workflows`' `security.yml`; Dependency Review (fails on newly added dependencies with a vulnerability of severity high or higher); PHP License Audit (`license-check.yml`, fails on an SSPL or BSL licensed Composer dependency); CodeQL with language auto-detection, which finds no Go or JavaScript source here and analyses the workflow files (CodeQL has no PHP analysis; PHPStan and Opengrep cover the PHP code); Betterleaks secret scanning; zizmor for the workflow files (reported to code scanning, not blocking); the pull request size check. The fuzz job finds no `Fuzz` test suite in `Build/phpunit.xml` and is skipped.
+- `.github/workflows/ci.yml`: PHP lint, PHPStan (level 6 with the baseline `Build/phpstan-baseline.neon`) and the unit tests on PHP 8.2 to 8.5 with TYPO3 ^13.4; code style (PHP-CS-Fixer, `Build/.php-cs-fixer.dist.php`) and Rector (`Build/rector.php`) on one PHP version. There are no functional tests (`run-functional-tests: false`), Fractor is not part of the CI run, and there is no `Documentation/guides.xml` to render.
+- `.github/workflows/harness-verify.yml`: `scripts/verify-harness.sh` checks the agent documentation against the tree.

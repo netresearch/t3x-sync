@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 [![Latest version](https://img.shields.io/github/v/release/netresearch/t3x-sync?sort=semver)](https://github.com/netresearch/t3x-sync/releases/latest)
 [![License](https://img.shields.io/github/license/netresearch/t3x-sync)](https://github.com/netresearch/t3x-sync/blob/main/LICENSE)
 [![CI](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml)

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 # Architecture
 
 Agent-facing component map of `netresearch/nr-sync` (TYPO3 extension key `nr_sync`). Every path below is verified against the tree; update this file when components move.

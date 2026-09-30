@@ -350,9 +350,9 @@ class Table
 
 TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
-        $strExec = 'mysqldump --host="' . $connection->getParams()['host'] . '"'
-            . ' --user="' . $connection->getParams()['user'] . '"'
-            . ' --password="' . $connection->getParams()['password'] . '"'
+        $strExec = 'mysqldump --host=' . escapeshellarg((string) $connection->getParams()['host'])
+            . ' --user=' . escapeshellarg((string) $connection->getParams()['user'])
+            . ' --password=' . escapeshellarg((string) $connection->getParams()['password'])
             // do not drop tables here, we truncated them already
             . ' --skip-add-drop-table';
 
@@ -369,8 +369,11 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
         // use INSERT with column names
         // - prevent errors due to differences in tables on live system
-        $strExec .= ' --complete-insert --extended-insert --disable-keys --hex-blob ' . $connection->getDatabase() . ' ' . $this->tableName;
+        $strExec .= ' --complete-insert --extended-insert --disable-keys --hex-blob '
+            . escapeshellarg((string) $connection->getDatabase()) . ' ' . escapeshellarg($this->tableName);
 
+        // Fixed command; every variable part goes through escapeshellarg().
+        // nosemgrep: php.lang.security.exec-use.exec-use
         $this->appendToDumpFile(shell_exec($strExec));
     }
 
@@ -398,9 +401,9 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
             );
         }
 
-        $strExec = 'mysqldump --host="' . $connection->getParams()['host'] . '"'
-            . ' --user="' . $connection->getParams()['user'] . '"'
-            . ' --password="' . $connection->getParams()['password'] . '"'
+        $strExec = 'mysqldump --host=' . escapeshellarg((string) $connection->getParams()['host'])
+            . ' --user=' . escapeshellarg((string) $connection->getParams()['user'])
+            . ' --password=' . escapeshellarg((string) $connection->getParams()['password'])
             // do not drop tables here, we truncated them already
             . ' --skip-add-drop-table';
 
@@ -411,9 +414,11 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
         // use INSERT with column names
         // - prevent errors due to differences in tables on live system
-        $strExec .= ' --complete-insert --extended-insert --disable-keys --replace --hex-blob --where="' . $strWhere . '"'
-            . ' ' . $connection->getDatabase() . ' ' . $this->tableName;
+        $strExec .= ' --complete-insert --extended-insert --disable-keys --replace --hex-blob --where=' . escapeshellarg($strWhere)
+            . ' ' . escapeshellarg((string) $connection->getDatabase()) . ' ' . escapeshellarg($this->tableName);
 
+        // Fixed command; every variable part goes through escapeshellarg().
+        // nosemgrep: php.lang.security.exec-use.exec-use
         $this->appendToDumpFile(shell_exec($strExec));
     }
 

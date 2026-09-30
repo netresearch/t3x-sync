@@ -113,16 +113,18 @@ class Task extends AbstractTask
             $this->deleteFile($file);
 
             $command = sprintf(
-                'mysql -h"%s" -u"%s" -p"%s" "%s" < %s 2>&1',
-                $databaseConnection->getParams()['host'],
-                $databaseConnection->getParams()['user'],
-                $databaseConnection->getParams()['password'],
-                $databaseConnection->getParams()['dbname'],
-                $tmpFile,
+                'mysql -h%s -u%s -p%s %s < %s 2>&1',
+                escapeshellarg((string) $databaseConnection->getParams()['host']),
+                escapeshellarg((string) $databaseConnection->getParams()['user']),
+                escapeshellarg((string) $databaseConnection->getParams()['password']),
+                escapeshellarg((string) $databaseConnection->getParams()['dbname']),
+                escapeshellarg($tmpFile),
             );
 
             $output = [];
             $return = '';
+            // Fixed command; every variable part goes through escapeshellarg().
+            // nosemgrep: php.lang.security.exec-use.exec-use
             exec($command, $output, $return);
             // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is the return value of tempnam() above; the path is system-generated and cannot be influenced by request data. The rule pattern cannot observe the source.
             unlink($tmpFile);

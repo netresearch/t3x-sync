@@ -410,6 +410,10 @@ class Area
     /**
      * Inform the Master(LIVE) Server per FTP.
      *
+     * Plain FTP is the transport the target system is configured for
+     * (notify.type 'ftp'); the uploaded files are empty trigger files. The
+     * ftp_* calls Opengrep flags carry a nosemgrep marker for that reason.
+     *
      * @param string[] $ftpConfig Config of the ftp connection
      *
      * @throws Exception
@@ -417,12 +421,14 @@ class Area
     protected function notifyMasterViaFtp(array $ftpConfig): void
     {
         // Suppress the PHP warning message if the host is invalid
+        // nosemgrep: php.lang.security.ftp-use.ftp-use
         $connection = @ftp_connect($ftpConfig['host'] ?? '');
 
         if (!$connection) {
             throw new Exception('Signal: FTP connection failed.');
         }
 
+        // nosemgrep: php.lang.security.ftp-use.ftp-use
         $loginResult = ftp_login($connection, $ftpConfig['user'], $ftpConfig['password']);
 
         if (!$loginResult) {
@@ -430,21 +436,25 @@ class Area
         }
 
         // Enforce passive mode
+        // nosemgrep: php.lang.security.ftp-use.ftp-use
         ftp_pasv($connection, true);
 
         // Create trigger file
         $sourceFile = tempnam(sys_get_temp_dir(), 'prefix');
 
         if (ftp_put($connection, 'db.txt', $sourceFile) === false) {
+            // nosemgrep: php.lang.security.ftp-use.ftp-use
             ftp_close($connection);
             throw new Exception('Signal: FTP put db.txt failed.');
         }
 
         if (ftp_put($connection, 'files.txt', $sourceFile) === false) {
+            // nosemgrep: php.lang.security.ftp-use.ftp-use
             ftp_close($connection);
             throw new Exception('Signal: FTP put files.txt failed.');
         }
 
+        // nosemgrep: php.lang.security.ftp-use.ftp-use
         ftp_close($connection);
     }
 

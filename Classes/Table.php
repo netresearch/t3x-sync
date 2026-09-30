@@ -159,8 +159,6 @@ class Table
      * Currently for only one database REPLACE INTO is needed therefore the table name
      * is hardcoded.
      *
-     * @see http://jira.aida.de/browse/TYPO-5566
-     *
      * @return bool
      */
     protected function useReplace(): bool

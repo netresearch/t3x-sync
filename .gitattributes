@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
+# Exclude development files from git archive: GitHub source archives and the
+# Composer dist downloads from GitHub. TER packaging (tailor) zips the working
+# directory and does not read this file.
+/.github export-ignore
+/Build export-ignore
+/docs export-ignore
+/Tests export-ignore
+/scripts/verify-harness.sh export-ignore
+/.bestpractices.json export-ignore
+/.editorconfig export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/Makefile export-ignore
+/renovate.json export-ignore
+AGENTS.md export-ignore
+CLAUDE.md export-ignore

@@ -41,7 +41,7 @@ class FalSyncModuleController extends BaseSyncModuleController
     {
         parent::run($area);
 
-        // See http://jira.aida.de/jira/browse/SDM-2099
+        // The clean-up button posts dam_cleanup when orphaned file references exist
         if (isset($_POST['data']['dam_cleanup'])) {
             $this->cleanUpDAM();
         }
@@ -55,7 +55,7 @@ class FalSyncModuleController extends BaseSyncModuleController
     }
 
     /**
-     * http://jira.aida.de/jira/browse/SDM-2099.
+     * Deletes file references that point to no record (uid_foreign = 0).
      *
      * @return void
      */

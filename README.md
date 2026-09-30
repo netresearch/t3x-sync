@@ -228,6 +228,11 @@ composer ci:test:php:rector
 ```
 
 
+## Security
+
+[docs/SECURITY-ASSURANCE.md](https://github.com/netresearch/t3x-sync/blob/master/docs/SECURITY-ASSURANCE.md) describes which data the sync modules write, what the extension protects and what it leaves to the operator, its trust boundaries and the deployment requirements. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+
+
 ## Governance and policies
 
 This extension follows the organisation-wide Netresearch policies:

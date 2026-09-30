@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 [![Latest version](https://img.shields.io/github/v/release/netresearch/t3x-sync?sort=semver)](https://github.com/netresearch/t3x-sync/releases/latest)
-[![License](https://img.shields.io/github/license/netresearch/t3x-sync)](https://github.com/netresearch/t3x-sync/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/netresearch/t3x-sync)](https://github.com/netresearch/t3x-sync/blob/master/LICENSE)
 [![CI](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml)
 [![Crowdin](https://badges.crowdin.net/typo3-extension-nr-sync/localized.svg)](https://crowdin.com/project/typo3-extension-nr-sync)
 
@@ -222,7 +222,7 @@ composer install
 
 composer ci:cgl
 composer ci:test
-composer ci:test:php:phplint
+composer ci:test:php:lint
 composer ci:test:php:phpstan
 composer ci:test:php:rector
 ```

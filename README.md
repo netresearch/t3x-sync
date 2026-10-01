@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 [![Latest version](https://img.shields.io/github/v/release/netresearch/t3x-sync?sort=semver)](https://github.com/netresearch/t3x-sync/releases/latest)
-[![License](https://img.shields.io/github/license/netresearch/t3x-sync)](https://github.com/netresearch/t3x-sync/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/netresearch/t3x-sync)](https://github.com/netresearch/t3x-sync/blob/master/LICENSE)
 [![CI](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml)
 [![Crowdin](https://badges.crowdin.net/typo3-extension-nr-sync/localized.svg)](https://crowdin.com/project/typo3-extension-nr-sync)
 
@@ -220,7 +222,32 @@ composer install
 
 composer ci:cgl
 composer ci:test
-composer ci:test:php:phplint
+composer ci:test:php:lint
 composer ci:test:php:phpstan
 composer ci:test:php:rector
 ```
+
+
+## Security
+
+[docs/SECURITY-ASSURANCE.md](https://github.com/netresearch/t3x-sync/blob/master/docs/SECURITY-ASSURANCE.md) describes which data the sync modules write, what the extension protects and what it leaves to the operator, its trust boundaries and the deployment requirements. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+
+
+## Governance and policies
+
+This extension follows the organisation-wide Netresearch policies:
+
+- [Governance](https://github.com/netresearch/.github/blob/main/GOVERNANCE.md): ownership, roles, how decisions are made and conflicts resolved.
+- [Roadmap](https://github.com/netresearch/.github/blob/main/ROADMAP.md): planned and excluded work for the next twelve months.
+- [Handling of dependency and code analysis findings](https://github.com/netresearch/.github/blob/main/SECURITY.md#handling-of-dependency-and-code-analysis-findings): which vulnerability, licence and static-analysis findings must be fixed, by when, and how exceptions are recorded.
+- [Secret management](https://github.com/netresearch/.github/blob/main/SECURITY.md#secret-management): where CI and release credentials are stored, who may use them, how committed secrets are detected, and when secrets are rotated.
+- [Access roster](https://github.com/netresearch/.github/blob/main/docs/access-roster.md): the people and teams with administrative or write access to this repository.
+
+Checks that the workflows in `.github/workflows/` run on pull requests:
+
+- `.github/workflows/checks.yml`: Composer Audit (fails on any advisory for an installed package; `composer.json` lists no `config.audit.ignore` exceptions) and Opengrep SAST (which findings block is set organisation-wide, see [Static analysis (SAST)](https://github.com/netresearch/.github/blob/main/SECURITY.md#static-analysis-sast)), both through `typo3-ci-workflows`' `security.yml`; Dependency Review (fails on newly added dependencies with a vulnerability of severity high or higher); PHP License Audit (`license-check.yml`, fails on an SSPL or BSL licensed Composer dependency); CodeQL with language auto-detection, which finds no Go or JavaScript source here and analyses the workflow files (CodeQL has no PHP analysis; PHPStan and Opengrep cover the PHP code); Betterleaks secret scanning; zizmor for the workflow files (reported to code scanning, not blocking); the pull request quality check (`pr-quality`, on non-draft pull requests only: its Quality Gate job reports the size of the change and warns on large pull requests, its Auto-Approve job approves pull requests opened from this repository by authors GitHub associates with it as owner, member or collaborator); and the aggregate gate `All security checks`, which fails when one of these jobs fails or is cancelled. The fuzz job finds no `Fuzz` test suite in `Build/phpunit.xml` and is skipped.
+- `.github/workflows/ci.yml`: lint (`php -l`, plus checks that `ext_emconf.php` declares no `strict_types` and that `.gitattributes` has `export-ignore` rules), PHPStan (level 6 with the baseline `Build/phpstan-baseline.neon`) and the unit tests on PHP 8.2 to 8.5 with TYPO3 ^13.4; code style (PHP-CS-Fixer, `Build/.php-cs-fixer.dist.php`) and Rector (`Build/rector.php`) on one PHP version; an advisory PHPStan pass against the PHPUnit the matrix resolves without the version cap (`PHPStan (unpinned PHPUnit)`); and the aggregate gate `All CI checks`. There are no functional tests (`run-functional-tests: false`), Fractor is not part of the CI run, and there is no `Documentation/guides.xml` to render.
+- `.github/workflows/harness-verify.yml`: `scripts/verify-harness.sh` checks the agent documentation against the tree.
+- `.github/workflows/labeler.yml`: labels the pull request by the paths it changes; `.github/workflows/community.yml`: greets a contributor on their first pull request; `.github/workflows/auto-merge-deps.yml`: approves and enables auto-merge for Dependabot and Renovate pull requests that carry neither the `deps-no-automerge` nor the `deps-major` label, and is skipped for all others.
+
+The reusable workflows also run helper jobs that decide which of their jobs apply, for example `Preflight (event gate)`, `Detect Documentation` and CodeQL's `Prepare languages`.

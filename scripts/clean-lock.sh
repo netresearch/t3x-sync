@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Autor: Tobias.Hein <tobias.hein@netresearch.de>
 #
 # the script checks for lock files created by nr_sync and removes them

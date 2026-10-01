@@ -3,6 +3,9 @@
 /*
  * This file is part of the package netresearch/nr-sync.
  *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ *
  * For the full copyright and license information, please read the
  * LICENSE file that was distributed with this source code.
  */
@@ -19,7 +22,7 @@ use Netresearch\Sync\Traits\TranslationTrait;
  * Class FalSyncModuleController.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */
@@ -38,7 +41,7 @@ class FalSyncModuleController extends BaseSyncModuleController
     {
         parent::run($area);
 
-        // See http://jira.aida.de/jira/browse/SDM-2099
+        // The clean-up button posts dam_cleanup when orphaned file references exist
         if (isset($_POST['data']['dam_cleanup'])) {
             $this->cleanUpDAM();
         }
@@ -52,7 +55,7 @@ class FalSyncModuleController extends BaseSyncModuleController
     }
 
     /**
-     * http://jira.aida.de/jira/browse/SDM-2099.
+     * Deletes file references that point to no record (uid_foreign = 0).
      *
      * @return void
      */

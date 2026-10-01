@@ -1,11 +1,10 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
-
 name: Checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   # `ready_for_review` is NOT in the default type set (opened, synchronize,
   # reopened), and without it a pull request opened as a draft never gets its
   # auto-approval: `pr-quality`'s auto-approve job is gated on
@@ -16,6 +15,17 @@ on:
   #
   # The Go templates already carry this type set in their own pr-quality.yml;
   # this template folded that job into `checks.yml` and lost it on the way.
+  #
+  # The scan jobs deliberately run on `ready_for_review` too; do not skip them
+  # there. This run posts its own `All security checks` check-run on the head
+  # SHA, and the gate passes skipped jobs. With the scans skipped, that
+  # check-run went green without one scan having run in it — while the run
+  # that did scan this SHA could still be in progress (its gate check-run only
+  # appears once every job it needs has finished) or could have failed. The
+  # required context must never be satisfied by a run that scanned nothing.
+  # Skipped callers also post bare-named check-runs (`betterleaks`, `zizmor`)
+  # that collide with the code-scanning contexts of the same name, and a
+  # skipped job counts as passed.
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
@@ -38,39 +48,29 @@ permissions: {}
 # step by hand.
 jobs:
   security:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/typo3-ci-workflows/.github/workflows/security.yml@main
     permissions:
       contents: read
       security-events: write
 
   betterleaks:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/.github/.github/workflows/betterleaks.yml@main
     permissions:
       contents: read
       security-events: write
 
   zizmor:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/.github/.github/workflows/zizmor.yml@main
     permissions:
       contents: read
       security-events: write
 
   fuzz:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/typo3-ci-workflows/.github/workflows/fuzz.yml@main
     permissions:
       contents: read
 
   license-check:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/typo3-ci-workflows/.github/workflows/license-check.yml@main
     permissions:
       contents: read
@@ -82,8 +82,6 @@ jobs:
   # first SARIF. Merging this file is what triggers that handover, so the
   # narrow default silently removed a control that had been in place.
   codeql:
-    # Ran on this SHA already; lifting a draft changes no code (see `on:`).
-    if: github.event.action != 'ready_for_review'
     uses: netresearch/.github/.github/workflows/codeql.yml@main
     permissions:
       contents: read

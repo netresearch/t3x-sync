@@ -24,7 +24,7 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  * Returns TRUE/FALSE depending on whether a lock file exists in the specified directory.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

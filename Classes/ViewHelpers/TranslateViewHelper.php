@@ -22,7 +22,7 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  * A ViewHelper to translate.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

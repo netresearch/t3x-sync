@@ -18,7 +18,7 @@ namespace Netresearch\Sync\Event;
  * This event is used to immediately trigger an FAL sync.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

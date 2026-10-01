@@ -21,7 +21,7 @@ use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
  * It allows listeners to add, modify, or remove menu items.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

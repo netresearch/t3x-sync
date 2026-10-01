@@ -19,7 +19,7 @@ namespace Netresearch\Sync\Event;
  * It allows listeners to add or remove tables from the sync list.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

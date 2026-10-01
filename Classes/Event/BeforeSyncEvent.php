@@ -19,7 +19,7 @@ namespace Netresearch\Sync\Event;
  * It allows listeners to modify the tables to sync or perform actions before the sync.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch https://www.netresearch.de
+ * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
  */

@@ -27,7 +27,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * The clear-cache command class.
  *
  * @author  Rico Sonntag <rico.sonntag@netresearch.de>
- * @license Netresearch http://www.netresearch.de/
+ * @license GPL-3.0-or-later
  *
  * @see    http://www.netresearch.de/
  */

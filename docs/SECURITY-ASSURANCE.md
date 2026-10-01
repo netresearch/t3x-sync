@@ -2,7 +2,7 @@
 <!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 # Security assurance
 
-This document describes what users can and cannot expect from `nr_sync` in terms of security, its threat model and trust boundaries, the secure design principles it applies and how it counters common weaknesses. The component map is in [ARCHITECTURE.md](ARCHITECTURE.md). Every statement refers to the code at the commit that contains this file. Vulnerabilities are reported as described in [SECURITY.md](../SECURITY.md) and the organisation's [security policy](https://github.com/netresearch/.github/blob/main/SECURITY.md).
+This document describes what users can and cannot expect from `nr_sync` in terms of security, its threat model and trust boundaries, the secure design principles it applies and how it counters common weaknesses. It covers the backend modules, the import task and the console command `sync:cache:clear`. The component map is in [ARCHITECTURE.md](ARCHITECTURE.md). Every statement refers to the code at the commit that contains this file. Vulnerabilities are reported as described in [SECURITY.md](../SECURITY.md) and the organisation's [security policy](https://github.com/netresearch/.github/blob/main/SECURITY.md).
 
 Where a statement depends on TYPO3 itself, it refers to TYPO3 13.4.35, the version Composer resolved for `typo3/cms-core: ^13.4` on 2026-09-30 (the repository tracks no `composer.lock`).
 
@@ -81,7 +81,7 @@ The dumps contain complete rows. They are gzip-compressed (`DumpFileTrait::creat
 - **Least privilege:** the modules that write backend users and scheduler tasks are admin-only; the other modules must be granted explicitly (`Configuration/Backend/Modules.php`).
 - **Complete mediation of page access:** every page of a sync list is checked against `PAGE_EDIT` when the dump is built, not only when the page is added (`SyncList::getAllPageIDs()`).
 - **Fail-safe defaults:** the FTP notification is off unless `notify.type` is `ftp` and the current application context matches `notify.contexts` (`Area::systemIsNotifyEnabled()`); the default area configuration sets `type` to `none`.
-- **Economy of mechanism:** the extension does not implement its own transfer, encryption or authentication; it relies on TYPO3's backend authentication and leaves transport to the operator's tooling.
+- **Economy of mechanism:** the extension does not implement its own transfer, encryption or authentication; it relies on TYPO3's backend authentication for its backend modules and leaves transport to the operator's tooling.
 
 ## Countering common weaknesses
 
@@ -90,7 +90,7 @@ The dumps contain complete rows. They are gzip-compressed (`DumpFileTrait::creat
 | CWE-89 SQL injection (A03) | Queries against TYPO3's database use the Doctrine QueryBuilder or quoted values; the conditions built as strings contain only TCA field names, quoted identifiers and integers; SQL written into dumps is quoted | `DumpFileTrait::buildInsertUpdateLine()`, `DumpFileTrait::buildDeleteLine()`, `Table::getDumpWhereCondition()`, `Table::getSqlDroppingObsoleteRows()`, `Table::setLastDumpTime()` |
 | CWE-78 OS command injection (A03) | The command lines take no request data; their inputs are TYPO3's own database configuration, configured table names and integers | `Table::appendDumpToFile()`, `Table::appendUpdateToFile()`, `Task::importSqlFiles()` |
 | CWE-22 path traversal, CWE-377 insecure temporary file | Files are created through TYPO3's FAL API in fixed folders; the import writes the decompressed dump to a file created by `tempnam()` and deletes it afterwards | `StorageService`, `Task::importSqlFiles()` |
-| CWE-862 missing authorisation (A01) | Module access through TYPO3's module permissions; page access through `PAGE_EDIT`; changing the module lock only for administrators | `Configuration/Backend/Modules.php`, `SyncList::getAllPageIDs()`, `BaseSyncModuleController::getModuleTemplate()` |
+| CWE-862 missing authorisation (A01) | In the backend modules: module access through TYPO3's module permissions; page access through `PAGE_EDIT`; changing the module lock only for administrators | `Configuration/Backend/Modules.php`, `SyncList::getAllPageIDs()`, `BaseSyncModuleController::getModuleTemplate()` |
 | CWE-79 cross-site scripting (A03) | Backend views are Fluid templates, which escape variables by default. Two places pass markup through unescaped: `WaitList.html` outputs the table it rendered before with `f:format.raw()`, and `FlashMessageViewHelper` does not escape its children, which in `WaitList.html` are a translated message with a file count, a size, a date and a number of minutes | `Resources/Private/Templates/`, `Resources/Private/Partials/`, `Classes/ViewHelpers/FlashMessageViewHelper.php` |
 | Vulnerable dependencies (A06) | Composer Audit, Dependency Review and Renovate, see README.md, "Governance and policies" | `.github/workflows/checks.yml`, `renovate.json` |
 

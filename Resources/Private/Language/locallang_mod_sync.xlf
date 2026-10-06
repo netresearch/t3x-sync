@@ -177,6 +177,9 @@
       <trans-unit id="error.no_pages_marked">
         <source>There are no pages marked to sync.</source>
       </trans-unit>
+      <trans-unit id="error.storage_public">
+        <source>The sync storage is public, so the tables {tables} are not written to it. Set "storageUid" in the extension configuration of nr_sync to a file storage that is not public.</source>
+      </trans-unit>
       <trans-unit id="error.last_sync_not_finished">
         <source>There ist already a sync-preparation in progress. Please retry in about 5 minutes.</source>
       </trans-unit>

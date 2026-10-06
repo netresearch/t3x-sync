@@ -14,6 +14,14 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Service;
 
+use function array_intersect;
+use function array_values;
+
+use Exception;
+
+use function is_numeric;
+
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
@@ -34,6 +42,18 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class StorageService
 {
+    /**
+     * Tables whose rows hold credentials or configuration that may carry credentials. Dumps of these tables are
+     * written only to a storage that is not public.
+     *
+     * @var string[]
+     */
+    public const CREDENTIAL_TABLES = [
+        'be_users',
+        'fe_users',
+        'tx_scheduler_task',
+    ];
+
     /**
      * @var ResourceStorage|null
      */
@@ -81,7 +101,8 @@ class StorageService
     }
 
     /**
-     * Returns the default storage.
+     * Returns the storage that holds the sync files: the storage set in the extension setting "storageUid",
+     * or the default storage of TYPO3 if the setting is 0 or missing.
      *
      * @return ResourceStorage
      */
@@ -91,9 +112,47 @@ class StorageService
             return $this->defaultStorage;
         }
 
-        $this->defaultStorage = $this->getResourceFactory()->getDefaultStorage();
+        $storageUid = $this->getConfiguredStorageUid();
+
+        $this->defaultStorage = $storageUid > 0
+            ? $this->getResourceFactory()->getStorageObject($storageUid)
+            : $this->getResourceFactory()->getDefaultStorage();
 
         return $this->defaultStorage;
+    }
+
+    /**
+     * Returns the tables of the list that must not be written to the sync storage because the storage is
+     * public and the tables hold credentials.
+     *
+     * @param string[] $tables
+     *
+     * @return string[]
+     */
+    public function getTablesNotAllowedInStorage(array $tables): array
+    {
+        $credentialTables = array_values(array_intersect($tables, self::CREDENTIAL_TABLES));
+
+        if (($credentialTables === []) || !$this->getDefaultStorage()->isPublic()) {
+            return [];
+        }
+
+        return $credentialTables;
+    }
+
+    /**
+     * @return int
+     */
+    private function getConfiguredStorageUid(): int
+    {
+        try {
+            $storageUid = GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                ->get('nr_sync', 'storageUid');
+        } catch (Exception) {
+            return 0;
+        }
+
+        return is_numeric($storageUid) ? (int) $storageUid : 0;
     }
 
     /**
@@ -110,7 +169,7 @@ class StorageService
             return $this->tempFolder;
         }
 
-        $storage = $this->getResourceFactory()->getStorageObject(1);
+        $storage = $this->getDefaultStorage();
 
         if (Environment::isCli()) {
             $storage->setEvaluatePermissions(false);

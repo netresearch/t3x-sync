@@ -18,18 +18,34 @@
                     <h3>
                         <f:if condition="{nrs:folder.lockFileExists(directory: system.directory)}">
                             <f:then>
-                                <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 0, pid: pageUid)}"
-                                   class="btn btn-danger"
-                                   title="Sync disabled, click to enable"
-                                >
-                                    <core:icon identifier="actions-lock" size="small" /></a>
+                                <f:if condition="{isAdmin}">
+                                    <f:then>
+                                        <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 0, pid: pageUid)}"
+                                           class="btn btn-danger"
+                                           title="Sync disabled, click to enable"
+                                        >
+                                            <core:icon identifier="actions-lock" size="small" /></a>
+                                    </f:then>
+                                    <f:else>
+                                        <span class="btn btn-danger disabled" title="Sync disabled">
+                                            <core:icon identifier="actions-lock" size="small" /></span>
+                                    </f:else>
+                                </f:if>
                             </f:then>
                             <f:else>
-                                <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 1, pid: pageUid)}"
-                                   class="btn btn-success"
-                                   title="Sync enabled, click to disable"
-                                >
-                                    <core:icon identifier="actions-unlock" size="small" /></a>
+                                <f:if condition="{isAdmin}">
+                                    <f:then>
+                                        <a href="{nrs:backend.uri(area: systemKey, route: moduleRoute, lock: 1, pid: pageUid)}"
+                                           class="btn btn-success"
+                                           title="Sync enabled, click to disable"
+                                        >
+                                            <core:icon identifier="actions-unlock" size="small" /></a>
+                                    </f:then>
+                                    <f:else>
+                                        <span class="btn btn-success disabled" title="Sync enabled">
+                                            <core:icon identifier="actions-unlock" size="small" /></span>
+                                    </f:else>
+                                </f:if>
                             </f:else>
                         </f:if>
 

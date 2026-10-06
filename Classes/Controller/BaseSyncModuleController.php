@@ -323,6 +323,7 @@ class BaseSyncModuleController implements ModuleInterface
         }
 
         $moduleTemplate->assign('syncLock', $this->syncLock);
+        $moduleTemplate->assign('isAdmin', $this->getBackendUserAuthentication()->isAdmin());
 
         $this->handleTargetLock();
         $this->sortMenuItems($moduleTemplate);

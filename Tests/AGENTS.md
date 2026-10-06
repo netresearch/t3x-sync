@@ -18,6 +18,12 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 | `Unit/Event/ModifyMenuItemsEventTest.php` | Tests for the ModifyMenuItems event |
 | `Unit/Event/ModifyTableListEventTest.php` | Tests for the ModifyTableList event |
 | `Unit/Configuration/ModuleGroupIconTest.php` | Pins the shared module group icon: the group module's icon identifier, the registration and the bytes (identical in nr_textdb and universal_messenger) |
+| `Unit/Middleware/ClearCacheTest.php` | Access check and parameter handling of the clear-cache frontend middleware |
+| `Unit/Traits/SyncTargetLockTraitTest.php` | Target lock and unlock only for administrators |
+| `Unit/Controller/BaseSyncModuleControllerTest.php` | A submitted sync form starts no sync while the module is locked |
+| `Unit/Service/MysqlClientOptionFileTest.php` | Option file for the mysql/mysqldump credentials: content, quoting, mode, removal |
+| `Unit/Service/StorageServiceTest.php` | Storage choice (`storageUid`) and refusal of credential tables on a public storage |
+| `Unit/Helper/AreaTest.php` | TLS choice of the FTP notification |
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START golden-samples -->
@@ -39,7 +45,12 @@ PHPUnit unit test suite for `nr_sync`. Only `Tests/Unit/` exists — there is no
 Tests/
 └── Unit/          # Fast, isolated unit tests (autoload-dev: Netresearch\Sync\Tests\)
     ├── Configuration/ # Icon registration and shared icon bytes
-    └── Event/     # PSR-14 event tests
+    ├── Controller/    # Base sync module controller
+    ├── Event/         # PSR-14 event tests
+    ├── Helper/        # Area helper (FTP notification), with Fixtures/
+    ├── Middleware/    # Clear-cache middleware
+    ├── Service/       # Option file for the database clients, storage service
+    └── Traits/        # Target lock trait, with Fixtures/
 ```
 <!-- AGENTS-GENERATED:END structure -->
 

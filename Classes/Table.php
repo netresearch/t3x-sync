@@ -200,7 +200,7 @@ class Table
             $table->writeDump();
         }
 
-        // TYPO-206 append delete statements at the end of the table
+        // Append delete statements at the end of the table
         foreach ($instances as $table) {
             if ($table->deleteObsoleteRows) {
                 $table->appendDeleteObsoleteRowsToFile();

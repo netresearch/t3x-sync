@@ -748,7 +748,7 @@ trait DumpFileTrait
                 $row[$key] = $connection->quote($value);
             }
 
-            // TYPO-2215 - Match the column to its update value
+            // Match the column to its update value
             $updateParts[$key] = sprintf(
                 '%1$s = VALUES(%1$s)',
                 $connection->quoteSingleIdentifier($key),

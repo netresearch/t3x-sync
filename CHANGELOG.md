@@ -1,5 +1,39 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+# 2.0.0
+
+## BREAKING
+
+- 24dfd1c Requires TYPO3 13.4; TYPO3 12.4 is no longer supported
+- 05b3aed Dumps that contain `be_users`, `fe_users` or `tx_scheduler_task` are written only to a file storage that is not public; set the extension setting `storageUid` to such a storage to keep using the backend users and scheduler modules
+- ba96643 The FTP notification uses FTP over TLS; set `'tls' => false` in the `notify` array of the area configuration for a server without TLS
+- 3c0f4e7 The frontend endpoint `?nr-sync-clear-cache` clears caches only for a logged-in backend administrator and answers every other request with 403
+
+## FEATURE
+
+- 05b3aed Extension setting `storageUid` selects the file storage for dump files and URL lists
+- 6e64c47 PSR-14 events `BeforeSyncEvent`, `AfterSyncEvent`, `ModifyMenuItemsEvent`, `ModifyTableListEvent`
+- 991e17b Translations for 30 languages, XLIFF 1.2
+
+## BUGFIX
+
+- 12180df, 04ad51d Only administrators lock and unlock target systems
+- 6a0f4e0 A submitted sync form starts no sync while the sync module is locked
+- fa885ca, da34fbe `mysqldump` and `mysql` read the database credentials from a temporary option file instead of the command line
+- cd07020, 4490a4b The clear-cache endpoint follows TYPO3's frontend backend-user checks (MFA, `IPmaskList`, `lockSSL`, `adminOnly`) and accepts no login form fields
+- ba96643 The FTP notification deletes its temporary trigger file
+- db74456 Close 3 SAST findings at the source
+
+## MISC
+
+- 7155b30 The release workflow runs on unprefixed version tags
+- Internal ticket keys removed from this changelog; unused `gitlab-domains` setting and `scripts/clean-lock.sh` removed
+- CI moved to the shared TYPO3 extension workflows, dependency updates through Renovate, AGENTS.md and security assurance documentation
+
+## Contributors
+
+- Sebastian Mendel
+
 # 1.0.7
 
 ## MISC

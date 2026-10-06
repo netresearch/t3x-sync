@@ -101,7 +101,8 @@ class ClearCache implements MiddlewareInterface
 
     /**
      * Returns the backend user of the request if it is a logged-in administrator who passed multi-factor
-     * authentication and meets the IP mask and HTTPS settings of the backend, otherwise NULL.
+     * authentication and meets the IP mask and HTTPS settings of the backend, otherwise NULL. Like TYPO3's
+     * frontend backend-user authentication, it accepts nobody while BE.adminOnly is negative (backend locked).
      *
      * @param ServerRequestInterface $request
      */
@@ -118,6 +119,7 @@ class ClearCache implements MiddlewareInterface
         if (!is_array($backendUser->user)
             || ((int) ($backendUser->user['uid'] ?? 0) <= 0)
             || !$backendUser->isAdmin()
+            || ((int) ($GLOBALS['TYPO3_CONF_VARS']['BE']['adminOnly'] ?? 0) < 0)
         ) {
             return null;
         }

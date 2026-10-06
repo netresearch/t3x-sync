@@ -52,6 +52,7 @@ final class ClearCacheTest extends TestCase
 
         $GLOBALS['TYPO3_CONF_VARS']['BE']['IPmaskList'] = '';
         $GLOBALS['TYPO3_CONF_VARS']['BE']['lockSSL']    = false;
+        $GLOBALS['TYPO3_CONF_VARS']['BE']['adminOnly']  = 0;
     }
 
     #[Override]
@@ -205,6 +206,20 @@ final class ClearCacheTest extends TestCase
 
         $response = $this->createSubject($this->createBackendUser(['uid' => 3, 'admin' => 1], true), $clearCacheService)
             ->process($this->createRequest($this->clearCacheQuery(), '192.0.2.10'), $this->createHandler());
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function administratorIsRefusedWhileTheBackendIsLocked(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['BE']['adminOnly'] = -1;
+
+        $clearCacheService = $this->createMock(ClearCacheService::class);
+        $clearCacheService->expects(self::never())->method('clearCaches');
+
+        $response = $this->createSubject($this->createBackendUser(['uid' => 3, 'admin' => 1], true), $clearCacheService)
+            ->process($this->createRequest($this->clearCacheQuery()), $this->createHandler());
 
         self::assertSame(403, $response->getStatusCode());
     }

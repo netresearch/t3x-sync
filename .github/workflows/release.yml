@@ -6,7 +6,9 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      # Release tags carry no prefix (1.0.0 … 1.0.7); the reusable workflow
+      # accepts X.Y.Z with or without a leading "v".
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 permissions: {}
 

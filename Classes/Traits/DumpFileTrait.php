@@ -169,6 +169,10 @@ trait DumpFileTrait
         string $dumpFile,
         array $arPath,
     ): bool {
+        if (!$this->mayWriteTablesToStorage($tables)) {
+            return false;
+        }
+
         if (count($pageIDs) <= 0) {
             $this->addErrorMessage($this->getLabel('error.no_pages_marked'));
 
@@ -317,6 +321,10 @@ trait DumpFileTrait
 
         // Use potentially modified tables from the event
         $tables = $beforeEvent->getTables();
+
+        if (!$this->mayWriteTablesToStorage($tables)) {
+            return false;
+        }
 
         $tempFolder         = $this->storageService->getTempFolder();
         $tempFileIdentifier = $tempFolder->getIdentifier() . $filename;
@@ -472,6 +480,34 @@ trait DumpFileTrait
         }
 
         return $compressedDumpFile;
+    }
+
+    /**
+     * Returns FALSE and shows an error if the tables include tables with credentials and the sync storage is
+     * public.
+     *
+     * @param string[] $tables
+     *
+     * @return bool
+     */
+    private function mayWriteTablesToStorage(array $tables): bool
+    {
+        $refusedTables = $this->storageService->getTablesNotAllowedInStorage($tables);
+
+        if ($refusedTables === []) {
+            return true;
+        }
+
+        $this->addErrorMessage(
+            $this->getLabel(
+                'error.storage_public',
+                [
+                    '{tables}' => implode(', ', $refusedTables),
+                ],
+            ),
+        );
+
+        return false;
     }
 
     /**
@@ -748,7 +784,7 @@ trait DumpFileTrait
                 $row[$key] = $connection->quote($value);
             }
 
-            // TYPO-2215 - Match the column to its update value
+            // Match the column to its update value
             $updateParts[$key] = sprintf(
                 '%1$s = VALUES(%1$s)',
                 $connection->quoteSingleIdentifier($key),

@@ -30,6 +30,12 @@ incremental to keep the required load to an absolute minimum. The extension won'
 ### GIT
 ``git clone git@github.com:netresearch/t3x-sync.git``
 
+## Configuration
+
+- **Sync storage:** the extension setting `storageUid` names the file storage that receives the dump files and URL lists, on the source and the target systems. `0` (the default) uses TYPO3's default storage, usually `fileadmin/`. Dumps that contain `be_users`, `fe_users` or `tx_scheduler_task` are written only to a storage that is not public, so the backend users and scheduler modules need a non-public storage outside the web directory set here.
+- **FTP notification:** a target system with `'notify' => ['type' => 'ftp', 'host' => …, 'user' => …, 'password' => …]` in the area configuration is notified over FTP with TLS. `'tls' => false` in the same array switches to plain FTP.
+- **Clearing caches over HTTP:** a frontend request with `?nr-sync-clear-cache&task=clearCache&data=<table>:<uid>,…` clears the listed caches only for a logged-in backend administrator; every other request gets `403`. The scheduler task `SyncImportTask` and the console command `sync:cache:clear` clear caches without this endpoint.
+
 
 ## PSR-14 Events
 

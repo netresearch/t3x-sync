@@ -31,9 +31,6 @@
         "sort-packages": true,
         "optimize-autoloader": true,
         "platform-check": false,
-        "gitlab-domains": [
-            "git.netresearch.de"
-        ],
         "allow-plugins": {
             "a9f/fractor-extension-installer": true,
             "captainhook/hook-installer": true,

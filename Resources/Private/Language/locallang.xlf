@@ -12,6 +12,9 @@
       <trans-unit id="lock.message">
         <source>Message for users in case of active lock</source>
       </trans-unit>
+      <trans-unit id="storage.label">
+        <source>File storage for the sync files (uid; 0 = default storage). Backend users, frontend users and scheduler tasks are written only to a storage that is not public.</source>
+      </trans-unit>
     </body>
   </file>
 </xliff>

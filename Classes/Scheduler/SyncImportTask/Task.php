@@ -18,6 +18,7 @@ use function is_array;
 
 use Netresearch\NrScheduler\AbstractTask;
 use Netresearch\Sync\Service\ClearCacheService;
+use Netresearch\Sync\Service\MysqlClientOptionFile;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\DatabaseConnectionTrait;
 use RuntimeException;
@@ -115,20 +116,25 @@ class Task extends AbstractTask
             file_put_contents($tmpFile, gzdecode($file->getContents()));
             $this->deleteFile($file);
 
-            $command = sprintf(
-                'mysql -h%s -u%s -p%s %s < %s 2>&1',
-                escapeshellarg((string) $databaseConnection->getParams()['host']),
-                escapeshellarg((string) $databaseConnection->getParams()['user']),
-                escapeshellarg((string) $databaseConnection->getParams()['password']),
-                escapeshellarg((string) $databaseConnection->getParams()['dbname']),
-                escapeshellarg($tmpFile),
-            );
-
             $output = [];
-            $return = '';
-            // Fixed command; every variable part goes through escapeshellarg().
-            // nosemgrep: php.lang.security.exec-use.exec-use
-            exec($command, $output, $return);
+            $return = 0;
+
+            // The credentials go into a temporary option file, not onto the command line.
+            MysqlClientOptionFile::run(
+                $databaseConnection->getParams(),
+                static function (string $defaultsOption) use ($databaseConnection, $tmpFile, &$output, &$return): void {
+                    $command = sprintf(
+                        'mysql %s %s < %s 2>&1',
+                        $defaultsOption,
+                        escapeshellarg((string) $databaseConnection->getParams()['dbname']),
+                        escapeshellarg($tmpFile),
+                    );
+
+                    // Fixed command; every variable part goes through escapeshellarg().
+                    // nosemgrep: php.lang.security.exec-use.exec-use
+                    exec($command, $output, $return);
+                },
+            );
             // nosemgrep: php.lang.security.unlink-use.unlink-use -- $tmpFile is the return value of tempnam() above; the path is system-generated and cannot be influenced by request data. The rule pattern cannot observe the source.
             unlink($tmpFile);
 

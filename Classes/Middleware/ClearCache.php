@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Middleware;
 
+use function is_array;
+use function is_string;
+
 use Netresearch\Sync\Service\ClearCacheService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,8 +24,10 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Authentication\Mfa\MfaRequiredException;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendBackendUserAuthentication;
 
 /**
  * The clear cache middleware.
@@ -52,17 +57,26 @@ class ClearCache implements MiddlewareInterface
     }
 
     /**
+     * Clears the caches listed in the "data" parameter of a request that carries "nr-sync-clear-cache".
+     *
+     * The request must come from a logged-in backend administrator; any other request is answered with
+     * 403 and clears nothing.
+     *
      * @param ServerRequestInterface  $request
      * @param RequestHandlerInterface $handler
      *
      * @return ResponseInterface
-     *
-     * @throws MfaRequiredException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!isset($request->getQueryParams()['nr-sync-clear-cache'])) {
             return $handler->handle($request);
+        }
+
+        $backendUser = $this->authenticateAdministrator($request);
+
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return (new Response())->withStatus(403, 'Backend administrator login required');
         }
 
         $task = $request->getQueryParams()['task'] ?? null;
@@ -72,43 +86,73 @@ class ClearCache implements MiddlewareInterface
             return (new Response())->withStatus(400, 'Task unknown');
         }
 
-        if (($data === '') || ($data === [])) {
+        if (!is_string($data) || ($data === '')) {
             return (new Response())->withStatus(400, 'Data parameter absent');
         }
 
-        $this->runClearCacheService($request, explode(',', (string) $data));
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        // Try increased memory limit
+        ini_set('memory_limit', '256M');
+
+        $this->clearCacheService->clearCaches(explode(',', $data));
 
         return (new Response())->withStatus(200);
     }
 
     /**
-     * @return BackendUserAuthentication
+     * Returns the backend user of the request if it is a logged-in administrator who passed multi-factor
+     * authentication and meets the IP mask and HTTPS settings of the backend, otherwise NULL. Like TYPO3's
+     * frontend backend-user authentication, it accepts nobody while BE.adminOnly is negative (backend locked).
+     *
+     * @param ServerRequestInterface $request
      */
-    private function getBackendUserAuthentication(): BackendUserAuthentication
+    protected function authenticateAdministrator(ServerRequestInterface $request): ?BackendUserAuthentication
     {
-        $GLOBALS['BE_USER'] = GeneralUtility::makeInstance(BackendUserAuthentication::class);
+        $backendUser = $this->createBackendUserAuthentication();
 
-        return $GLOBALS['BE_USER'];
+        try {
+            $backendUser->start($request);
+        } catch (MfaRequiredException) {
+            return null;
+        }
+
+        if (!is_array($backendUser->user)
+            || ((int) ($backendUser->user['uid'] ?? 0) <= 0)
+            || !$backendUser->isAdmin()
+            || ((int) ($GLOBALS['TYPO3_CONF_VARS']['BE']['adminOnly'] ?? 0) < 0)
+        ) {
+            return null;
+        }
+
+        $normalizedParams = $request->getAttribute('normalizedParams');
+        $ipMask           = trim((string) ($GLOBALS['TYPO3_CONF_VARS']['BE']['IPmaskList'] ?? ''));
+
+        if (($ipMask !== '')
+            && (!$normalizedParams instanceof NormalizedParams
+                || !GeneralUtility::cmpIP($normalizedParams->getRemoteAddress(), $ipMask))
+        ) {
+            return null;
+        }
+
+        if ((bool) ($GLOBALS['TYPO3_CONF_VARS']['BE']['lockSSL'] ?? false)
+            && (!$normalizedParams instanceof NormalizedParams || !$normalizedParams->isHttps())
+        ) {
+            return null;
+        }
+
+        return $backendUser;
     }
 
     /**
-     * Run the service.
+     * Returns the backend user authentication TYPO3 uses in the frontend: it reads an existing backend session
+     * and accepts no login form fields, so a frontend request cannot log a backend user in. The middleware
+     * runs in the frontend stack, which only exists with typo3/cms-frontend installed.
      *
-     * @param ServerRequestInterface $request
-     * @param string[]               $data    array with values in table:uid order
-     *
-     * @return void
-     *
-     * @throws MfaRequiredException
+     * @return BackendUserAuthentication
      */
-    private function runClearCacheService(ServerRequestInterface $request, array $data): void
+    protected function createBackendUserAuthentication(): BackendUserAuthentication
     {
-        $backendUser = $this->getBackendUserAuthentication();
-        $backendUser->start($request);
-
-        // Try increased memory limit
-        ini_set('memory_limit', '256M');
-
-        $this->clearCacheService->clearCaches($data);
+        return GeneralUtility::makeInstance(FrontendBackendUserAuthentication::class);
     }
 }

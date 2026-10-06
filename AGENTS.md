@@ -50,7 +50,7 @@ Resources/       → Fluid templates/partials, XLIFF translations, CSS, icons
 Tests/           → PHPUnit unit tests (Tests/Unit/ only, no functional suite)
 Build/           → tool configs (phpstan, rector, php-cs-fixer, phplint, phpunit)
 Documentation/   → images for README (no RST docs)
-scripts/         → repo scripts (clean-lock.sh, verify-harness.sh)
+scripts/         → repo scripts (verify-harness.sh)
 docs/            → agent-facing docs (ARCHITECTURE.md, exec-plans/)
 ```
 <!-- AGENTS-GENERATED:END filemap -->

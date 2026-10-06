@@ -6,3 +6,6 @@ syncModuleLocked = 0
 
 # cat=basic/11; type=text; label=LLL:EXT:nr_sync/Resources/Private/Language/locallang.xlf:lock.message
 syncModuleLockedMessage = Content sync is currently disabled.
+
+# cat=basic/12; type=int+; label=LLL:EXT:nr_sync/Resources/Private/Language/locallang.xlf:storage.label
+storageUid = 0

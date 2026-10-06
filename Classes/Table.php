@@ -17,7 +17,9 @@ namespace Netresearch\Sync;
 use Doctrine\DBAL\Exception;
 
 use function in_array;
+use function is_string;
 
+use Netresearch\Sync\Service\MysqlClientOptionFile;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -351,31 +353,26 @@ class Table
 
 TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
-        $strExec = 'mysqldump --host=' . escapeshellarg((string) $connection->getParams()['host'])
-            . ' --user=' . escapeshellarg((string) $connection->getParams()['user'])
-            . ' --password=' . escapeshellarg((string) $connection->getParams()['password'])
-            // do not drop tables here, we truncated them already
-            . ' --skip-add-drop-table';
+        // do not drop tables here, we truncated them already
+        $strOptions = ' --skip-add-drop-table';
 
         if ($this->noCreateInfo) {
             // do not add CREATE TABLE
-            $strExec .= ' --no-create-info';
+            $strOptions .= ' --no-create-info';
         }
 
         $bUseReplace = $this->useReplace();
 
         if ($bUseReplace) {
-            $strExec .= ' --replace';
+            $strOptions .= ' --replace';
         }
 
         // use INSERT with column names
         // - prevent errors due to differences in tables on live system
-        $strExec .= ' --complete-insert --extended-insert --disable-keys --hex-blob '
+        $strOptions .= ' --complete-insert --extended-insert --disable-keys --hex-blob '
             . escapeshellarg((string) $connection->getDatabase()) . ' ' . escapeshellarg($this->tableName);
 
-        // Fixed command; every variable part goes through escapeshellarg().
-        // nosemgrep: php.lang.security.exec-use.exec-use
-        $this->appendToDumpFile(shell_exec($strExec));
+        $this->appendToDumpFile($this->runMysqldump($connection->getParams(), $strOptions));
     }
 
     /**
@@ -402,25 +399,47 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
             );
         }
 
-        $strExec = 'mysqldump --host=' . escapeshellarg((string) $connection->getParams()['host'])
-            . ' --user=' . escapeshellarg((string) $connection->getParams()['user'])
-            . ' --password=' . escapeshellarg((string) $connection->getParams()['password'])
-            // do not drop tables here, we truncated them already
-            . ' --skip-add-drop-table';
+        // do not drop tables here, we truncated them already
+        $strOptions = ' --skip-add-drop-table';
 
         if ($this->noCreateInfo) {
             // do not add CREATE TABLE
-            $strExec .= ' --no-create-info';
+            $strOptions .= ' --no-create-info';
         }
 
         // use INSERT with column names
         // - prevent errors due to differences in tables on live system
-        $strExec .= ' --complete-insert --extended-insert --disable-keys --replace --hex-blob --where=' . escapeshellarg($strWhere)
+        $strOptions .= ' --complete-insert --extended-insert --disable-keys --replace --hex-blob --where=' . escapeshellarg($strWhere)
             . ' ' . escapeshellarg((string) $connection->getDatabase()) . ' ' . escapeshellarg($this->tableName);
 
-        // Fixed command; every variable part goes through escapeshellarg().
-        // nosemgrep: php.lang.security.exec-use.exec-use
-        $this->appendToDumpFile(shell_exec($strExec));
+        $this->appendToDumpFile($this->runMysqldump($connection->getParams(), $strOptions));
+    }
+
+    /**
+     * Runs mysqldump with the given options and returns its output. The connection credentials are passed
+     * in a temporary option file, not on the command line.
+     *
+     * @param array<string, mixed> $connectionParams Doctrine DBAL connection parameters
+     * @param string               $options          Command line options after the option file, already escaped
+     *
+     * @return string
+     */
+    private function runMysqldump(array $connectionParams, string $options): string
+    {
+        return MysqlClientOptionFile::run(
+            $connectionParams,
+            static function (string $defaultsOption) use ($options): string {
+                // Fixed command; every variable part goes through escapeshellarg().
+                // nosemgrep: php.lang.security.exec-use.exec-use
+                $output = shell_exec('mysqldump ' . $defaultsOption . $options);
+
+                if (!is_string($output)) {
+                    throw new RuntimeException('mysqldump returned no output');
+                }
+
+                return $output;
+            },
+        );
     }
 
     /**

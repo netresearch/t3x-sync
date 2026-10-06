@@ -125,8 +125,8 @@
 
 - 553f107 Refactor empty check
 - 0a7505d Skip insert mm delete lines for sys_file_references due to the table has a deleted marker ans do it's not neccessary anymore.
-- 86e7927 MFI-173: Rework sync modules
-- 084f737 MFI-152: Search only content elements which list_types begins with news. So we ensure only pages with news plugins are found.
+- 86e7927 Rework sync modules
+- 084f737 Search only content elements which list_types begins with news. So we ensure only pages with news plugins are found.
 - 4852c69 Fix .gitlab-ci.yml
 
 ## Contributors
@@ -142,7 +142,7 @@
 - 62954ca Exclude zip archive from versioning
 - 6fd2cfd Fix README
 - 9c6a3ac Convert readme to markdown.
-- 554f584 ATU-153: Use correct nr-sync backend mobule icon
+- 554f584 Use correct nr-sync backend mobule icon
 
 ## Contributors
 
@@ -153,7 +153,7 @@
 
 ## MISC
 
-- a5478a3 MFI-152: Update readme.
+- a5478a3 Update readme.
 - 71f6e25 Rename readme from .md to .rst
 
 ## Contributors
@@ -164,19 +164,19 @@
 
 ## MISC
 
-- 1eeb437 MFI-152: Create syncs for pages which contains news plugins.
+- 1eeb437 Create syncs for pages which contains news plugins.
 - 7b351bb Remove sys_file_storage from fal sync. Due to we want to manage this for each environent separately.
 - 4f54382 change accesslevel for textDB sync from 100 (admins only) to 50 - make it possible for non admins to sync textdb stuff
-- 341ee67 MFI-112: Remove restrictions for determing page translations. So also disabled pages could be synced if necessary.
-- 138e16d MFI-112: Make sync of redirects possible.
-- 4b412e4 MFI-112: Add some common syncs
-- f3cd98a MFI-112: Do not use deprecated methods
-- a9e94c7 MFI-112: Determine Translations of a page on sync.,
-- 3bf2628 MFI-100: rename signaling ftp user
-- 16d9e58 MFI-100: Fix clearcache url.
+- 341ee67 Remove restrictions for determing page translations. So also disabled pages could be synced if necessary.
+- 138e16d Make sync of redirects possible.
+- 4b412e4 Add some common syncs
+- f3cd98a Do not use deprecated methods
+- a9e94c7 Determine Translations of a page on sync.,
+- 3bf2628 rename signaling ftp user
+- 16d9e58 Fix clearcache url.
 - 54b9af0 Added missing extension-key in composer.json
 - 1ee17a8 Updated logo
-- 4b96d8e MFI-32: fix return type for getFunctionObject in Classes/Controller/SyncModuleController.php - avoid fatal error
+- 4b96d8e fix return type for getFunctionObject in Classes/Controller/SyncModuleController.php - avoid fatal error
 - ad644b8 Fixed small bug with backend user
 - 5b24577 More code cleanup, removed obsolete/duplicate methods, changed method visiblities, added use statements
 - 067dd85 Removed obsolete sync entries

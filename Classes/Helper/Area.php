@@ -458,6 +458,7 @@ class Area
                     }
                 }
             } finally {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- $sourceFile is the return value of tempnam() above; no request data reaches it
                 unlink($sourceFile);
             }
         } finally {
@@ -480,6 +481,7 @@ class Area
             }
 
             // Suppress the PHP warning message if the host is invalid
+            // nosemgrep: php.lang.security.ftp-use.ftp-use -- FTP over TLS, the transport the rule asks for
             return @ftp_ssl_connect($host);
         }
 

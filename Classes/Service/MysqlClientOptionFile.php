@@ -72,6 +72,7 @@ final class MysqlClientOptionFile
             return $callback('--defaults-extra-file=' . escapeshellarg($file));
         } finally {
             if (is_file($file)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- $file is the return value of tempnam() in create(); no request data reaches it
                 unlink($file);
             }
         }
@@ -119,6 +120,7 @@ final class MysqlClientOptionFile
         if (!chmod($file, 0600)
             || (file_put_contents($file, self::render($connectionParams)) === false)
         ) {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- $file is the return value of tempnam() above
             unlink($file);
 
             throw new RuntimeException('Failed to write the option file for the MySQL client');

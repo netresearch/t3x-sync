@@ -225,11 +225,7 @@ class BaseSyncModuleController implements ModuleInterface
         $this->initFolders($this->getArea());
         $this->initializeAction($request);
 
-        if (($request->getMethod() === 'POST')
-            && ($request->getParsedBody() !== null)
-            && ($request->getParsedBody() !== [])
-            && isset($request->getParsedBody()['data']['submit'])
-        ) {
+        if ($this->isSyncRequested($request)) {
             $dumpFile = $this->getDumpFile();
 
             if (($dumpFile !== '') && ($dumpFile !== null)) {
@@ -240,6 +236,23 @@ class BaseSyncModuleController implements ModuleInterface
         }
 
         return $this->htmlResponse();
+    }
+
+    /**
+     * Returns TRUE if the request submits the sync form and the sync module is not locked.
+     *
+     * @param ServerRequestInterface $request
+     *
+     * @return bool
+     */
+    protected function isSyncRequested(ServerRequestInterface $request): bool
+    {
+        $parsedBody = $request->getParsedBody();
+
+        return ($request->getMethod() === 'POST')
+            && is_array($parsedBody)
+            && isset($parsedBody['data']['submit'])
+            && !$this->syncLock->isLocked();
     }
 
     /**

@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Helper;
 
+use FTP\Connection;
+
 use function in_array;
 
 use Netresearch\Sync\Exception;
@@ -413,52 +415,77 @@ class Area
     /**
      * Inform the Master(LIVE) Server per FTP.
      *
-     * Plain FTP is the transport the target system is configured for
-     * (notify.type 'ftp'); the uploaded files are empty trigger files. The
-     * ftp_* calls Opengrep flags carry a nosemgrep marker for that reason.
+     * Uploads two empty trigger files. The connection uses FTP over TLS (explicit AUTH TLS) unless the
+     * notify configuration sets 'tls' => false; with TLS, a server that does not offer it refuses the login.
      *
-     * @param string[] $ftpConfig Config of the ftp connection
+     * @param array<string, mixed> $ftpConfig Config of the ftp connection
      *
      * @throws Exception
      */
     protected function notifyMasterViaFtp(array $ftpConfig): void
     {
-        // Suppress the PHP warning message if the host is invalid
-        // nosemgrep: php.lang.security.ftp-use.ftp-use
-        $connection = @ftp_connect($ftpConfig['host'] ?? '');
+        $connection = $this->openFtpConnection(
+            (string) ($ftpConfig['host'] ?? ''),
+            ($ftpConfig['tls'] ?? true) !== false,
+        );
 
-        if (!$connection) {
+        if ($connection === false) {
             throw new Exception('Signal: FTP connection failed.');
         }
 
-        // nosemgrep: php.lang.security.ftp-use.ftp-use
-        $loginResult = ftp_login($connection, $ftpConfig['user'], $ftpConfig['password']);
+        try {
+            // nosemgrep: php.lang.security.ftp-use.ftp-use -- FTP over TLS unless the area configuration opts out
+            if (!ftp_login($connection, (string) ($ftpConfig['user'] ?? ''), (string) ($ftpConfig['password'] ?? ''))) {
+                throw new Exception('Signal: FTP auth failed.');
+            }
 
-        if (!$loginResult) {
-            throw new Exception('Signal: FTP auth failed.');
-        }
+            // Enforce passive mode
+            // nosemgrep: php.lang.security.ftp-use.ftp-use
+            ftp_pasv($connection, true);
 
-        // Enforce passive mode
-        // nosemgrep: php.lang.security.ftp-use.ftp-use
-        ftp_pasv($connection, true);
+            // Create trigger file
+            $sourceFile = tempnam(sys_get_temp_dir(), 'nrsync_');
 
-        // Create trigger file
-        $sourceFile = tempnam(sys_get_temp_dir(), 'prefix');
+            if ($sourceFile === false) {
+                throw new Exception('Signal: could not create the trigger file.');
+            }
 
-        if (ftp_put($connection, 'db.txt', $sourceFile) === false) {
+            try {
+                foreach (['db.txt', 'files.txt'] as $triggerFile) {
+                    // nosemgrep: php.lang.security.ftp-use.ftp-use
+                    if (!ftp_put($connection, $triggerFile, $sourceFile)) {
+                        throw new Exception('Signal: FTP put ' . $triggerFile . ' failed.');
+                    }
+                }
+            } finally {
+                unlink($sourceFile);
+            }
+        } finally {
             // nosemgrep: php.lang.security.ftp-use.ftp-use
             ftp_close($connection);
-            throw new Exception('Signal: FTP put db.txt failed.');
+        }
+    }
+
+    /**
+     * Opens the FTP connection, with TLS unless $useTls is FALSE.
+     *
+     * @param string $host
+     * @param bool   $useTls
+     */
+    protected function openFtpConnection(string $host, bool $useTls): Connection|false
+    {
+        if ($useTls) {
+            if (!function_exists('ftp_ssl_connect')) {
+                return false;
+            }
+
+            // Suppress the PHP warning message if the host is invalid
+            return @ftp_ssl_connect($host);
         }
 
-        if (ftp_put($connection, 'files.txt', $sourceFile) === false) {
-            // nosemgrep: php.lang.security.ftp-use.ftp-use
-            ftp_close($connection);
-            throw new Exception('Signal: FTP put files.txt failed.');
-        }
-
-        // nosemgrep: php.lang.security.ftp-use.ftp-use
-        ftp_close($connection);
+        // Suppress the PHP warning message if the host is invalid
+        // nosemgrep: php.lang.security.ftp-use.ftp-use -- plain FTP only when the area configuration sets 'tls' => false
+        return @ftp_connect($host);
     }
 
     /**

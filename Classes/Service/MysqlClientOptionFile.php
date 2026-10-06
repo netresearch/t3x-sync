@@ -29,9 +29,10 @@ use function unlink;
 /**
  * Passes the database credentials to the mysql and mysqldump clients in an option file.
  *
- * The clients read the file given with --defaults-extra-file, which must be the first option on the command
- * line. The file is readable only by the owner and is removed after the client has run, so the password
- * appears neither on the command line nor in the environment of the client process.
+ * The clients read the file given with --defaults-file, which must be the first option on the command line,
+ * and no other option file, so neither /etc/my.cnf nor ~/.my.cnf of the PHP process user can replace the
+ * connection parameters of TYPO3. The file is readable only by the owner and is removed after the client has
+ * run, so the password appears neither on the command line nor in the environment of the client process.
  *
  * @author  Netresearch DTT GmbH
  * @license GPL-3.0-or-later
@@ -60,7 +61,7 @@ final class MysqlClientOptionFile
      * @template T
      *
      * @param array<string, mixed>                $connectionParams Doctrine DBAL connection parameters
-     * @param callable(string $defaultsOption): T $callback         Receives "--defaults-extra-file=<escaped path>"
+     * @param callable(string $defaultsOption): T $callback         Receives "--defaults-file=<escaped path>"
      *
      * @return T
      */
@@ -69,7 +70,7 @@ final class MysqlClientOptionFile
         $file = self::create($connectionParams);
 
         try {
-            return $callback('--defaults-extra-file=' . escapeshellarg($file));
+            return $callback('--defaults-file=' . escapeshellarg($file));
         } finally {
             if (is_file($file)) {
                 // nosemgrep: php.lang.security.unlink-use.unlink-use -- $file is the return value of tempnam() in create(); no request data reaches it

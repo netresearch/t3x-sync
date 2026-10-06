@@ -39,13 +39,13 @@ final class MysqlClientOptionFileTest extends TestCase
     }
 
     /**
-     * Returns the path of the option file from "--defaults-extra-file='<path>'".
+     * Returns the path of the option file from "--defaults-file='<path>'".
      */
     private function pathOf(string $defaultsOption): string
     {
-        self::assertMatchesRegularExpression("/^--defaults-extra-file='[^']+'$/", $defaultsOption);
+        self::assertMatchesRegularExpression("/^--defaults-file='[^']+'$/", $defaultsOption);
 
-        return substr($defaultsOption, strlen("--defaults-extra-file='"), -1);
+        return substr($defaultsOption, strlen("--defaults-file='"), -1);
     }
 
     #[Test]

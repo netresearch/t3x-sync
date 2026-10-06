@@ -25,12 +25,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ReflectionMethod;
+use ReflectionProperty;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Authentication\Mfa\MfaProviderManifestInterface;
 use TYPO3\CMS\Core\Authentication\Mfa\MfaRequiredException;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Frontend\Authentication\FrontendBackendUserAuthentication;
 
 #[CoversClass(ClearCache::class)]
 final class ClearCacheTest extends TestCase
@@ -136,6 +139,20 @@ final class ClearCacheTest extends TestCase
             'task'                => 'clearCache',
             'data'                => 'pages:12,pages:13',
         ];
+    }
+
+    #[Test]
+    public function backendSessionIsReadWithoutAcceptingLoginFormFields(): void
+    {
+        $subject = new ClearCache($this->createStub(ClearCacheService::class));
+
+        $backendUser = (new ReflectionMethod(ClearCache::class, 'createBackendUserAuthentication'))->invoke($subject);
+
+        self::assertInstanceOf(FrontendBackendUserAuthentication::class, $backendUser);
+
+        foreach (['formfield_status', 'formfield_uname', 'formfield_uident'] as $property) {
+            self::assertSame('', (new ReflectionProperty($backendUser, $property))->getValue($backendUser), $property);
+        }
     }
 
     #[Test]

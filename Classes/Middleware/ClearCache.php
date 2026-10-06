@@ -27,6 +27,7 @@ use TYPO3\CMS\Core\Authentication\Mfa\MfaRequiredException;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendBackendUserAuthentication;
 
 /**
  * The clear cache middleware.
@@ -144,10 +145,14 @@ class ClearCache implements MiddlewareInterface
     }
 
     /**
+     * Returns the backend user authentication TYPO3 uses in the frontend: it reads an existing backend session
+     * and accepts no login form fields, so a frontend request cannot log a backend user in. The middleware
+     * runs in the frontend stack, which only exists with typo3/cms-frontend installed.
+     *
      * @return BackendUserAuthentication
      */
     protected function createBackendUserAuthentication(): BackendUserAuthentication
     {
-        return GeneralUtility::makeInstance(BackendUserAuthentication::class);
+        return GeneralUtility::makeInstance(FrontendBackendUserAuthentication::class);
     }
 }

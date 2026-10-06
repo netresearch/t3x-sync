@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Traits;
 
+use function is_array;
+
 /**
  * SyncTargetLockTrait.
  *
@@ -26,11 +28,17 @@ namespace Netresearch\Sync\Traits;
 trait SyncTargetLockTrait
 {
     /**
+     * Locks or unlocks the target systems named in the request parameter "lock". Only administrators may
+     * change the lock of a target system; the request of any other user is ignored.
+     *
      * @return void
      */
     private function handleTargetLock(): void
     {
-        if (!isset($_REQUEST['lock'])) {
+        if (!isset($_REQUEST['lock'])
+            || !is_array($_REQUEST['lock'])
+            || !$this->getBackendUserAuthentication()->isAdmin()
+        ) {
             return;
         }
 

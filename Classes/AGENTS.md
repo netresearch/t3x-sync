@@ -51,7 +51,7 @@ Classes/
   Helper/          → Area helper (contains @deprecated code)
   Middleware/      → PSR-15 middleware (clear-cache endpoint)
   Scheduler/       → SyncImportTask for target-side import
-  Service/         → ClearCacheService, StorageService
+  Service/         → ClearCacheService, StorageService, MysqlClientOptionFile
   Traits/          → shared behavior (DumpFile, DatabaseConnection, FlashMessage, …)
   ViewHelpers/     → Fluid ViewHelpers (Backend, File, Folder, Format, Math)
 ```

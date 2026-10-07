@@ -5,7 +5,7 @@
 [![CI](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-sync/actions/workflows/ci.yml)
 [![Crowdin](https://badges.crowdin.net/typo3-extension-nr-sync/localized.svg)](https://crowdin.com/project/typo3-extension-nr-sync)
 
-# nr-sync - TYPO3 Content Synchronization
+# Content Synchronization for TYPO3
 
 ## Introduction
 

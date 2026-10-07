@@ -1,7 +1,7 @@
 {
     "name": "netresearch/nr-sync",
     "type": "typo3-cms-extension",
-    "description": "A module for synchronizing content from a production system to a single or multiple target systems.",
+    "description": "Content Synchronization - Backend module that synchronizes content from a production system to one or more target systems.",
     "license": [
         "GPL-3.0-or-later"
     ],

@@ -1,32 +1,24 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
-
+# Label configuration for PR Labeler
+# https://github.com/actions/labeler
 documentation:
   - changed-files:
-      - any-glob-to-any-file:
-          - 'Documentation/**'
-          - '*.md'
-
-configuration:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'Configuration/**'
-          - 'ext_emconf.php'
-          - 'composer.json'
-
+      - any-glob-to-any-file: ['Documentation/**/*', '**/*.md']
 tests:
   - changed-files:
-      - any-glob-to-any-file:
-          - 'Tests/**'
-          - 'phpunit*.xml'
-
+      # Two layouts coexist while typo3-ci-workflows#186 runs: the reference
+      # one puts the configs at Build/phpunit.xml and Build/FunctionalTests.xml,
+      # the older one under Build/phpunit/. Matching both keeps the label
+      # correct on either side of an extension's migration; drop the last
+      # entry once #186 is finished.
+      - any-glob-to-any-file: ['Tests/**/*', 'Build/phpunit.xml', 'Build/FunctionalTests.xml', 'Build/phpunit/**/*']
 ci:
   - changed-files:
-      - any-glob-to-any-file:
-          - '.github/**'
-
+      - any-glob-to-any-file: ['.github/**/*', 'Build/**/*']
 dependencies:
   - changed-files:
-      - any-glob-to-any-file:
-          - 'composer.json'
-          - 'composer.lock'
+      - any-glob-to-any-file: ['composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'yarn.lock']
+configuration:
+  - changed-files:
+      - any-glob-to-any-file: ['Configuration/**/*', 'ext_*.php', 'composer.json']

@@ -15,6 +15,7 @@ GitHub Actions workflows of this repo. Every workflow is a **thin caller** of ce
 |------|---------|
 | `ci.yml` | Test matrix (PHP 8.2-8.5 × TYPO3 ^13.4) via `typo3-ci-workflows/ci.yml` |
 | `checks.yml` | Security/quality jobs (CodeQL, gitleaks, zizmor, …) with a `gate` job; byte-identical across t3x repos |
+| `check-template-drift.yml` | Fails when a file governed by the `typo3-extension` template of `netresearch/.github` differs from it; `.github/template.yaml` lists `ci.yml` and `release.yml` as intentional drift |
 | `harness-verify.yml` | Agent-harness consistency check via `netresearch/.github` `script-check.yml` |
 | `release.yml` | Release via `typo3-ci-workflows/release-typo3-extension.yml` |
 | `republish.yml` | Republish via `typo3-ci-workflows/republish.yml` |
@@ -39,7 +40,7 @@ There are no composite actions, no CODEOWNERS, and no repo-local PR template (or
 - Top-level `permissions: {}`; each `uses:` job grants exactly the reusable's caller contract (e.g. `contents: read`)
 - Reference reusables `@main` — central repos control their own pinning; do not pin reusable refs here
 - `checks.yml` is drift-enforced: any job added there **must** also be added to `gate.needs` (see the comment block in the file)
-- The extension-specific CI matrix lives only in `ci.yml` (intentional drift); everything else stays byte-identical with sibling t3x repos
+- The extension-specific CI matrix lives in `ci.yml` and the release inputs in `release.yml` (both intentional drift); everything else stays byte-identical with sibling t3x repos
 - Never use `secrets: inherit` — pass secrets explicitly (`CODECOV_TOKEN` in `ci.yml`)
 <!-- AGENTS-GENERATED:END code-style -->
 

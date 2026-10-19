@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Controller;
 
 use Exception;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\PageSyncModuleInterface;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -85,9 +86,11 @@ class NewsSyncModuleController extends BaseSyncModuleController implements PageS
             ->groupBy('pid');
 
         try {
-            return $queryBuilder
-                ->executeQuery()
-                ->fetchFirstColumn();
+            return TypeHelper::toIntList(
+                $queryBuilder
+                    ->executeQuery()
+                    ->fetchFirstColumn(),
+            );
         } catch (Exception) {
             return [];
         }

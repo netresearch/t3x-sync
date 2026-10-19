@@ -165,7 +165,7 @@ class Area
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param array<mixed> $record
      *
      * @return bool
      */

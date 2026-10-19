@@ -16,6 +16,8 @@ namespace Netresearch\Sync\Service;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -86,14 +88,14 @@ class ClearCacheService implements LoggerAwareInterface
             [$cache, $key] = explode('|', $identifier);
 
             try {
-                $this->logger
+                $this->getLogger()
                     ->debug('Clear cache: ' . $cache . '; key: ' . $key);
 
                 $this->cacheManager
                     ->getCache($cache)
                     ->remove($key);
             } catch (Throwable $throwable) {
-                $this->logger->error(
+                $this->getLogger()->error(
                     'Clear cache failed with message: ' . $throwable->getMessage(),
                     [
                         'exception' => $throwable,
@@ -107,7 +109,7 @@ class ClearCacheService implements LoggerAwareInterface
         $this->dataHandler->start([], []);
 
         if ($type === 'pages') {
-            $this->logger
+            $this->getLogger()
                 ->debug('Clear cache table: ' . $type . '; uid: ' . $identifier);
 
             $this->dataHandler->clear_cacheCmd((int) $identifier);
@@ -115,9 +117,17 @@ class ClearCacheService implements LoggerAwareInterface
             return;
         }
 
-        $this->logger
+        $this->getLogger()
             ->debug(sprintf('Execute clear_cacheCmd (%s)', $cmd));
 
         $this->dataHandler->clear_cacheCmd($cmd);
+    }
+
+    /**
+     * Returns the logger, or a logger that discards the messages if none was set.
+     */
+    private function getLogger(): LoggerInterface
+    {
+        return $this->logger ?? new NullLogger();
     }
 }

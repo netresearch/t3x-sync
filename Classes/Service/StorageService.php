@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Service;
 
 use Exception;
+use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
@@ -112,9 +113,18 @@ class StorageService
 
         $storageUid = $this->getConfiguredStorageUid();
 
-        $this->defaultStorage = $storageUid > 0
+        $storage = $storageUid > 0
             ? $this->getResourceFactory()->getStorageObject($storageUid)
             : $this->getResourceFactory()->getDefaultStorage();
+
+        if (!$storage instanceof ResourceStorage) {
+            throw new RuntimeException(
+                'No file storage is configured for the sync files and TYPO3 has no default storage.',
+                1760900001,
+            );
+        }
+
+        $this->defaultStorage = $storage;
 
         return $this->defaultStorage;
     }

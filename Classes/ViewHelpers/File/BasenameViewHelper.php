@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\File;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
 /**
@@ -48,6 +49,6 @@ class BasenameViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
-        return basename((string) $this->arguments['file']);
+        return basename(TypeHelper::toString($this->arguments['file']));
     }
 }

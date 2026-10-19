@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\File;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
 /**
@@ -48,6 +49,6 @@ class ModifiedTimeViewHelper extends AbstractViewHelper
      */
     public function render(): int
     {
-        return (int) filemtime($this->arguments['file']);
+        return (int) filemtime(TypeHelper::toString($this->arguments['file']));
     }
 }

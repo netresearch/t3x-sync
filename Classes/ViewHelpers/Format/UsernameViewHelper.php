@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Format;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
@@ -49,17 +50,20 @@ class UsernameViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
-        if ($this->arguments['id'] > 0) {
+        $rawId = $this->arguments['id'];
+        $id    = TypeHelper::toInt($rawId);
+
+        if ($id > 0) {
             $user = $this->getBackendUserAuthentication()
-                ->getRawUserByUid($this->arguments['id']);
+                ->getRawUserByUid($id);
 
-            $realName = $user['realName'] !== '' ? $user['realName'] : null;
-            $userName = $user['username'] !== '' ? $user['username'] : null;
+            $realName = TypeHelper::toString(TypeHelper::arrayPath($user, 'realName'));
+            $userName = TypeHelper::toString(TypeHelper::arrayPath($user, 'username'));
 
-            return ($realName ?? $userName) . ' #' . $this->arguments['id'];
+            return ($realName !== '' ? $realName : $userName) . ' #' . $id;
         }
 
-        return ($this->arguments['id'] === 0) ? 'SYSTEM' : 'UNKNOWN';
+        return ($rawId === 0) ? 'SYSTEM' : 'UNKNOWN';
     }
 
     /**
@@ -67,6 +71,9 @@ class UsernameViewHelper extends AbstractViewHelper
      */
     private function getBackendUserAuthentication(): BackendUserAuthentication
     {
-        return $GLOBALS['BE_USER'];
+        $backendUser = $GLOBALS['BE_USER'];
+        assert($backendUser instanceof BackendUserAuthentication);
+
+        return $backendUser;
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Folder;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Service\StorageService;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
@@ -61,7 +62,7 @@ class FilesViewHelper extends AbstractViewHelper
 
         $subFolder = GeneralUtility::makeInstance(StorageService::class)
             ->getSyncFolder()
-            ->getSubfolder($this->arguments['directory']);
+            ->getSubfolder(TypeHelper::toString($this->arguments['directory']));
 
         // .sql.gz
         $subFolder->setFileAndFolderNameFilters(

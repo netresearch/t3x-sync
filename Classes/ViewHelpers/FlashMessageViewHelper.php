@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
@@ -83,9 +84,9 @@ class FlashMessageViewHelper extends AbstractViewHelper
         /** @var FlashMessage $message */
         $message = GeneralUtility::makeInstance(
             FlashMessage::class,
-            trim((string) $this->renderChildren()),
+            trim(TypeHelper::toString($this->renderChildren())),
             '',
-            constant(ContextualFeedbackSeverity::class . '::' . $this->arguments['type']),
+            constant(ContextualFeedbackSeverity::class . '::' . TypeHelper::toString($this->arguments['type'])),
         );
 
         return $this->bootstrapRenderer->render([$message]);

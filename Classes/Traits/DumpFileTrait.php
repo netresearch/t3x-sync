@@ -19,6 +19,7 @@ use Doctrine\DBAL\ParameterType;
 use Netresearch\Sync\Event\AfterSyncEvent;
 use Netresearch\Sync\Event\BeforeSyncEvent;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\PageSyncModuleInterface;
 use Netresearch\Sync\Table;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -30,6 +31,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function count;
 use function is_array;
+use function is_numeric;
+use function is_string;
 use function sprintf;
 
 /**
@@ -773,11 +776,16 @@ trait DumpFileTrait
     private function buildInsertUpdateLine(string $tableName, array $columnNames, array $row): string
     {
         $connection  = $this->connectionPool->getConnectionForTable($tableName);
+        $values      = [];
         $updateParts = [];
 
         foreach ($row as $key => $value) {
-            if (!is_numeric($value)) {
-                $row[$key] = $connection->quote($value);
+            if ($value === null) {
+                $values[] = 'NULL';
+            } elseif (is_numeric($value)) {
+                $values[] = (string) $value;
+            } else {
+                $values[] = $connection->quote(TypeHelper::toString($value));
             }
 
             // Match the column to its update value
@@ -791,7 +799,7 @@ trait DumpFileTrait
             'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;',
             $connection->quoteSingleIdentifier($tableName),
             implode(', ', array_map($connection->quoteSingleIdentifier(...), $columnNames)),
-            implode(', ', $row),
+            implode(', ', $values),
             implode(', ', $updateParts),
         );
     }
@@ -872,7 +880,7 @@ trait DumpFileTrait
      */
     private function addForeignTableToReferences(array $column): void
     {
-        if (isset($column['config']['foreign_table'])) {
+        if (isset($column['config']['foreign_table']) && is_string($column['config']['foreign_table'])) {
             $strForeignTable                           = $column['config']['foreign_table'];
             $this->referenceTables[$strForeignTable][] = $column['config'];
         }
@@ -887,7 +895,7 @@ trait DumpFileTrait
      */
     private function addMMTableToReferences(array $column): void
     {
-        if (isset($column['config']['MM'])) {
+        if (isset($column['config']['MM']) && is_string($column['config']['MM'])) {
             $this->referenceTables[$column['config']['MM']][] = $column['config'];
         }
     }

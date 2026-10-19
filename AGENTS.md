@@ -126,7 +126,7 @@ docs/            → agent-facing docs (ARCHITECTURE.md, exec-plans/)
 ## Codebase State
 <!-- AGENTS-GENERATED:START codebase-state -->
 - Deprecated code exists: `Classes/Helper/Area.php` carries `@deprecated` (grep for `@deprecated`)
-- PHPStan runs at level 6 with baseline `Build/phpstan-baseline.neon` — do not grow the baseline
+- PHPStan runs at level 10 (shared config of `netresearch/typo3-ci-workflows`) with baseline `Build/phpstan-baseline.neon` — do not grow the baseline
 <!-- AGENTS-GENERATED:END codebase-state -->
 
 ## Scoped AGENTS.md (MUST read when working in these directories)

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Traits;
 
 use Doctrine\DBAL\Exception;
+use InvalidArgumentException;
 
 /**
  * Service clear cache for Netresearch Synchronisation.
@@ -88,6 +89,10 @@ trait TableDifferenceTrait
             return true;
         }
 
+        if ($tableName === '') {
+            throw new InvalidArgumentException('The table name must not be empty.');
+        }
+
         $columns = $this->connectionPool
             ->getConnectionForTable($tableName)
             ->createSchemaManager()
@@ -137,14 +142,42 @@ trait TableDifferenceTrait
         // JSON exclusively from this PR onward.
         $decoded = json_decode((string) $stateFileContent, true);
         if (is_array($decoded)) {
-            $this->tableDefinition = $decoded;
+            $this->tableDefinition = $this->withStringKeys($decoded);
 
             return;
         }
 
-        // nosemgrep: php.lang.security.unserialize-use.unserialize-use -- backward-compat fallback for state files written by pre-JSON-migration versions; allowed_classes=false makes PHP refuse to instantiate any class, so PHP object injection is impossible regardless of the file contents. Writers from this PR onward use json_encode().
-        $legacy                = @unserialize($stateFileContent, ['allowed_classes' => false]);
-        $this->tableDefinition = is_array($legacy) ? $legacy : [];
+        // A file that is no serialized data makes unserialize() warn and return false
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            // nosemgrep: php.lang.security.unserialize-use.unserialize-use -- backward-compat fallback for state files written by pre-JSON-migration versions; allowed_classes=false makes PHP refuse to instantiate any class, so PHP object injection is impossible regardless of the file contents. Writers from this PR onward use json_encode().
+            $legacy = unserialize($stateFileContent, ['allowed_classes' => false]);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->tableDefinition = is_array($legacy) ? $this->withStringKeys($legacy) : [];
+    }
+
+    /**
+     * Keeps the entries with a string key (the table name) of a decoded table definition.
+     *
+     * @param array<mixed> $definition
+     *
+     * @return array<string, mixed>
+     */
+    private function withStringKeys(array $definition): array
+    {
+        $result = [];
+
+        foreach ($definition as $key => $value) {
+            if (is_string($key)) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     /**

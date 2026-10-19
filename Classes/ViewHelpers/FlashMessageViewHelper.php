@@ -14,13 +14,13 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers;
 
-use function constant;
-
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\Renderer\BootstrapRenderer;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
+
+use function constant;
 
 /**
  * A ViewHelper to print return an area by a given areaId.

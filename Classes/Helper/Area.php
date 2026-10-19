@@ -15,9 +15,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Helper;
 
 use FTP\Connection;
-
-use function in_array;
-
 use Netresearch\Sync\Exception;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -25,6 +22,8 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\ApplicationContext;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function in_array;
 
 /**
  * Methods to work with synchronization areas.

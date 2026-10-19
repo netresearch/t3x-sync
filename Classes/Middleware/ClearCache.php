@@ -14,9 +14,6 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Middleware;
 
-use function is_array;
-use function is_string;
-
 use Netresearch\Sync\Service\ClearCacheService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +25,9 @@ use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendBackendUserAuthentication;
+
+use function is_array;
+use function is_string;
 
 /**
  * The clear cache middleware.

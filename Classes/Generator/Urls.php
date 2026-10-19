@@ -14,12 +14,12 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
-use function count;
-
 use Netresearch\Sync\Controller\BaseSyncModuleController;
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\TranslationTrait;
+
+use function count;
 
 /**
  * Generate files with the list of URLs that have to be called

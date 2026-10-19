@@ -14,13 +14,8 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Traits;
 
-use function count;
-
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
-
-use function is_array;
-
 use Netresearch\Sync\Event\AfterSyncEvent;
 use Netresearch\Sync\Event\BeforeSyncEvent;
 use Netresearch\Sync\Helper\Area;
@@ -28,13 +23,14 @@ use Netresearch\Sync\PageSyncModuleInterface;
 use Netresearch\Sync\Table;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
-
-use function sprintf;
-
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function count;
+use function is_array;
+use function sprintf;
 
 /**
  * DumpFileTrait.

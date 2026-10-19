@@ -75,7 +75,7 @@ class BaseSyncModuleController implements ModuleInterface
      *
      * @var int
      */
-    public const FOLDER_ACCESS_RIGHTS = 0777;
+    public const FOLDER_ACCESS_RIGHTS = 0o777;
 
     /**
      * The date format prepended to the sync files.

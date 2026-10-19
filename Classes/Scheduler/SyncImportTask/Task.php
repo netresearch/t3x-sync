@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Scheduler\SyncImportTask;
 
-use function is_array;
-
 use Netresearch\NrScheduler\AbstractTask;
 use Netresearch\Sync\Service\ClearCacheService;
 use Netresearch\Sync\Service\MysqlClientOptionFile;
@@ -27,6 +25,8 @@ use TYPO3\CMS\Core\Resource\Exception\InsufficientFileAccessPermissionsException
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\File;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function is_array;
 
 /**
  * Scheduler task to import the sync MyQSL files.

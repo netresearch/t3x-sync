@@ -15,10 +15,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use Doctrine\DBAL\Exception;
-
-use function in_array;
-use function is_array;
-
 use Netresearch\Sync\Helper\Area;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -29,6 +25,9 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function in_array;
+use function is_array;
 
 /**
  * Class SyncList.

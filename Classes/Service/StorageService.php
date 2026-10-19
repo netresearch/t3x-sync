@@ -14,13 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Service;
 
-use function array_intersect;
-use function array_values;
-
 use Exception;
-
-use function is_numeric;
-
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
@@ -30,6 +24,10 @@ use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function array_intersect;
+use function array_values;
+use function is_numeric;
 
 /**
  * StorageTrait.

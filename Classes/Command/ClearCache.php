@@ -14,14 +14,14 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Command;
 
-use function is_string;
-
 use Netresearch\Sync\Service\ClearCacheService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
+use function is_string;
 
 /**
  * The clear-cache command class.

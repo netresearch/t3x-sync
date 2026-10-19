@@ -15,10 +15,6 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use Doctrine\DBAL\Exception;
-
-use function in_array;
-use function is_string;
-
 use Netresearch\Sync\Service\MysqlClientOptionFile;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\FlashMessageTrait;
@@ -29,6 +25,9 @@ use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function in_array;
+use function is_string;
 
 /**
  * Controls table sync/dump generation.

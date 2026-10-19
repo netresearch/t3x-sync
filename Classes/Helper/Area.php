@@ -24,6 +24,8 @@ use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function in_array;
+use function is_array;
+use function is_string;
 
 /**
  * Methods to work with synchronization areas.
@@ -33,6 +35,14 @@ use function in_array;
  * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
+ *
+ * @phpstan-type SystemConfig array{
+ *     name: string,
+ *     directory: string,
+ *     url-path: string,
+ *     notify: array<string, mixed>,
+ *     hide: bool
+ * }
  */
 class Area
 {
@@ -97,9 +107,11 @@ class Area
             $rootLine = BackendUtility::BEgetRootLine($pid);
 
             foreach ($rootLine as $element) {
-                if (isset($this->areas[$element['uid']])) {
-                    $this->area       = $this->areas[$element['uid']];
-                    $this->area['id'] = $element['uid'];
+                $uid = TypeHelper::toInt(TypeHelper::arrayPath($element, 'uid'));
+
+                if (isset($this->areas[$uid])) {
+                    $this->area       = $this->areas[$uid];
+                    $this->area['id'] = $uid;
 
                     $this->removeUnwantedSystems();
                     break;
@@ -117,7 +129,9 @@ class Area
             return;
         }
 
-        foreach ($this->area['system'] as $key => $system) {
+        $systems = TypeHelper::toArray($this->area['system'] ?? null);
+
+        foreach (array_keys($systems) as $key) {
             if ($this->selectedTarget === '') {
                 continue;
             }
@@ -130,8 +144,10 @@ class Area
                 continue;
             }
 
-            unset($this->area['system'][$key]);
+            unset($systems[$key]);
         }
+
+        $this->area['system'] = $systems;
     }
 
     /**
@@ -156,8 +172,8 @@ class Area
     public function isDocTypeAllowed(array $record): bool
     {
         return !(isset($this->area['doctype'], $this->area['not_doctype'])
-            && in_array($record['doktype'], $this->area['not_doctype'], true)
-            && !in_array($record['doktype'], $this->area['doctype'], true));
+            && in_array($record['doktype'] ?? null, TypeHelper::toArray($this->area['not_doctype']), true)
+            && !in_array($record['doktype'] ?? null, TypeHelper::toArray($this->area['doctype']), true));
     }
 
     /**
@@ -167,7 +183,7 @@ class Area
      */
     public function getName(): string
     {
-        return $this->area['name'] ?? '';
+        return TypeHelper::toString($this->area['name'] ?? '');
     }
 
     /**
@@ -179,7 +195,7 @@ class Area
      */
     public function getId(): int
     {
-        return $this->area['id'] ?? 0;
+        return TypeHelper::toInt($this->area['id'] ?? 0);
     }
 
     /**
@@ -189,7 +205,7 @@ class Area
      */
     public function getDescription(): string
     {
-        return $this->area['description'] ?? '';
+        return TypeHelper::toString($this->area['description'] ?? '');
     }
 
     /**
@@ -199,7 +215,7 @@ class Area
      */
     public function getFilesToSync(): array
     {
-        return $this->area['files_to_sync'] ?? [];
+        return TypeHelper::toStringList($this->area['files_to_sync'] ?? null);
     }
 
     /**
@@ -257,7 +273,7 @@ class Area
      */
     public function getNotDocType(): array
     {
-        return $this->area['not_doctype'] ?? [];
+        return TypeHelper::toIntList($this->area['not_doctype'] ?? null);
     }
 
     /**
@@ -267,23 +283,42 @@ class Area
      */
     public function getDocType(): array
     {
-        return $this->area['doctype'] ?? [];
+        return TypeHelper::toIntList($this->area['doctype'] ?? null);
     }
 
     /**
      * Returns the systems.
      *
-     * @return array<string, array{
-     *     name: string,
-     *     directory: string,
-     *     url-path: string,
-     *     notify: array<string, string|string[]>,
-     *     hide: bool
-     * }>
+     * Entries that are no array are skipped; missing or mistyped values of an entry
+     * are replaced by '' (name, directory, url-path), [] (notify) or false (hide).
+     *
+     * @return array<string, SystemConfig>
      */
     public function getSystems(): array
     {
-        return $this->area['system'] ?? [];
+        $systems = [];
+
+        foreach (TypeHelper::toArray($this->area['system'] ?? null) as $key => $system) {
+            if (!is_array($system)) {
+                continue;
+            }
+
+            $notify = [];
+
+            foreach (TypeHelper::toArray($system['notify'] ?? null) as $notifyKey => $value) {
+                $notify[(string) $notifyKey] = $value;
+            }
+
+            $systems[(string) $key] = [
+                'name'      => TypeHelper::toString($system['name'] ?? ''),
+                'directory' => TypeHelper::toString($system['directory'] ?? ''),
+                'url-path'  => TypeHelper::toString($system['url-path'] ?? ''),
+                'notify'    => $notify,
+                'hide'      => (bool) ($system['hide'] ?? false),
+            ];
+        }
+
+        return $systems;
     }
 
     /**
@@ -291,13 +326,7 @@ class Area
      *
      * @param string $systemName
      *
-     * @return array{
-     *      name: string,
-     *      directory: string,
-     *      url-path: string,
-     *      notify: array<string, string|string[]>,
-     *      hide: bool
-     *  }
+     * @return SystemConfig|array{} The system, or an empty array if the area has no system of that name
      */
     public function getSystem(string $systemName): array
     {
@@ -346,7 +375,7 @@ class Area
                         'message.notify_unknown',
                         [
                             '{target}'      => $system['name'],
-                            '{notify_type}' => $system['notify']['type'],
+                            '{notify_type}' => TypeHelper::toString($system['notify']['type'] ?? ''),
                         ],
                     ),
                 );
@@ -371,7 +400,7 @@ class Area
      * TYPO3_CONTEXT = Production/Stage/Instance01
      * returns true
      *
-     * @param array{name: string, directory: string, url-path: string, notify: array<string, string|string[]>, hide: bool} $system
+     * @param SystemConfig $system
      *
      * @return bool
      */
@@ -390,7 +419,9 @@ class Area
             return false;
         }
 
-        foreach ($system['notify']['contexts'] as $context) {
+        $contexts = TypeHelper::toStringList($system['notify']['contexts']);
+
+        foreach ($contexts as $context) {
             $configuredContext = GeneralUtility::makeInstance(ApplicationContext::class, $context);
 
             if (str_starts_with((string) Environment::getContext(), (string) $configuredContext)) {
@@ -403,7 +434,7 @@ class Area
                 'message.notify_skipped_context',
                 [
                     '{target}'           => $system['name'],
-                    '{allowed_contexts}' => implode(', ', $system['notify']['contexts']),
+                    '{allowed_contexts}' => implode(', ', $contexts),
                 ],
             ),
         );
@@ -424,7 +455,7 @@ class Area
     protected function notifyMasterViaFtp(array $ftpConfig): void
     {
         $connection = $this->openFtpConnection(
-            (string) ($ftpConfig['host'] ?? ''),
+            TypeHelper::toString($ftpConfig['host'] ?? ''),
             ($ftpConfig['tls'] ?? true) !== false,
         );
 
@@ -434,7 +465,7 @@ class Area
 
         try {
             // nosemgrep: php.lang.security.ftp-use.ftp-use -- FTP over TLS unless the area configuration opts out
-            if (!ftp_login($connection, (string) ($ftpConfig['user'] ?? ''), (string) ($ftpConfig['password'] ?? ''))) {
+            if (!ftp_login($connection, TypeHelper::toString($ftpConfig['user'] ?? ''), TypeHelper::toString($ftpConfig['password'] ?? ''))) {
                 throw new Exception('Signal: FTP auth failed.');
             }
 
@@ -474,19 +505,24 @@ class Area
      */
     protected function openFtpConnection(string $host, bool $useTls): Connection|false
     {
-        if ($useTls) {
-            if (!function_exists('ftp_ssl_connect')) {
-                return false;
-            }
-
-            // Suppress the PHP warning message if the host is invalid
-            // nosemgrep: php.lang.security.ftp-use.ftp-use -- FTP over TLS, the transport the rule asks for
-            return @ftp_ssl_connect($host);
+        if ($useTls && !function_exists('ftp_ssl_connect')) {
+            return false;
         }
 
-        // Suppress the PHP warning message if the host is invalid
-        // nosemgrep: php.lang.security.ftp-use.ftp-use -- plain FTP only when the area configuration sets 'tls' => false
-        return @ftp_connect($host);
+        // Swallow the PHP warning for an invalid host; the caller handles the FALSE result
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            if ($useTls) {
+                // nosemgrep: php.lang.security.ftp-use.ftp-use -- FTP over TLS, the transport the rule asks for
+                return ftp_ssl_connect($host);
+            }
+
+            // nosemgrep: php.lang.security.ftp-use.ftp-use -- plain FTP only when the area configuration sets 'tls' => false
+            return ftp_connect($host);
+        } finally {
+            restore_error_handler();
+        }
     }
 
     /**
@@ -531,10 +567,28 @@ class Area
     {
         $configurationFile = $this->getAreaConfigurationFileLocation();
 
-        if (is_file($configurationFile)) {
-            return require $configurationFile;
+        if (!is_file($configurationFile)) {
+            $configurationFile = $this->getDefaultConfigurationFileLocation();
         }
 
-        return require $this->getDefaultConfigurationFileLocation();
+        $areas = [];
+
+        foreach (TypeHelper::toArray(require $configurationFile) as $pid => $area) {
+            if (!is_array($area)) {
+                continue;
+            }
+
+            $config = [];
+
+            foreach ($area as $key => $value) {
+                if (is_string($key)) {
+                    $config[$key] = $value;
+                }
+            }
+
+            $areas[(int) $pid] = $config;
+        }
+
+        return $areas;
     }
 }

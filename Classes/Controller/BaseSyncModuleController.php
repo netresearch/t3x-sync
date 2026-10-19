@@ -61,6 +61,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
+ *
+ * @phpstan-import-type SystemConfig from Area
  */
 class BaseSyncModuleController implements ModuleInterface
 {
@@ -509,9 +511,9 @@ class BaseSyncModuleController implements ModuleInterface
     }
 
     /**
-     * @param ModuleTemplate                                                                                               $moduleTemplate
-     * @param string                                                                                                       $systemName
-     * @param array{name: string, directory: string, url-path: string, notify: array<string, string|string[]>, hide: bool} $system
+     * @param ModuleTemplate $moduleTemplate
+     * @param string         $systemName
+     * @param SystemConfig   $system
      *
      * @throws RouteNotFoundException
      */

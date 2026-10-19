@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Backend;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -76,11 +77,11 @@ class UriViewHelper extends AbstractBackendViewHelper
     {
         return (string) GeneralUtility::makeInstance(UriBuilder::class)
             ->buildUriFromRoute(
-                $this->arguments['route'],
+                TypeHelper::toString($this->arguments['route']),
                 [
                     'id'   => $this->arguments['pid'],
                     'lock' => [
-                        $this->arguments['area'] => $this->arguments['lock'],
+                        TypeHelper::toString($this->arguments['area']) => $this->arguments['lock'],
                     ],
                 ],
             );

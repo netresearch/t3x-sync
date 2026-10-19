@@ -19,6 +19,7 @@ use Netresearch\Sync\Event\ModifyMenuItemsEvent;
 use Netresearch\Sync\Event\ModifyTableListEvent;
 use Netresearch\Sync\Generator\Urls;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\ModuleInterface;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\SyncList;
@@ -61,6 +62,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * @license GPL-3.0-or-later
  *
  * @see    https://www.netresearch.de
+ *
+ * @phpstan-import-type SystemConfig from Area
  */
 class BaseSyncModuleController implements ModuleInterface
 {
@@ -75,7 +78,7 @@ class BaseSyncModuleController implements ModuleInterface
      *
      * @var int
      */
-    public const FOLDER_ACCESS_RIGHTS = 0777;
+    public const FOLDER_ACCESS_RIGHTS = 0o777;
 
     /**
      * The date format prepended to the sync files.
@@ -251,7 +254,7 @@ class BaseSyncModuleController implements ModuleInterface
 
         return ($request->getMethod() === 'POST')
             && is_array($parsedBody)
-            && isset($parsedBody['data']['submit'])
+            && TypeHelper::arrayPath($parsedBody, 'data', 'submit') !== null
             && !$this->syncLock->isLocked();
     }
 
@@ -267,7 +270,11 @@ class BaseSyncModuleController implements ModuleInterface
 
         $this->pageUid        = $this->getPageId($request);
         $this->moduleTemplate = $this->getModuleTemplate($request, $this->pageUid);
-        $this->target         = $parsedBody['target'] ?? $queryParams['target'] ?? 'all';
+        $this->target         = TypeHelper::toString(
+            TypeHelper::arrayPath($parsedBody, 'target')
+            ?? TypeHelper::arrayPath($queryParams, 'target')
+            ?? 'all',
+        );
 
         $this->initModule($this->moduleTemplate);
     }
@@ -281,7 +288,11 @@ class BaseSyncModuleController implements ModuleInterface
      */
     protected function getPageId(ServerRequestInterface $request): int
     {
-        return (int) ($request->getParsedBody()['id'] ?? $request->getQueryParams()['id'] ?? -1);
+        return TypeHelper::toInt(
+            TypeHelper::arrayPath($request->getParsedBody(), 'id')
+            ?? TypeHelper::arrayPath($request->getQueryParams(), 'id')
+            ?? -1,
+        );
     }
 
     /**
@@ -289,7 +300,27 @@ class BaseSyncModuleController implements ModuleInterface
      */
     protected function htmlResponse(): ResponseInterface
     {
-        return $this->moduleTemplate->renderResponse('Backend/DefaultSyncModule');
+        return $this->getInitializedModuleTemplate()->renderResponse('Backend/DefaultSyncModule');
+    }
+
+    /**
+     * Returns the module template that initializeAction() created.
+     */
+    protected function getInitializedModuleTemplate(): ModuleTemplate
+    {
+        assert($this->moduleTemplate instanceof ModuleTemplate, 'initializeAction() creates the module template');
+
+        return $this->moduleTemplate;
+    }
+
+    /**
+     * Returns the module data of the request that indexAction() received.
+     */
+    private function getModuleData(): ModuleData
+    {
+        assert($this->moduleData instanceof ModuleData, 'indexAction() sets the module data');
+
+        return $this->moduleData;
     }
 
     /**
@@ -369,13 +400,19 @@ class BaseSyncModuleController implements ModuleInterface
             ->getMenuRegistry()
             ->getMenus()['moduleMenu'];
 
-        $menuItems = $moduleMenu->getMenuItems();
+        $menuItems = [];
+
+        foreach ($moduleMenu->getMenuItems() as $menuItem) {
+            if ($menuItem instanceof MenuItem) {
+                $menuItems[] = $menuItem;
+            }
+        }
 
         // Dispatch ModifyMenuItemsEvent to allow extensions to add/modify menu items
         /** @var EventDispatcherInterface $eventDispatcher */
         $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
         $menuEvent       = new ModifyMenuItemsEvent($menuItems, $this->getModuleIdentifier());
-        $menuEvent       = $eventDispatcher->dispatch($menuEvent);
+        $eventDispatcher->dispatch($menuEvent);
 
         // Use potentially modified menu items from the event
         $menuItems = $menuEvent->getMenuItems();
@@ -509,9 +546,9 @@ class BaseSyncModuleController implements ModuleInterface
     }
 
     /**
-     * @param ModuleTemplate                                                                                               $moduleTemplate
-     * @param string                                                                                                       $systemName
-     * @param array{name: string, directory: string, url-path: string, notify: array<string, string|string[]>, hide: bool} $system
+     * @param ModuleTemplate $moduleTemplate
+     * @param string         $systemName
+     * @param SystemConfig   $system
      *
      * @throws RouteNotFoundException
      */
@@ -580,7 +617,7 @@ class BaseSyncModuleController implements ModuleInterface
      */
     public function getError(): string
     {
-        return $this->error;
+        return $this->error ?? '';
     }
 
     /**
@@ -719,7 +756,7 @@ class BaseSyncModuleController implements ModuleInterface
      */
     protected function getModuleIdentifier(): string
     {
-        return $this->moduleData->getModuleIdentifier();
+        return $this->getModuleData()->getModuleIdentifier();
     }
 
     /**
@@ -727,13 +764,13 @@ class BaseSyncModuleController implements ModuleInterface
      */
     public function getTables(): array
     {
-        $tables = $this->moduleData->get('tables', []);
+        $tables = array_values(TypeHelper::toStringList($this->getModuleData()->get('tables', [])));
 
         // Dispatch ModifyTableListEvent to allow extensions to modify the table list
         /** @var EventDispatcherInterface $eventDispatcher */
         $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
         $tableEvent      = new ModifyTableListEvent($tables, $this->getModuleIdentifier());
-        $tableEvent      = $eventDispatcher->dispatch($tableEvent);
+        $eventDispatcher->dispatch($tableEvent);
 
         // Return potentially modified tables from the event
         return $tableEvent->getTables();
@@ -741,7 +778,9 @@ class BaseSyncModuleController implements ModuleInterface
 
     public function getDumpFile(): ?string
     {
-        return $this->moduleData->get('dumpFile');
+        $dumpFile = $this->getModuleData()->get('dumpFile');
+
+        return is_string($dumpFile) ? $dumpFile : null;
     }
 
     /**
@@ -749,7 +788,7 @@ class BaseSyncModuleController implements ModuleInterface
      */
     public function getClearCacheEntries(): array
     {
-        return $this->moduleData->get('clearCacheEntries', []);
+        return TypeHelper::toStringList($this->getModuleData()->get('clearCacheEntries', []));
     }
 
     /**
@@ -789,7 +828,10 @@ class BaseSyncModuleController implements ModuleInterface
      */
     protected function getBackendUserAuthentication(): BackendUserAuthentication
     {
-        return $GLOBALS['BE_USER'];
+        $backendUser = $GLOBALS['BE_USER'];
+        assert($backendUser instanceof BackendUserAuthentication);
+
+        return $backendUser;
     }
 
     /**
@@ -837,7 +879,7 @@ class BaseSyncModuleController implements ModuleInterface
      */
     private function addInformationToSyncfileName(string $dumpFile): string
     {
-        $isFullSync = isset($_POST['data']['force_full_sync']) && ($_POST['data']['force_full_sync'] === '1');
+        $isFullSync = TypeHelper::arrayPath($_POST, 'data', 'force_full_sync') === '1';
         $prefix     = 'inc_';
         $target     = strtolower($this->target);
 

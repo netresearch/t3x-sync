@@ -14,12 +14,11 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Service;
 
+use RuntimeException;
+
 use function chmod;
 use function file_put_contents;
 use function is_file;
-
-use RuntimeException;
-
 use function sprintf;
 use function str_replace;
 use function sys_get_temp_dir;
@@ -118,7 +117,7 @@ final class MysqlClientOptionFile
             throw new RuntimeException('Failed to create the option file for the MySQL client');
         }
 
-        if (!chmod($file, 0600)
+        if (!chmod($file, 0o600)
             || (file_put_contents($file, self::render($connectionParams)) === false)
         ) {
             // nosemgrep: php.lang.security.unlink-use.unlink-use -- $file is the return value of tempnam() above

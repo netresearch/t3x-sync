@@ -98,6 +98,23 @@ final class SyncTargetLockTraitTest extends TestCase
     }
 
     #[Test]
+    public function lockRequestForATargetTheAreaDoesNotKnowChangesNothing(): void
+    {
+        $_REQUEST = ['lock' => ['unknown' => '1']];
+
+        $area = $this->createStub(Area::class);
+        $area->method('getSystem')->willReturn([]);
+
+        $storageService = $this->createMock(StorageService::class);
+        $storageService->expects(self::never())->method('getSyncFolder');
+
+        $subject = new TargetLockSubject($storageService, $area, $this->createBackendUser(true));
+        $subject->handle();
+
+        self::assertSame([], $subject->messages);
+    }
+
+    #[Test]
     public function lockRequestOfAUserWhoIsNotAdministratorChangesNothing(): void
     {
         $storageService = $this->createMock(StorageService::class);

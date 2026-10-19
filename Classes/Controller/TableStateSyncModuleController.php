@@ -16,6 +16,7 @@ namespace Netresearch\Sync\Controller;
 
 use Doctrine\DBAL\Schema\Name\OptionallyQualifiedName;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TableDifferenceTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
@@ -44,7 +45,7 @@ class TableStateSyncModuleController extends BaseSyncModuleController
     {
         // Do not call parent method
 
-        if (isset($_POST['data']['submit'])) {
+        if (TypeHelper::arrayPath($_POST, 'data', 'submit') !== null) {
             if ($this->createNewDefinitions()) {
                 $this->addSuccessMessage(
                     $this->getLabel('message.table_state_success'),
@@ -80,6 +81,11 @@ class TableStateSyncModuleController extends BaseSyncModuleController
     {
         $tables = [];
         foreach ($this->getAllTables() as $tableName) {
+            // The schema manager returns no table without a name
+            if ($tableName === '') {
+                continue;
+            }
+
             $columns = $this->connectionPool
                 ->getConnectionForTable($tableName)
                 ->createSchemaManager()

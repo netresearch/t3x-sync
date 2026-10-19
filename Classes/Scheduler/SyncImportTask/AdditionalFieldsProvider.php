@@ -16,6 +16,7 @@ namespace Netresearch\Sync\Scheduler\SyncImportTask;
 
 use Netresearch\NrScheduler\AbstractAdditionalFieldProvider;
 use Netresearch\NrScheduler\Fields\TextField;
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3\CMS\Scheduler\Task\AbstractTask;
 
 /**
@@ -57,8 +58,8 @@ class AdditionalFieldsProvider extends AbstractAdditionalFieldProvider
         parent::saveAdditionalFields($submittedData, $task);
 
         /** @var Task $task */
-        $task->syncStoragePath = $submittedData[self::FIELD_NAME_PATH];
-        $task->syncUrlsPath    = $submittedData[self::FIELD_NAME_URLS];
+        $task->syncStoragePath = TypeHelper::toString($submittedData[self::FIELD_NAME_PATH] ?? '');
+        $task->syncUrlsPath    = TypeHelper::toString($submittedData[self::FIELD_NAME_URLS] ?? '');
     }
 
     /**

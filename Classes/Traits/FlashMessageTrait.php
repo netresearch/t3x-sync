@@ -132,6 +132,10 @@ trait FlashMessageTrait
         string $message,
         int|ContextualFeedbackSeverity $type = ContextualFeedbackSeverity::INFO,
     ): void {
-        $this->createFlashMessage($message, '', $type);
+        $this->createFlashMessage(
+            $message,
+            '',
+            $type instanceof ContextualFeedbackSeverity ? $type : ContextualFeedbackSeverity::from($type),
+        );
     }
 }

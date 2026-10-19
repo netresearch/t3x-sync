@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync;
 
 use Exception;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -82,7 +83,7 @@ class SyncLock
      */
     private function receivedLockChangeRequest(): bool
     {
-        return isset($_REQUEST['data']['lock']);
+        return TypeHelper::arrayPath($_REQUEST, 'data', 'lock') !== null;
     }
 
     /**
@@ -92,7 +93,7 @@ class SyncLock
      */
     private function isLockRequested(): bool
     {
-        return (bool) $_REQUEST['data']['lock'];
+        return (bool) TypeHelper::arrayPath($_REQUEST, 'data', 'lock');
     }
 
     /**
@@ -103,7 +104,9 @@ class SyncLock
     public function getLockMessage(): string
     {
         try {
-            return $this->extensionConfiguration->get('nr_sync')['syncModuleLockedMessage'];
+            return TypeHelper::toString(
+                TypeHelper::arrayPath($this->extensionConfiguration->get('nr_sync'), 'syncModuleLockedMessage'),
+            );
         } catch (Exception) {
             return '';
         }
@@ -117,7 +120,7 @@ class SyncLock
     public function isLocked(): bool
     {
         try {
-            return (bool) $this->extensionConfiguration->get('nr_sync')['syncModuleLocked'];
+            return (bool) TypeHelper::arrayPath($this->extensionConfiguration->get('nr_sync'), 'syncModuleLocked');
         } catch (Exception) {
             return false;
         }
@@ -129,11 +132,15 @@ class SyncLock
     private function storeLockConfiguration(): void
     {
         try {
-            $configuration                     = $this->extensionConfiguration->get('nr_sync');
+            $configuration                     = TypeHelper::toArray($this->extensionConfiguration->get('nr_sync'));
             $configuration['syncModuleLocked'] = $this->isLockRequested();
 
             // Updated the configuration during run time, so any following check will have new updated values
-            $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_sync'] = $configuration;
+            $confVars                   = TypeHelper::toArray($GLOBALS['TYPO3_CONF_VARS'] ?? null);
+            $extensions                 = TypeHelper::toArray($confVars['EXTENSIONS'] ?? null);
+            $extensions['nr_sync']      = $configuration;
+            $confVars['EXTENSIONS']     = $extensions;
+            $GLOBALS['TYPO3_CONF_VARS'] = $confVars;
 
             // Write new/updated configuration
             $this->extensionConfiguration->set('nr_sync', $configuration);

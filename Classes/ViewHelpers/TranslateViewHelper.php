@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Traits\TranslationTrait;
 use RuntimeException;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
@@ -64,16 +65,20 @@ class TranslateViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
-        $id = $this->arguments['id'] ?? $this->arguments['key'] ?? null;
-        $id = (string) $id;
+        $id = TypeHelper::toString($this->arguments['id'] ?? $this->arguments['key'] ?? null);
 
         if ($id === '') {
             throw new RuntimeException('An argument "key" or "id" has to be provided', 1711101732);
         }
 
-        return $this->getLabel(
-            $id,
-            $this->arguments['data'] ?? [],
-        );
+        $data = [];
+
+        foreach (TypeHelper::toArray($this->arguments['data'] ?? null) as $key => $value) {
+            if (is_int($value) || is_string($value)) {
+                $data[(string) $key] = $value;
+            }
+        }
+
+        return $this->getLabel($id, $data);
     }
 }

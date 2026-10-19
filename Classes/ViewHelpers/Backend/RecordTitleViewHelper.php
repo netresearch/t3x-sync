@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Backend;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
@@ -49,9 +50,11 @@ class RecordTitleViewHelper extends AbstractViewHelper
      */
     public function render(): string
     {
+        // A page that was deleted after it was marked has no record; getRecordTitle() reads
+        // an empty row the way it read NULL before: it falls back to its "no title" label
         return BackendUtility::getRecordTitle(
             'pages',
-            BackendUtility::getRecord('pages', $this->arguments['pid']),
+            BackendUtility::getRecord('pages', TypeHelper::toInt($this->arguments['pid'])) ?? [],
         );
     }
 }

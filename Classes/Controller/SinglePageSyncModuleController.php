@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Netresearch\Sync\Controller;
 
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\SinglePageSyncModuleInterface;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -41,7 +42,7 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
     {
         parent::run($area);
 
-        $this->moduleTemplate->assign('isSingePageSyncModule', true);
+        $this->getInitializedModuleTemplate()->assign('isSingePageSyncModule', true);
 
         // Sync single pages/page trees
         $this->showPageSelection($this->getTables());
@@ -87,14 +88,16 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
         }
 
         $bShowButton = false;
-        $recursion   = (int) $this
-            ->getBackendUserAuthentication()
-            ->getSessionData(
-                'nr_sync_synclist_levelmax' . $this->getSyncList()->getId(),
-            );
+        $recursion   = TypeHelper::toInt(
+            $this
+                ->getBackendUserAuthentication()
+                ->getSessionData(
+                    'nr_sync_synclist_levelmax' . $this->getSyncList()->getId(),
+                ),
+        );
 
-        if (isset($_POST['data']['recursion'])) {
-            $recursion = (int) $_POST['data']['levelmax'];
+        if (TypeHelper::arrayPath($_POST, 'data', 'recursion') !== null) {
+            $recursion = TypeHelper::toInt(TypeHelper::arrayPath($_POST, 'data', 'levelmax'));
 
             $this->getBackendUserAuthentication()
                 ->setAndSaveSessionData('nr_sync_synclist_levelmax' . $this->getSyncList()->getId(), $recursion);
@@ -116,19 +119,21 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
                 $tables,
             );
 
-        $strTitle = $this->getArea()->getName() . ' - ' . $record['uid'] . ' - ' . $record['title'];
+        $strTitle = $this->getArea()->getName()
+            . ' - ' . TypeHelper::toString($record['uid'] ?? '')
+            . ' - ' . TypeHelper::toString($record['title'] ?? '');
 
-        if (((int) $record['doktype']) === PageRepository::DOKTYPE_SHORTCUT) {
+        if (TypeHelper::toInt($record['doktype'] ?? null) === PageRepository::DOKTYPE_SHORTCUT) {
             $strTitle .= ' - LINK';
         }
 
-        $this->moduleTemplate->assign('pageValid', true);
-        $this->moduleTemplate->assign('title', $strTitle);
-        $this->moduleTemplate->assign('arCount', $arCount);
-        $this->moduleTemplate->assign('record', $record);
+        $this->getInitializedModuleTemplate()->assign('pageValid', true);
+        $this->getInitializedModuleTemplate()->assign('title', $strTitle);
+        $this->getInitializedModuleTemplate()->assign('arCount', $arCount);
+        $this->getInitializedModuleTemplate()->assign('record', $record);
 
         if ($this->getSyncList()->pageContainsData($this->pageUid, $tables)) {
-            $this->moduleTemplate->assign('pageContainsData', true);
+            $this->getInitializedModuleTemplate()->assign('pageContainsData', true);
             $bShowButton = true;
         }
 
@@ -136,10 +141,10 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
             $bShowButton = true;
         }
 
-        $this->moduleTemplate->assign('bShowButton', $bShowButton);
+        $this->getInitializedModuleTemplate()->assign('bShowButton', $bShowButton);
 
         if ($bShowButton) {
-            $this->moduleTemplate->assign('recursion', $recursion);
+            $this->getInitializedModuleTemplate()->assign('recursion', $recursion);
         } else {
             $this->addErrorMessage(
                 $this->getLabel('error.select_mark_type'),
@@ -154,12 +159,14 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
      */
     protected function manageSyncList(): void
     {
+        $data = TypeHelper::toArray($_POST['data'] ?? null);
+
         // ID hinzufügen
-        if (isset($_POST['data']['add'])) {
-            if (isset($_POST['data']['type'])) {
+        if (isset($data['add'])) {
+            if (isset($data['type'])) {
                 $this->getSyncList()
                     ->addToSyncList(
-                        $_POST['data'],
+                        $data,
                     );
             } else {
                 $this->addErrorMessage($this->getLabel('error.select_mark_type'));
@@ -167,8 +174,8 @@ class SinglePageSyncModuleController extends BaseSyncModuleController implements
         }
 
         // ID entfernen
-        if (isset($_POST['data']['delete'])) {
-            $this->getSyncList()->deleteFromSyncList($_POST['data']);
+        if (isset($data['delete'])) {
+            $this->getSyncList()->deleteFromSyncList($data);
         }
 
         $this->getSyncList()->saveSyncList();

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\ViewHelpers\Folder;
 
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Service\StorageService;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
@@ -55,7 +56,7 @@ class LockFileExistsViewHelper extends AbstractViewHelper
     {
         return GeneralUtility::makeInstance(StorageService::class)
             ->getSyncFolder()
-            ->getSubfolder($this->arguments['directory'])
+            ->getSubfolder(TypeHelper::toString($this->arguments['directory']))
             ->hasFile('.lock');
     }
 }

@@ -105,7 +105,7 @@ final class MysqlClientOptionFileTest extends TestCase
         MysqlClientOptionFile::run(
             $this->connectionParams(),
             function (string $defaultsOption): void {
-                self::assertSame(0600, fileperms($this->pathOf($defaultsOption)) & 0777);
+                self::assertSame(0o600, fileperms($this->pathOf($defaultsOption)) & 0o777);
             },
         );
     }
@@ -129,7 +129,7 @@ final class MysqlClientOptionFileTest extends TestCase
         try {
             MysqlClientOptionFile::run(
                 $this->connectionParams(),
-                function (string $defaultsOption) use (&$path): void {
+                function (string $defaultsOption) use (&$path): never {
                     $path = $this->pathOf($defaultsOption);
 
                     throw new RuntimeException('client failed', 1);

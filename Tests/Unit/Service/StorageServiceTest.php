@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
@@ -54,6 +55,23 @@ final class StorageServiceTest extends TestCase
         $storage->method('isPublic')->willReturn($isPublic);
 
         return $storage;
+    }
+
+    #[Test]
+    public function missingDefaultStorageOfTypo3IsReported(): void
+    {
+        $extensionConfiguration = $this->createStub(ExtensionConfiguration::class);
+        $extensionConfiguration->method('get')->willReturn(null);
+        GeneralUtility::addInstance(ExtensionConfiguration::class, $extensionConfiguration);
+
+        $resourceFactory = $this->createStub(ResourceFactory::class);
+        $resourceFactory->method('getDefaultStorage')->willReturn(null);
+        GeneralUtility::setSingletonInstance(ResourceFactory::class, $resourceFactory);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1760900001);
+
+        (new StorageService())->getDefaultStorage();
     }
 
     #[Test]

@@ -14,19 +14,21 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Scheduler\SyncImportTask;
 
-use function is_array;
-
 use Netresearch\NrScheduler\AbstractTask;
 use Netresearch\Sync\Service\ClearCacheService;
 use Netresearch\Sync\Service\MysqlClientOptionFile;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\DatabaseConnectionTrait;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Resource\Exception\FileOperationErrorException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFileAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\File;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function is_array;
 
 /**
  * Scheduler task to import the sync MyQSL files.
@@ -96,13 +98,13 @@ class Task extends AbstractTask
         $sqlFiles = $this->findFilesToImport();
 
         if ($sqlFiles === []) {
-            $this->logger->info('Nothing to import');
+            $this->getLogger()->info('Nothing to import');
         }
 
         $databaseConnection = $this->getDefaultDatabaseConnection();
 
         foreach ($sqlFiles as $name => $file) {
-            $this->logger->info('Start import of file ' . $name);
+            $this->getLogger()->info('Start import of file ' . $name);
 
             // Use tempnam() so the path is system-generated and cannot be
             // influenced by $name. Defense in depth even though $name comes
@@ -126,7 +128,7 @@ class Task extends AbstractTask
                     $command = sprintf(
                         'mysql %s %s < %s 2>&1',
                         $defaultsOption,
-                        escapeshellarg((string) $databaseConnection->getParams()['dbname']),
+                        escapeshellarg($databaseConnection->getParams()['dbname'] ?? ''),
                         escapeshellarg($tmpFile),
                     );
 
@@ -139,12 +141,12 @@ class Task extends AbstractTask
             unlink($tmpFile);
 
             if ($return > 0) {
-                $this->logger->error(sprintf('Something went wrong on importing %s. Please check further logs and the file.', $name));
+                $this->getLogger()->error(sprintf('Something went wrong on importing %s. Please check further logs and the file.', $name));
                 throw new RuntimeException(implode(PHP_EOL, $output));
             }
 
-            $this->logger->info(sprintf('Import %s is finished. Delete File.', $name));
-            $this->logger->info('Import was done successful.');
+            $this->getLogger()->info(sprintf('Import %s is finished. Delete File.', $name));
+            $this->getLogger()->info('Import was done successful.');
         }
 
         return true;
@@ -164,7 +166,7 @@ class Task extends AbstractTask
         $urlFiles = $this->findUrlFiles();
 
         foreach ($urlFiles as $name => $file) {
-            $this->logger->info('start processing ' . $name);
+            $this->getLogger()->info('start processing ' . $name);
 
             $matches = [];
             preg_match_all('/[a-zA-Z]+:[0-9|a-zA-Z\-_]+/', $file->getContents(), $matches);
@@ -179,7 +181,7 @@ class Task extends AbstractTask
                 ->clearCaches($cacheEntries);
 
             $this->deleteFile($file);
-            $this->logger->info('finish processing ' . $name);
+            $this->getLogger()->info('finish processing ' . $name);
         }
 
         return true;
@@ -255,5 +257,13 @@ class Task extends AbstractTask
         }
 
         return $files;
+    }
+
+    /**
+     * Returns the logger, or a logger that discards the messages if none was set.
+     */
+    private function getLogger(): LoggerInterface
+    {
+        return $this->logger ?? new NullLogger();
     }
 }

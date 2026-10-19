@@ -14,12 +14,13 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Generator;
 
-use function count;
-
 use Netresearch\Sync\Controller\BaseSyncModuleController;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\TranslationTrait;
+
+use function count;
 
 /**
  * Generate files with the list of URLs that have to be called
@@ -76,8 +77,11 @@ class Urls
             return;
         }
 
-        if ((count($params['arUrlsOnce']) === 0)
-            && (count($params['arUrlsPerMachine']) === 0)
+        $urlsOnce       = TypeHelper::toStringList($params['arUrlsOnce'] ?? null);
+        $urlsPerMachine = TypeHelper::toStringList($params['arUrlsPerMachine'] ?? null);
+
+        if (($urlsOnce === [])
+            && ($urlsPerMachine === [])
         ) {
             return;
         }
@@ -88,7 +92,7 @@ class Urls
 
         if (isset($params['arUrlsOnce'])) {
             $count = $this->generateUrlFile(
-                $params['arUrlsOnce'],
+                $urlsOnce,
                 $folders,
                 self::FILE_FORMAT_ONCE,
             );
@@ -96,7 +100,7 @@ class Urls
 
         if (isset($params['arUrlsPerMachine'])) {
             $count += $this->generateUrlFile(
-                $params['arUrlsPerMachine'],
+                $urlsPerMachine,
                 $folders,
                 self::FILE_FORMAT_PERMACHINE,
             );

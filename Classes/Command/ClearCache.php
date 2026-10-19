@@ -14,14 +14,14 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Command;
 
-use function is_string;
-
 use Netresearch\Sync\Service\ClearCacheService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
+use function is_string;
 
 /**
  * The clear-cache command class.
@@ -53,11 +53,6 @@ class ClearCache extends Command
      * @var int
      */
     private const CLI_ERROR_FILE = 2;
-
-    /**
-     * @var SymfonyStyle
-     */
-    private SymfonyStyle $io;
 
     /**
      * The clear cache service.
@@ -119,7 +114,7 @@ class ClearCache extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->io = new SymfonyStyle($input, $output);
+        $io = new SymfonyStyle($input, $output);
 
         $inputFilename = $input->getOption('filename');
         $inputData     = $input->getOption('data');
@@ -128,19 +123,19 @@ class ClearCache extends Command
             if (is_readable($inputFilename)) {
                 $data = $this->getDataFromFile($inputFilename);
             } else {
-                $this->io->error('Cannot read file "' . $inputFilename . '".');
+                $io->error('Cannot read file "' . $inputFilename . '".');
 
                 return self::CLI_ERROR_FILE;
             }
         } elseif (is_string($inputData)) {
             $data = explode(',', $inputData);
         } else {
-            $this->io->error('You need to specify either option -f or -d. Type --help for more information.');
+            $io->error('You need to specify either option -f or -d. Type --help for more information.');
 
             return self::CLI_ERROR_COMMAND;
         }
 
-        $this->runClearCacheService($data);
+        $this->runClearCacheService($data, $io);
 
         return self::CLI_OK;
     }
@@ -158,7 +153,7 @@ class ClearCache extends Command
         $fileLines = file($filename);
         $result    = [[]];
 
-        foreach ($fileLines as $fileLine) {
+        foreach ($fileLines === false ? [] : $fileLines as $fileLine) {
             $result[] = explode(',', trim($fileLine));
         }
 
@@ -171,14 +166,15 @@ class ClearCache extends Command
     /**
      * CLI runner with echo output.
      *
-     * @param string[] $data array with values in table:uid order
+     * @param string[]     $data array with values in table:uid order
+     * @param SymfonyStyle $io   The console output of the command
      *
      * @return void
      */
-    private function runClearCacheService(array $data): void
+    private function runClearCacheService(array $data, SymfonyStyle $io): void
     {
-        $this->io->success('TYPO3 cache clearing....');
+        $io->success('TYPO3 cache clearing....');
         $this->clearCacheService->clearCaches($data);
-        $this->io->success('Caches cleared.');
+        $io->success('Caches cleared.');
     }
 }

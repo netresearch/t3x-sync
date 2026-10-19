@@ -16,6 +16,7 @@ namespace Netresearch\Sync\Controller;
 
 use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Traits\TranslationTrait;
 
 /**
@@ -42,7 +43,7 @@ class FalSyncModuleController extends BaseSyncModuleController
         parent::run($area);
 
         // The clean-up button posts dam_cleanup when orphaned file references exist
-        if (isset($_POST['data']['dam_cleanup'])) {
+        if (TypeHelper::arrayPath($_POST, 'data', 'dam_cleanup') !== null) {
             $this->cleanUpDAM();
         }
 
@@ -50,7 +51,7 @@ class FalSyncModuleController extends BaseSyncModuleController
         $this->testDAMForErrors();
 
         if ($this->hasError()) {
-            $this->moduleTemplate->assign('customModulePartial', 'FalSyncModule/CleanUpButton');
+            $this->getInitializedModuleTemplate()->assign('customModulePartial', 'FalSyncModule/CleanUpButton');
         }
     }
 

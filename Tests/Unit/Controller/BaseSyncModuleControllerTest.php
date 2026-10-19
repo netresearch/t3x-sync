@@ -75,4 +75,32 @@ final class BaseSyncModuleControllerTest extends TestCase
     {
         self::assertFalse($this->isSyncRequested(false, $method, $parsedBody));
     }
+
+    /**
+     * @param array<string, mixed> $queryParams
+     */
+    private function getPageId(mixed $parsedBody, array $queryParams): int
+    {
+        $controller = (new ReflectionClass(BaseSyncModuleController::class))->newInstanceWithoutConstructor();
+        $request    = (new ServerRequest('https://source.example.org/typo3/module/netresearch/sync', 'POST'))
+            ->withParsedBody($parsedBody)
+            ->withQueryParams($queryParams);
+
+        return (int) (new ReflectionMethod(BaseSyncModuleController::class, 'getPageId'))
+            ->invoke($controller, $request);
+    }
+
+    #[Test]
+    public function pageIdIsTakenFromTheBodyBeforeTheQuery(): void
+    {
+        self::assertSame(12, $this->getPageId(['id' => '12'], ['id' => '7']));
+        self::assertSame(7, $this->getPageId(null, ['id' => '7']));
+        self::assertSame(-1, $this->getPageId(null, []));
+    }
+
+    #[Test]
+    public function pageIdThatIsAnArrayIsPageZero(): void
+    {
+        self::assertSame(0, $this->getPageId(['id' => ['5']], []));
+    }
 }

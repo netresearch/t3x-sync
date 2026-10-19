@@ -14,15 +14,15 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Tests\Unit\Configuration;
 
-use function hash_file;
-use function is_array;
-
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+use function hash_file;
+use function is_array;
 
 /**
  * The module group icon "extension-netresearch-module" is registered by

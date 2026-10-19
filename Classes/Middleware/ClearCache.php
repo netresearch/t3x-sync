@@ -14,9 +14,7 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync\Middleware;
 
-use function is_array;
-use function is_string;
-
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Service\ClearCacheService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +26,9 @@ use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendBackendUserAuthentication;
+
+use function is_array;
+use function is_string;
 
 /**
  * The clear cache middleware.
@@ -118,15 +119,15 @@ class ClearCache implements MiddlewareInterface
         }
 
         if (!is_array($backendUser->user)
-            || ((int) ($backendUser->user['uid'] ?? 0) <= 0)
+            || (TypeHelper::toInt($backendUser->user['uid'] ?? 0) <= 0)
             || !$backendUser->isAdmin()
-            || ((int) ($GLOBALS['TYPO3_CONF_VARS']['BE']['adminOnly'] ?? 0) < 0)
+            || (TypeHelper::toInt(TypeHelper::arrayPath($GLOBALS, 'TYPO3_CONF_VARS', 'BE', 'adminOnly') ?? 0) < 0)
         ) {
             return null;
         }
 
         $normalizedParams = $request->getAttribute('normalizedParams');
-        $ipMask           = trim((string) ($GLOBALS['TYPO3_CONF_VARS']['BE']['IPmaskList'] ?? ''));
+        $ipMask           = trim(TypeHelper::toString(TypeHelper::arrayPath($GLOBALS, 'TYPO3_CONF_VARS', 'BE', 'IPmaskList') ?? ''));
 
         if (($ipMask !== '')
             && (!$normalizedParams instanceof NormalizedParams
@@ -135,7 +136,7 @@ class ClearCache implements MiddlewareInterface
             return null;
         }
 
-        if ((bool) ($GLOBALS['TYPO3_CONF_VARS']['BE']['lockSSL'] ?? false)
+        if ((bool) (TypeHelper::arrayPath($GLOBALS, 'TYPO3_CONF_VARS', 'BE', 'lockSSL') ?? false)
             && (!$normalizedParams instanceof NormalizedParams || !$normalizedParams->isHttps())
         ) {
             return null;

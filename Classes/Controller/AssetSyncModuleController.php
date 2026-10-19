@@ -16,6 +16,7 @@ namespace Netresearch\Sync\Controller;
 
 use Doctrine\DBAL\Exception;
 use Netresearch\Sync\Helper\Area;
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Traits\TranslationTrait;
 
 /**
@@ -41,7 +42,7 @@ class AssetSyncModuleController extends BaseSyncModuleController
     {
         parent::run($area);
 
-        if (!isset($_POST['data']['submit'])) {
+        if (TypeHelper::arrayPath($_POST, 'data', 'submit') === null) {
             return;
         }
 

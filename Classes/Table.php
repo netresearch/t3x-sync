@@ -14,21 +14,23 @@ declare(strict_types=1);
 
 namespace Netresearch\Sync;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Exception;
-
-use function in_array;
-use function is_string;
-
+use Netresearch\Sync\Helper\TypeHelper;
 use Netresearch\Sync\Service\MysqlClientOptionFile;
 use Netresearch\Sync\Service\StorageService;
 use Netresearch\Sync\Traits\FlashMessageTrait;
 use Netresearch\Sync\Traits\TranslationTrait;
 use RuntimeException;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+use function in_array;
+use function is_string;
 
 /**
  * Controls table sync/dump generation.
@@ -118,7 +120,7 @@ class Table
         }
 
         if (isset($options['noCreateInfo'])) {
-            $this->setNoCreateInfo($options['noCreateInfo']);
+            $this->setNoCreateInfo((bool) $options['noCreateInfo']);
         }
     }
 
@@ -321,7 +323,7 @@ class Table
 
         if (isset($result['0']['uid_list']) && ($result['0']['uid_list'] !== '')) {
             $list = array_filter(
-                explode(',', (string) $result['0']['uid_list']),
+                explode(',', TypeHelper::toString($result['0']['uid_list'])),
                 static fn (string $uid): bool => $uid !== '',
             );
         }
@@ -487,15 +489,13 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
      */
     protected function getTstampField(): false|string
     {
-        if (!isset($GLOBALS['TCA'][$this->tableName]['ctrl']['tstamp'])) {
+        $tstampField = TypeHelper::arrayPath($GLOBALS, 'TCA', $this->tableName, 'ctrl', 'tstamp');
+
+        if (!is_string($tstampField) || $tstampField === '') {
             return false;
         }
 
-        if ($GLOBALS['TCA'][$this->tableName]['ctrl']['tstamp'] === '') {
-            return false;
-        }
-
-        return $GLOBALS['TCA'][$this->tableName]['ctrl']['tstamp'];
+        return $tstampField;
     }
 
     /**
@@ -535,13 +535,16 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
             ->fetchAssociative();
 
         // DEFAULT: date of last full dump - facelift 2013
-        $nTime = mktime(0, 0, 0, 1, 1, 2000);
+        $nTime = (new DateTimeImmutable('2000-01-01 00:00:00'))->getTimestamp();
 
         if ($arRow === [] || $arRow === false) {
             return $nTime;
         }
 
-        $nTimeMaxRow = max($arRow['incr'], $arRow['full']);
+        $nTimeMaxRow = max(
+            TypeHelper::toInt($arRow['incr'] ?? null),
+            TypeHelper::toInt($arRow['full'] ?? null),
+        );
 
         if ($nTimeMaxRow > 0) {
             return $nTimeMaxRow;
@@ -566,17 +569,20 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
 
         $connection = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
 
-        global $BE_USER;
-
-        $nTime ??= (int) GeneralUtility::makeInstance(Context::class)
-            ->getPropertyFromAspect('date', 'timestamp');
+        $nTime ??= TypeHelper::toInt(
+            GeneralUtility::makeInstance(Context::class)
+                ->getPropertyFromAspect('date', 'timestamp'),
+        );
 
         if ($nTime === 0) {
             $nTime = time();
         }
 
         $strUpdateField = $bIncr ? 'incr' : 'full';
-        $nUserId        = (int) $BE_USER->user['uid'];
+        $backendUser    = $GLOBALS['BE_USER'] ?? null;
+        $nUserId        = $backendUser instanceof BackendUserAuthentication
+            ? TypeHelper::toInt(TypeHelper::arrayPath($backendUser->user, 'uid'))
+            : 0;
 
         $connection->executeStatement(
             sprintf(
@@ -602,7 +608,7 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
         /** @var ConnectionPool $connectionPool */
         $connectionPool  = GeneralUtility::makeInstance(ConnectionPool::class);
         $connection      = $connectionPool->getConnectionForTable('tx_nrsync_syncstat');
-        $arControlFields = $connection->quoteIdentifiers($this->getControlFieldsFromTcaByTableName());
+        $arControlFields = array_map($connection->quoteIdentifier(...), $this->getControlFieldsFromTcaByTableName());
 
         if ($arControlFields === []) {
             return null;
@@ -651,25 +657,20 @@ TRUNCATE TABLE ' . $this->tableName . ";\n\n");
      */
     public function getControlFieldsFromTcaByTableName(): array
     {
-        if (!isset($GLOBALS['TCA'][$this->tableName])) {
-            return [];
-        }
+        $arControl = TypeHelper::arrayPath($GLOBALS, 'TCA', $this->tableName, 'ctrl');
 
-        $arControl      = $GLOBALS['TCA'][$this->tableName]['ctrl'];
-        $arEnableFields = $arControl['enablecolumns'] ?? [];
+        $controlFields = [
+            'delete'   => TypeHelper::arrayPath($arControl, 'delete'),
+            'disabled' => TypeHelper::arrayPath($arControl, 'enablecolumns', 'disabled'),
+            'endtime'  => TypeHelper::arrayPath($arControl, 'enablecolumns', 'endtime'),
+        ];
 
         $arReturn = [];
 
-        if (isset($arControl['delete'])) {
-            $arReturn['delete'] = $arControl['delete'];
-        }
-
-        if (isset($arEnableFields['disabled'])) {
-            $arReturn['disabled'] = $arEnableFields['disabled'];
-        }
-
-        if (isset($arEnableFields['endtime'])) {
-            $arReturn['endtime'] = $arEnableFields['endtime'];
+        foreach ($controlFields as $key => $fieldName) {
+            if (is_string($fieldName)) {
+                $arReturn[$key] = $fieldName;
+            }
         }
 
         return $arReturn;

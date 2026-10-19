@@ -36,7 +36,10 @@ trait TranslationTrait
      */
     protected function getLanguageService(): LanguageService
     {
-        return $GLOBALS['LANG'];
+        $languageService = $GLOBALS['LANG'];
+        assert($languageService instanceof LanguageService);
+
+        return $languageService;
     }
 
     /**
@@ -83,6 +86,10 @@ trait TranslationTrait
             $data,
         );
 
-        return str_replace(array_keys($data), $data, $translation);
+        return str_replace(
+            array_map(static fn (int|string $key): string => (string) $key, array_keys($data)),
+            array_map(static fn (int|string $value): string => (string) $value, $data),
+            $translation,
+        );
     }
 }

@@ -93,7 +93,7 @@ final class BeforeSyncEventTest extends TestCase
 
         $event = new BeforeSyncEvent($initialTables, $dumpFile);
 
-        $modifiedTables = array_filter($event->getTables(), fn ($table) => $table !== 'table2');
+        $modifiedTables = array_filter($event->getTables(), fn (string $table): bool => $table !== 'table2');
         $event->setTables(array_values($modifiedTables));
 
         self::assertCount(2, $event->getTables());

@@ -129,7 +129,7 @@ final class MysqlClientOptionFileTest extends TestCase
         try {
             MysqlClientOptionFile::run(
                 $this->connectionParams(),
-                function (string $defaultsOption) use (&$path): void {
+                function (string $defaultsOption) use (&$path): never {
                     $path = $this->pathOf($defaultsOption);
 
                     throw new RuntimeException('client failed', 1);

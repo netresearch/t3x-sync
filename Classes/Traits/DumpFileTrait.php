@@ -16,6 +16,7 @@ namespace Netresearch\Sync\Traits;
 
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
+use InvalidArgumentException;
 use Netresearch\Sync\Event\AfterSyncEvent;
 use Netresearch\Sync\Event\BeforeSyncEvent;
 use Netresearch\Sync\Helper\Area;
@@ -52,7 +53,9 @@ trait DumpFileTrait
     public int $dumpTableRecursion = 0;
 
     /**
-     * @var array<string, mixed>
+     * MM and inline reference tables of the current table and their TCA column config.
+     *
+     * @var array<string, list<array<mixed>>>
      */
     private array $referenceTables = [];
 
@@ -66,7 +69,7 @@ trait DumpFileTrait
      * tablename:      name of the table the records belong to
      * identifier:     unique identifier like uid or a uique string
      *
-     * @var array<string, array<string, mixed>>
+     * @var array<string, array<string, array<int|string, string>>>
      */
     private array $globalSqlLineStorage = [];
 
@@ -229,7 +232,7 @@ trait DumpFileTrait
      */
     private function writeInsertLines(FileInterface $fpDumpFile): void
     {
-        if (!is_array($this->globalSqlLineStorage['insert'])) {
+        if (!isset($this->globalSqlLineStorage['insert'])) {
             return;
         }
 
@@ -315,8 +318,8 @@ trait DumpFileTrait
         // Dispatch BeforeSyncEvent to allow modifications
         /** @var EventDispatcherInterface $eventDispatcher */
         $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
-        $beforeEvent     = new BeforeSyncEvent($tables, $filename, $targetName);
-        $beforeEvent     = $eventDispatcher->dispatch($beforeEvent);
+        $beforeEvent     = new BeforeSyncEvent(array_values($tables), $filename, $targetName);
+        $eventDispatcher->dispatch($beforeEvent);
 
         // Use potentially modified tables from the event
         $tables = $beforeEvent->getTables();
@@ -345,8 +348,8 @@ trait DumpFileTrait
             $tables,
             $tempFileIdentifier,
             [
-                'forceFullSync'      => isset($_POST['data']['force_full_sync']) && ($_POST['data']['force_full_sync'] === '1'),
-                'deleteObsoleteRows' => isset($_POST['data']['delete_obsolete_rows']) && ($_POST['data']['delete_obsolete_rows'] === '1'),
+                'forceFullSync'      => $this->isForceFullSync(),
+                'deleteObsoleteRows' => TypeHelper::arrayPath($_POST, 'data', 'delete_obsolete_rows') === '1',
             ],
         );
 
@@ -456,13 +459,17 @@ trait DumpFileTrait
             $tempFileIdentifier = $folder->getIdentifier() . $filename;
             $dumpFile           = $tempStorage->getFile($tempFileIdentifier);
 
-            $compressedDumpFile = $tempStorage->createFile($filename . '.gz', $folder);
-            $compressedDumpFile?->setContents(
-                gzencode(
-                    $dumpFile instanceof FileInterface ? $dumpFile->getContents() : '',
-                    9,
-                ),
+            $compressedContent = gzencode(
+                $dumpFile instanceof FileInterface ? $dumpFile->getContents() : '',
+                9,
             );
+
+            if ($compressedContent === false) {
+                throw new RuntimeException('Could not compress ' . $tempFileIdentifier);
+            }
+
+            $compressedDumpFile = $tempStorage->createFile($filename . '.gz', $folder);
+            $compressedDumpFile->setContents($compressedContent);
 
             $tempStorage->deleteFile($dumpFile);
         } catch (\Exception) {
@@ -601,7 +608,9 @@ trait DumpFileTrait
      */
     private function getDbConnectionCharSet(): string
     {
-        return $GLOBALS['TYPO3_CONF_VARS']['DB']['Connections']['Default']['charset'] ?? 'utf8';
+        $charset = TypeHelper::arrayPath($GLOBALS, 'TYPO3_CONF_VARS', 'DB', 'Connections', 'Default', 'charset');
+
+        return is_string($charset) ? $charset : 'utf8';
     }
 
     /**
@@ -639,17 +648,7 @@ trait DumpFileTrait
         $deleteLines = [];
         $insertLines = [];
 
-        $connection = $this->connectionPool
-            ->getConnectionForTable($tableName);
-
-        $columns = $connection
-            ->createSchemaManager()
-            ->introspectTableColumnsByUnquotedName($tableName);
-
-        $columnNames = [];
-        foreach ($columns as $column) {
-            $columnNames[] = $column->getObjectName()->toString();
-        }
+        $columnNames = $this->getColumnNames($tableName);
 
         $queryBuilder = $this->getQueryBuilderForTable($tableName);
 
@@ -668,11 +667,13 @@ trait DumpFileTrait
             ->executeQuery();
 
         while ($row = $refTableResult->fetchAssociative()) {
-            if ($row['deleted'] === 1) {
-                $deleteLines[$tableName][$row['uid']]
-                    = $this->buildDeleteLine($tableName, $row['uid']);
+            $uid = TypeHelper::toInt($row['uid'] ?? null);
+
+            if (($row['deleted'] ?? null) === 1) {
+                $deleteLines[$tableName][$uid]
+                    = $this->buildDeleteLine($tableName, $uid);
             } else {
-                $insertLines[$tableName][$row['uid']]
+                $insertLines[$tableName][$uid]
                     = $this->buildInsertUpdateLine($tableName, $columnNames, $row);
             }
 
@@ -686,9 +687,7 @@ trait DumpFileTrait
             }
         }
 
-        if (isset($_POST['data']['delete_obsolete_rows'])
-            && ($_POST['data']['delete_obsolete_rows'] === '1')
-        ) {
+        if (TypeHelper::arrayPath($_POST, 'data', 'delete_obsolete_rows') === '1') {
             $this->addAsDeleteRowTable($tableName);
         }
 
@@ -696,6 +695,30 @@ trait DumpFileTrait
         $this->prepareDump($deleteLines, $insertLines, $fpDumpFile);
 
         --$this->dumpTableRecursion;
+    }
+
+    /**
+     * Returns the column names of a table.
+     *
+     * @return list<string>
+     */
+    private function getColumnNames(string $tableName): array
+    {
+        if ($tableName === '') {
+            throw new InvalidArgumentException('The table name must not be empty.');
+        }
+
+        $columns = $this->connectionPool
+            ->getConnectionForTable($tableName)
+            ->createSchemaManager()
+            ->introspectTableColumnsByUnquotedName($tableName);
+
+        $columnNames = [];
+        foreach ($columns as $column) {
+            $columnNames[] = $column->getObjectName()->toString();
+        }
+
+        return $columnNames;
     }
 
     /**
@@ -822,21 +845,13 @@ trait DumpFileTrait
         $this->addMMReferenceTables($refTableName);
 
         foreach ($this->referenceTables as $mmTableName => $arTableFields) {
-            $columns = $this->connectionPool
-                ->getConnectionForTable($mmTableName)
-                ->createSchemaManager()
-                ->introspectTableColumnsByUnquotedName($mmTableName);
-
-            $columnNames = [];
-            foreach ($columns as $column) {
-                $columnNames[] = $column->getObjectName()->toString();
-            }
+            $columnNames = $this->getColumnNames($mmTableName);
 
             foreach ($arTableFields as $arMMConfig) {
                 $this->writeMMReference(
                     $refTableName,
                     $mmTableName,
-                    $row['uid'],
+                    TypeHelper::toInt($row['uid'] ?? null),
                     $arMMConfig,
                     $columnNames,
                     $fpDumpFile,
@@ -855,17 +870,23 @@ trait DumpFileTrait
      */
     private function addMMReferenceTables(string $tableName): void
     {
-        if (!isset($GLOBALS['TCA'][$tableName]['columns'])) {
+        $columns = TypeHelper::arrayPath($GLOBALS, 'TCA', $tableName, 'columns');
+
+        if (!is_array($columns)) {
             return;
         }
 
-        foreach ($GLOBALS['TCA'][$tableName]['columns'] as $column) {
-            if (isset($column['config']['type'])) {
-                if ($column['config']['type'] === 'inline') {
-                    $this->addForeignTableToReferences($column);
-                } else {
-                    $this->addMMTableToReferences($column);
-                }
+        foreach ($columns as $column) {
+            $config = TypeHelper::arrayPath($column, 'config');
+
+            if (!is_array($config) || !isset($config['type'])) {
+                continue;
+            }
+
+            if ($config['type'] === 'inline') {
+                $this->addForeignTableToReferences($config);
+            } else {
+                $this->addMMTableToReferences($config);
             }
         }
     }
@@ -874,29 +895,32 @@ trait DumpFileTrait
      * Adds Column config to reference table, if a foreign_table reference config
      * like in inline-fields exists.
      *
-     * @param array<string, array<string, mixed>> $column column config to get foreign_table data from
+     * @param array<mixed> $config TCA config of the column to get foreign_table data from
      *
      * @return void
      */
-    private function addForeignTableToReferences(array $column): void
+    private function addForeignTableToReferences(array $config): void
     {
-        if (isset($column['config']['foreign_table']) && is_string($column['config']['foreign_table'])) {
-            $strForeignTable                           = $column['config']['foreign_table'];
-            $this->referenceTables[$strForeignTable][] = $column['config'];
+        $foreignTable = $config['foreign_table'] ?? null;
+
+        if (is_string($foreignTable)) {
+            $this->referenceTables[$foreignTable][] = $config;
         }
     }
 
     /**
      * Adds column config to reference table, if a MM reference config exists.
      *
-     * @param array<string, array<string, mixed>> $column Column config to get MM data from
+     * @param array<mixed> $config TCA config of the column to get MM data from
      *
      * @return void
      */
-    private function addMMTableToReferences(array $column): void
+    private function addMMTableToReferences(array $config): void
     {
-        if (isset($column['config']['MM']) && is_string($column['config']['MM'])) {
-            $this->referenceTables[$column['config']['MM']][] = $column['config'];
+        $mmTable = $config['MM'] ?? null;
+
+        if (is_string($mmTable)) {
+            $this->referenceTables[$mmTable][] = $config;
         }
     }
 
@@ -928,12 +952,12 @@ trait DumpFileTrait
      * - sorting - optional
      * - sorting_foreign - optional
      *
-     * @param string               $strRefTableName table which we get the references from
-     * @param string               $tableName       table to get MM data from
-     * @param int                  $uid             the uid of element which references
-     * @param array<string, mixed> $arMMConfig      the configuration of this MM reference
-     * @param string[]             $columnNames     Table columns
-     * @param FileInterface        $fpDumpFile      file pointer to the SQL dump file
+     * @param string        $strRefTableName table which we get the references from
+     * @param string        $tableName       table to get MM data from
+     * @param int           $uid             the uid of element which references
+     * @param array<mixed>  $arMMConfig      the configuration of this MM reference
+     * @param string[]      $columnNames     Table columns
+     * @param FileInterface $fpDumpFile      file pointer to the SQL dump file
      */
     private function writeMMReference(
         string $strRefTableName,
@@ -946,7 +970,7 @@ trait DumpFileTrait
         $deleteLines = [];
         $insertLines = [];
 
-        $strFieldName = $arMMConfig['foreign_field'] ?? 'uid_foreign';
+        $strFieldName = TypeHelper::toString($arMMConfig['foreign_field'] ?? 'uid_foreign');
         $connection   = $this->connectionPool->getConnectionForTable($tableName);
 
         $queryBuilder = $connection->createQueryBuilder();
@@ -969,32 +993,35 @@ trait DumpFileTrait
         // values pass through quoteSingleIdentifier()/quote() with the int cast.
         $strWhere = $connection->quoteSingleIdentifier($strFieldName) . ' = ' . $uid;
 
-        if (isset($arMMConfig['MM_match_fields'])) {
-            foreach ($arMMConfig['MM_match_fields'] as $strName => $strValue) {
-                $queryBuilder->andWhere($queryBuilder->expr()->eq(
-                    $strName,
-                    $queryBuilder->createNamedParameter($strValue),
-                ));
-                $strWhere .= ' AND ' . $connection->quoteSingleIdentifier($strName) . ' = ' . $connection->quote($strValue);
-            }
+        foreach (TypeHelper::toArray($arMMConfig['MM_match_fields'] ?? null) as $strName => $strValue) {
+            $strName  = (string) $strName;
+            $strValue = TypeHelper::toString($strValue);
+
+            $queryBuilder->andWhere($queryBuilder->expr()->eq(
+                $strName,
+                $queryBuilder->createNamedParameter($strValue),
+            ));
+            $strWhere .= ' AND ' . $connection->quoteSingleIdentifier($strName) . ' = ' . $connection->quote($strValue);
         }
 
         $statement = $queryBuilder->executeQuery();
 
         if ($tableName !== 'sys_file_reference') {
-            $deleteLines[$tableName][$uid] = sprintf(
-                'DELETE FROM %s WHERE %s;',
-                $connection->quoteSingleIdentifier($tableName),
-                $strWhere,
-            );
+            $deleteLines[$tableName] = [
+                $uid => sprintf(
+                    'DELETE FROM %s WHERE %s;',
+                    $connection->quoteSingleIdentifier($tableName),
+                    $strWhere,
+                ),
+            ];
         }
 
         while ($row = $statement->fetchAssociative()) {
             if (isset($row['uid'])) {
-                $insertLines[$tableName][$row['uid']]
+                $insertLines[$tableName][TypeHelper::toInt($row['uid'])]
                     = $this->buildInsertUpdateLine($tableName, $columnNames, $row);
             } elseif (isset($row['uid_foreign'])) {
-                $insertLines[$tableName][$row['uid_foreign']]
+                $insertLines[$tableName][TypeHelper::toInt($row['uid_foreign'])]
                     = $this->buildInsertUpdateLine($tableName, $columnNames, $row);
             } else {
                 throw new RuntimeException('Table misses column "uid" or "uid_foreign');
@@ -1008,7 +1035,7 @@ trait DumpFileTrait
             ) {
                 $this->dumpTableByPageIDs(
                     [
-                        $row['uid_local'],
+                        TypeHelper::toInt($row['uid_local'] ?? null),
                     ],
                     'sys_file',
                     $fpDumpFile,
@@ -1065,8 +1092,7 @@ trait DumpFileTrait
      */
     private function isForceFullSync(): bool
     {
-        return isset($_POST['data']['force_full_sync'])
-            && ($_POST['data']['force_full_sync'] === '1');
+        return TypeHelper::arrayPath($_POST, 'data', 'force_full_sync') === '1';
     }
 
     /**
@@ -1105,8 +1131,8 @@ trait DumpFileTrait
             return true;
         }
 
-        $syncStats = $this->getSyncStatsForElement($table, $uid);
-        $timeStamp = $this->getTimestampOfElement($table, $uid);
+        $syncStats = $this->getSyncStatsForElement($table, (int) $uid);
+        $timeStamp = $this->getTimestampOfElement($table, (int) $uid);
 
         if ($timeStamp === 0) {
             return false;
@@ -1162,14 +1188,16 @@ trait DumpFileTrait
     {
         $queryBuilder = $this->getQueryBuilderForTable($table);
 
-        return (int) $queryBuilder
-            ->select('tstamp')
-            ->from($table)
-            ->where(
-                $queryBuilder->expr()->eq('uid', $uid),
-            )
-            ->executeQuery()
-            ->fetchOne();
+        return TypeHelper::toInt(
+            $queryBuilder
+                ->select('tstamp')
+                ->from($table)
+                ->where(
+                    $queryBuilder->expr()->eq('uid', $uid),
+                )
+                ->executeQuery()
+                ->fetchOne(),
+        );
     }
 
     /**
@@ -1348,7 +1376,7 @@ trait DumpFileTrait
     private function setLastDumpTimeForElement(string $table, int $uid): void
     {
         $time        = time();
-        $userId      = (int) $this->getBackendUserAuthentication()->user['uid'];
+        $userId      = TypeHelper::toInt(TypeHelper::arrayPath($this->getBackendUserAuthentication()->user, 'uid'));
         $updateField = $this->isForceFullSync() ? 'full' : 'incr';
 
         $connection = $this->connectionPool

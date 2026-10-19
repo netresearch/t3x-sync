@@ -35,8 +35,9 @@ trait SyncTargetLockTrait
      */
     private function handleTargetLock(): void
     {
-        if (!isset($_REQUEST['lock'])
-            || !is_array($_REQUEST['lock'])
+        $locks = $_REQUEST['lock'] ?? null;
+
+        if (!is_array($locks)
             || !$this->getBackendUserAuthentication()->isAdmin()
         ) {
             return;
@@ -44,8 +45,14 @@ trait SyncTargetLockTrait
 
         $defaultStorage = $this->storageService->getDefaultStorage();
 
-        foreach ($_REQUEST['lock'] as $systemName => $lockState) {
-            $system = $this->getArea()->getSystem($systemName);
+        foreach ($locks as $systemName => $lockState) {
+            $systemName = (string) $systemName;
+            $system     = $this->getArea()->getSystem($systemName);
+
+            // A target the area does not know has no directory to lock
+            if ($system === []) {
+                continue;
+            }
 
             $systemDirectory = $this
                 ->storageService

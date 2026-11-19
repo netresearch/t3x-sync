@@ -361,18 +361,18 @@ trait DumpFileTrait
             $this->addInfoMessage(
                 $this->getLabel('info.no_data_dumped'),
             );
-        } finally {
-            if ($dumpFile === null) {
-                $this->addInfoMessage(
-                    $this->getLabel('info.no_data_dumped'),
-                );
+        }
 
-                // Dispatch AfterSyncEvent with failure
-                $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, false);
-                $eventDispatcher->dispatch($afterEvent);
+        if ($dumpFile === null) {
+            $this->addInfoMessage(
+                $this->getLabel('info.no_data_dumped'),
+            );
 
-                return false;
-            }
+            // Dispatch AfterSyncEvent with failure
+            $afterEvent = new AfterSyncEvent($tables, $filename, $targetName, false);
+            $eventDispatcher->dispatch($afterEvent);
+
+            return false;
         }
 
         $compressedDumFile = $this->createGZipFile($tempFolder, $dumpFile->getName());

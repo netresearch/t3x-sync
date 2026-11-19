@@ -13,7 +13,7 @@ GitHub Actions workflows of this repo. Every workflow is a **thin caller** of ce
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `ci.yml` | Test matrix (PHP 8.2-8.5 × TYPO3 ^13.4) via `typo3-ci-workflows/ci.yml` |
+| `ci.yml` | Test matrix (PHP 8.2-8.6 × TYPO3 ^13.4) via `typo3-ci-workflows/ci.yml` |
 | `checks.yml` | Security/quality jobs (CodeQL, gitleaks, zizmor, …) with a `gate` job; byte-identical across t3x repos |
 | `check-template-drift.yml` | Fails when a file governed by the `typo3-extension` template of `netresearch/.github` differs from it; `.github/template.yaml` lists `ci.yml` and `release.yml` as intentional drift |
 | `harness-verify.yml` | Agent-harness consistency check via `netresearch/.github` `script-check.yml` |
@@ -57,7 +57,7 @@ jobs:
     permissions:
       contents: read
     with:
-        php-versions: '["8.2","8.3","8.4","8.5"]'
+        php-versions: '["8.2","8.3","8.4","8.5","8.6"]'
         typo3-versions: '["^13.4"]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

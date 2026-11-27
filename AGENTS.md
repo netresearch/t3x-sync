@@ -22,6 +22,7 @@ netresearch/nr-sync — TYPO3 v13.4 backend extension (key `nr_sync`) that synch
 | Rector dry-run | `composer ci:test:php:rector` (= `make rector`) |
 | Unit tests | `composer ci:test:php:unit` (= `make test-unit`) |
 | All checks | `composer ci:test` |
+| Changelog fragments | `composer ci:test:changelog` |
 | Any suite in Docker (verified 2026-08-24) | `./Build/Scripts/runTests.sh -s unit\|lint\|phpstan\|rector\|cgl` |
 
 `Build/Scripts/runTests.sh` is the bootstrap stub of `netresearch/typo3-ci-workflows`; the runner comes from the package and is linked into `.build/bin`. It runs the suites in Docker against a chosen PHP version (`-p 8.2`). **Do not run `-s functional` here:** this extension has no functional tests and no functional config, and the runner silently falls back to `Build/phpunit.xml`, so the suite re-runs the unit tests and reports them as functional (netresearch/typo3-ci-workflows#212). `-s lint` uses `php -l` over `Classes Configuration Tests`, not `phplint` with `Build/.phplint.yml` (netresearch/typo3-ci-workflows#217).
@@ -128,6 +129,12 @@ docs/            → agent-facing docs (ARCHITECTURE.md, exec-plans/)
 - Deprecated code exists: `Classes/Helper/Area.php` carries `@deprecated` (grep for `@deprecated`)
 - PHPStan runs at level 10 (shared config of `netresearch/typo3-ci-workflows`) with baseline `Build/phpstan-baseline.neon` — do not grow the baseline
 <!-- AGENTS-GENERATED:END codebase-state -->
+
+## Changelog
+
+- Changes are recorded in [`CHANGELOG.md`](CHANGELOG.md), [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) from the release after 2.0.0 on: `## [X.Y.Z] - YYYY-MM-DD` with `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security` as needed, newest first, below `## [Unreleased]`. Releases up to 2.0.0 keep their original format (`# X.Y.Z` with `## BREAKING`, `## FEATURE`, `## BUGFIX`) below.
+- A feature or fix PR writes its entry as a fragment `changelog.d/<branch-slug>.<section>.md` ([format](changelog.d/README.md)) instead of editing `CHANGELOG.md`; `composer ci:test:changelog` checks it, and CI runs it through `composer ci:test:php:cgl`.
+- The release PR `chore(release): X.Y.Z` runs `composer changelog:collect`, which moves the fragments into `## [Unreleased]`, and then renames that section to `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## Scoped AGENTS.md (MUST read when working in these directories)
 <!-- AGENTS-GENERATED:START scope-index -->

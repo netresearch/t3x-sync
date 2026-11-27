@@ -15,5 +15,6 @@
 /.gitignore export-ignore
 /Makefile export-ignore
 /renovate.json export-ignore
+/changelog.d/ export-ignore
 AGENTS.md export-ignore
 CLAUDE.md export-ignore

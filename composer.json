@@ -53,7 +53,7 @@
         "netresearch/nr-scheduler": "*"
     },
     "require-dev": {
-        "netresearch/typo3-ci-workflows": "^2.0.3"
+        "netresearch/typo3-ci-workflows": "^2.3.1"
     },
     "extra": {
         "typo3/cms": {
@@ -82,6 +82,7 @@
             "rector process --config Build/rector.php"
         ],
         "ci:test:php:cgl": [
+            "@ci:test:changelog",
             "@ci:cgl --dry-run"
         ],
         "ci:test:php:lint": [
@@ -105,6 +106,8 @@
             "@ci:test:php:rector",
             "@ci:test:php:cgl",
             "@ci:test:php:unit"
-        ]
+        ],
+        "changelog:collect": "changelog-fragments collect",
+        "ci:test:changelog": "changelog-fragments check @no_additional_args"
     }
 }

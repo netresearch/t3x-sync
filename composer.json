@@ -53,7 +53,7 @@
         "netresearch/nr-scheduler": "*"
     },
     "require-dev": {
-        "netresearch/typo3-ci-workflows": "^2.3.1"
+        "netresearch/typo3-ci-workflows": "^2.3.2"
     },
     "extra": {
         "typo3/cms": {

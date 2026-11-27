@@ -129,6 +129,11 @@ docs/            → agent-facing docs (ARCHITECTURE.md, exec-plans/)
 - PHPStan runs at level 10 (shared config of `netresearch/typo3-ci-workflows`) with baseline `Build/phpstan-baseline.neon` — do not grow the baseline
 <!-- AGENTS-GENERATED:END codebase-state -->
 
+## Changelog
+
+- Changes are recorded in [`CHANGELOG.md`](CHANGELOG.md), [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) from the release after 2.0.0 on: `## [X.Y.Z] - YYYY-MM-DD` with `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security` as needed, newest first, below `## [Unreleased]`. Releases up to 2.0.0 keep their original format (`# X.Y.Z` with `## BREAKING`, `## FEATURE`, `## BUGFIX`) below.
+- A feature or fix PR writes its entry as a fragment `changelog.d/<branch-slug>.<section>.md` ([format](changelog.d/README.md)) instead of editing `CHANGELOG.md`; `composer ci:test:changelog` checks it, and CI runs it through `composer ci:test:php:cgl`. The release PR `chore(release): X.Y.Z` runs `composer changelog:collect`, which moves the fragments into `## [Unreleased]`, and then renames that section to `## [X.Y.Z] - YYYY-MM-DD`.
+
 ## Scoped AGENTS.md (MUST read when working in these directories)
 <!-- AGENTS-GENERATED:START scope-index -->
 - `./Classes/AGENTS.md` — PHP classes: sync modules, services, events, DI
